@@ -4,10 +4,9 @@ use libp2p::gossipsub::{
     Gossipsub, GossipsubConfig, GossipsubEvent, IdentTopic, MessageAuthenticity,
 };
 use libp2p::mdns::{Mdns, MdnsConfig, MdnsEvent};
-use libp2p::swarm::{NetworkBehaviourEventProcess, Swarm};
+use libp2p::swarm::{NetworkBehaviourEventProcess, Swarm, SwarmEvent};
 use libp2p::{identity, Multiaddr, NetworkBehaviour, PeerId};
 use std::error::Error;
-use std::task::Poll;
 
 /// Custom network behaviour with mdns and gossipsub
 #[derive(NetworkBehaviour)]
@@ -56,6 +55,23 @@ impl NetworkBehaviourEventProcess<MdnsEvent> for HiBehaviour {
     }
 }
 
+/// main loop for handling events
+async fn handle_events(swarm: &mut Swarm<HiBehaviour>) {
+    loop {
+        futures::select! {
+            // handle swarm events
+            event = swarm.next_event().fuse() => {
+                match event {
+                    SwarmEvent::Behaviour(event) => println!("{:?}", event),
+                    SwarmEvent::NewListenAddr(addr) => println!("Started listing on {:?}", addr),
+                    SwarmEvent::ExpiredListenAddr(addr) => println!("Stopped listening on {:?}", addr),
+                    _ => (),
+                }
+            }
+        }
+    }
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
     // create key and peer id
     let local_key = identity::Keypair::generate_ed25519();
@@ -95,22 +111,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     // start main loop
-    let mut listening = false;
-    block_on(future::poll_fn(move |cx| loop {
-        match swarm.poll_next_unpin(cx) {
-            Poll::Ready(Some(event)) => println!("event: {:?}", event),
-            Poll::Ready(None) => return Poll::Ready(()),
-            Poll::Pending => {
-                if !listening {
-                    for addr in Swarm::listeners(&swarm) {
-                        println!("Listening on {}", addr);
-                        listening = true;
-                    }
-                }
-                return Poll::Pending;
-            }
-        }
-    }));
+    block_on(handle_events(&mut swarm));
 
     Ok(())
 }
