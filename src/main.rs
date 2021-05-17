@@ -88,11 +88,20 @@ fn main() -> Result<(), Box<dyn Error>> {
     swarm.listen_on("/ip4/0.0.0.0/tcp/0".parse()?)?;
 
     // start main loop
+    let mut listening = false;
     block_on(future::poll_fn(move |cx| loop {
         match swarm.poll_next_unpin(cx) {
             Poll::Ready(Some(event)) => println!("event: {:?}", event),
             Poll::Ready(None) => return Poll::Ready(()),
-            Poll::Pending => return Poll::Pending,
+            Poll::Pending => {
+                if !listening {
+                    for addr in Swarm::listeners(&swarm) {
+                        println!("Listening on {}", addr);
+                        listening = true;
+                    }
+                }
+                return Poll::Pending;
+            }
         }
     }));
 
