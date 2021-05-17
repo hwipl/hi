@@ -1,5 +1,4 @@
-use futures::executor::block_on;
-use futures::prelude::*;
+use futures::{executor::block_on, prelude::*, select};
 use libp2p::gossipsub::{
     Gossipsub, GossipsubConfig, GossipsubEvent, IdentTopic, MessageAuthenticity,
 };
@@ -61,7 +60,7 @@ impl NetworkBehaviourEventProcess<MdnsEvent> for HiBehaviour {
 async fn handle_events(swarm: &mut Swarm<HiBehaviour>) {
     let mut timer = Delay::new(Duration::from_secs(5)).fuse();
     loop {
-        futures::select! {
+        select! {
             // handle swarm events
             event = swarm.next_event().fuse() => {
                 match event {
@@ -82,6 +81,13 @@ async fn handle_events(swarm: &mut Swarm<HiBehaviour>) {
             event = timer => {
                 println!("timer event: {:?}", event);
                 timer = Delay::new(Duration::from_secs(15)).fuse();
+
+                // announce presence
+                let topic = IdentTopic::new("/hello/world");
+                match swarm.behaviour_mut().gossip.publish(topic, b"hi".to_vec()) {
+                    Ok(_) => (),
+                    Err(e) => println!("publish error: {:?}", e),
+                }
             },
         }
     }
