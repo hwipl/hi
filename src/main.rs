@@ -5,7 +5,7 @@ use libp2p::gossipsub::{
 };
 use libp2p::mdns::{Mdns, MdnsConfig, MdnsEvent};
 use libp2p::swarm::{NetworkBehaviourEventProcess, Swarm};
-use libp2p::{identity, NetworkBehaviour, PeerId};
+use libp2p::{identity, Multiaddr, NetworkBehaviour, PeerId};
 use std::error::Error;
 use std::task::Poll;
 
@@ -86,6 +86,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     // listen on all IPs and random ports.
     swarm.listen_on("/ip6/::/tcp/0".parse()?)?;
     swarm.listen_on("/ip4/0.0.0.0/tcp/0".parse()?)?;
+
+    // connect to peer address in first command line argument if present
+    if let Some(addr) = std::env::args().nth(1) {
+        let remote: Multiaddr = addr.parse()?;
+        swarm.dial_addr(remote.clone())?;
+        println!("Connecting to {}", addr);
+    }
 
     // start main loop
     let mut listening = false;
