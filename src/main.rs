@@ -62,10 +62,16 @@ async fn handle_events(swarm: &mut Swarm<HiBehaviour>) {
             // handle swarm events
             event = swarm.next_event().fuse() => {
                 match event {
-                    SwarmEvent::Behaviour(event) => println!("{:?}", event),
-                    SwarmEvent::NewListenAddr(addr) => println!("Started listing on {:?}", addr),
-                    SwarmEvent::ExpiredListenAddr(addr) => println!("Stopped listening on {:?}", addr),
-                    _ => (),
+                    SwarmEvent::Behaviour(event) => {
+                        println!("{:?}", event);
+                    }
+                    SwarmEvent::NewListenAddr(addr) => {
+                        println!("Started listing on {:?}", addr);
+                    }
+                    SwarmEvent::ExpiredListenAddr(addr) => {
+                        println!("Stopped listening on {:?}", addr);
+                    }
+                    event => println!("{:?}", event),
                 }
             }
         }
