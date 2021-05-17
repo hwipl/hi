@@ -9,7 +9,7 @@ use libp2p::{identity, NetworkBehaviour, PeerId};
 use std::error::Error;
 use std::task::Poll;
 
-/// Custom network behaviour with mdns
+/// Custom network behaviour with mdns and gossipsub
 #[derive(NetworkBehaviour)]
 struct HiBehaviour {
     gossip: Gossipsub,
