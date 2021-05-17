@@ -7,6 +7,8 @@ use libp2p::mdns::{Mdns, MdnsConfig, MdnsEvent};
 use libp2p::swarm::{NetworkBehaviourEventProcess, Swarm, SwarmEvent};
 use libp2p::{identity, Multiaddr, NetworkBehaviour, PeerId};
 use std::error::Error;
+use std::time::Duration;
+use wasm_timer::Delay;
 
 /// Custom network behaviour with mdns and gossipsub
 #[derive(NetworkBehaviour)]
@@ -57,6 +59,7 @@ impl NetworkBehaviourEventProcess<MdnsEvent> for HiBehaviour {
 
 /// main loop for handling events
 async fn handle_events(swarm: &mut Swarm<HiBehaviour>) {
+    let mut timer = Delay::new(Duration::from_secs(5)).fuse();
     loop {
         futures::select! {
             // handle swarm events
@@ -73,7 +76,13 @@ async fn handle_events(swarm: &mut Swarm<HiBehaviour>) {
                     }
                     event => println!("{:?}", event),
                 }
-            }
+            },
+
+            // handle timer events
+            event = timer => {
+                println!("timer event: {:?}", event);
+                timer = Delay::new(Duration::from_secs(15)).fuse();
+            },
         }
     }
 }
