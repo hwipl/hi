@@ -21,12 +21,20 @@ impl NetworkBehaviourEventProcess<GossipsubEvent> for HiBehaviour {
     // handle `gossip` events
     fn inject_event(&mut self, event: GossipsubEvent) {
         match event {
-            GossipsubEvent::Message { message, .. } => {
-                println!(
-                    "Message: {:?} -> {:?}: {:?}",
-                    message.source, message.topic, message.data,
-                );
-            }
+            GossipsubEvent::Message { message, .. } => match HiAnnounce::decode(&message.data) {
+                Some(msg) => {
+                    println!(
+                        "Message: {:?} -> {:?}: {:?}",
+                        message.source, message.topic, msg
+                    );
+                }
+                None => {
+                    println!(
+                        "Message: {:?} -> {:?}: {:?}",
+                        message.source, message.topic, message.data
+                    );
+                }
+            },
             GossipsubEvent::Subscribed { peer_id, topic } => {
                 println!("Subscribed: {:?} {:?}", peer_id, topic);
             }
@@ -58,7 +66,7 @@ impl NetworkBehaviourEventProcess<MdnsEvent> for HiBehaviour {
 }
 
 /// announce message that is sent over gossipsub
-#[derive(Encode, Decode)]
+#[derive(Debug, Encode, Decode)]
 struct HiAnnounce {
     #[n(0)]
     version: u8,
@@ -75,6 +83,16 @@ impl HiAnnounce {
             Ok(()) => Some(buffer),
             Err(e) => {
                 println!("HiAnnounce encoding error: {:?}", e);
+                None
+            }
+        }
+    }
+
+    fn decode(buffer: &[u8]) -> Option<Self> {
+        match minicbor::decode(buffer) {
+            Ok(msg) => Some(msg),
+            Err(e) => {
+                println!("HiAnnounce decoding error: {:?}", e);
                 None
             }
         }
