@@ -56,6 +56,25 @@ impl NetworkBehaviourEventProcess<MdnsEvent> for HiBehaviour {
     }
 }
 
+/// announce message that is sent over gossipsub
+struct HiAnnounce {
+    version: u8,
+}
+
+impl HiAnnounce {
+    fn new() -> Self {
+        HiAnnounce { version: 0 }
+    }
+
+    fn encode(&self) -> Vec<u8> {
+        if self.version == 0 {
+            b"hi".to_vec()
+        } else {
+            b"unknown".to_vec()
+        }
+    }
+}
+
 /// main loop for handling events
 async fn handle_events(swarm: &mut Swarm<HiBehaviour>) {
     let mut timer = Delay::new(Duration::from_secs(5)).fuse();
@@ -106,7 +125,8 @@ async fn handle_events(swarm: &mut Swarm<HiBehaviour>) {
                 }
 
                 // announce presence
-                match swarm.behaviour_mut().gossip.publish(topic, b"hi".to_vec()) {
+                let announce = HiAnnounce::new().encode();
+                match swarm.behaviour_mut().gossip.publish(topic, announce) {
                     Ok(_) => (),
                     Err(e) => println!("publish error: {:?}", e),
                 }
