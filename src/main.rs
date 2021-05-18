@@ -69,13 +69,15 @@ impl HiAnnounce {
         HiAnnounce { version: 0 }
     }
 
-    fn encode(&self) -> Vec<u8> {
+    fn encode(&self) -> Option<Vec<u8>> {
         let mut buffer = Vec::new();
         match minicbor::encode(self, &mut buffer) {
-            Ok(()) => (),
-            Err(e) => println!("HiAnnounce encoding error: {:?}", e),
+            Ok(()) => Some(buffer),
+            Err(e) => {
+                println!("HiAnnounce encoding error: {:?}", e);
+                None
+            }
         }
-        return buffer;
     }
 }
 
@@ -129,10 +131,11 @@ async fn handle_events(swarm: &mut Swarm<HiBehaviour>) {
                 }
 
                 // announce presence
-                let announce = HiAnnounce::new().encode();
-                match swarm.behaviour_mut().gossip.publish(topic, announce) {
-                    Ok(_) => (),
-                    Err(e) => println!("publish error: {:?}", e),
+                if let Some(announce) = HiAnnounce::new().encode() {
+                    match swarm.behaviour_mut().gossip.publish(topic, announce) {
+                        Ok(_) => (),
+                        Err(e) => println!("publish error: {:?}", e),
+                    }
                 }
             },
         }
