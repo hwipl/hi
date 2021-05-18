@@ -5,6 +5,7 @@ use libp2p::gossipsub::{
 use libp2p::mdns::{Mdns, MdnsConfig, MdnsEvent};
 use libp2p::swarm::{NetworkBehaviourEventProcess, Swarm, SwarmEvent};
 use libp2p::{identity, Multiaddr, NetworkBehaviour, PeerId};
+use minicbor::{Decode, Encode};
 use std::error::Error;
 use std::time::Duration;
 use wasm_timer::Delay;
@@ -57,7 +58,9 @@ impl NetworkBehaviourEventProcess<MdnsEvent> for HiBehaviour {
 }
 
 /// announce message that is sent over gossipsub
+#[derive(Encode, Decode)]
 struct HiAnnounce {
+    #[n(0)]
     version: u8,
 }
 
@@ -67,11 +70,12 @@ impl HiAnnounce {
     }
 
     fn encode(&self) -> Vec<u8> {
-        if self.version == 0 {
-            b"hi".to_vec()
-        } else {
-            b"unknown".to_vec()
+        let mut buffer = Vec::new();
+        match minicbor::encode(self, &mut buffer) {
+            Ok(()) => (),
+            Err(e) => println!("HiAnnounce encoding error: {:?}", e),
         }
+        return buffer;
     }
 }
 

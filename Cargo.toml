@@ -8,3 +8,4 @@ edition = "2018"
 libp2p = "0.38"
 futures = "0.3"
 wasm-timer = "0.2"
+minicbor = { version = "0.8", features = ["std", "derive"] }
