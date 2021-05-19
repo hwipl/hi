@@ -205,11 +205,16 @@ impl NetworkBehaviourEventProcess<MdnsEvent> for HiBehaviour {
 struct HiAnnounce {
     #[n(0)]
     version: u8,
+    #[n(1)]
+    name: String,
 }
 
 impl HiAnnounce {
     fn new() -> Self {
-        HiAnnounce { version: 0 }
+        HiAnnounce {
+            version: 0,
+            name: String::new(),
+        }
     }
 
     fn encode(&self) -> Option<Vec<u8>> {
