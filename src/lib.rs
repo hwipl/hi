@@ -1,116 +1,20 @@
+mod behaviour;
 mod gossip;
 mod request;
 
+use behaviour::HiBehaviour;
 use futures::{executor::block_on, prelude::*, select};
 use gossip::HiAnnounce;
-use libp2p::gossipsub::{
-    Gossipsub, GossipsubConfig, GossipsubEvent, IdentTopic, MessageAuthenticity,
-};
-use libp2p::mdns::{Mdns, MdnsConfig, MdnsEvent};
-use libp2p::request_response::{
-    ProtocolSupport, RequestResponse, RequestResponseConfig, RequestResponseEvent,
-    RequestResponseMessage,
-};
-use libp2p::swarm::{NetworkBehaviourEventProcess, Swarm, SwarmEvent};
-use libp2p::{identity, Multiaddr, NetworkBehaviour, PeerId};
-use request::{HiCodec, HiRequest, HiRequestProtocol, HiResponse};
+use libp2p::gossipsub::{Gossipsub, GossipsubConfig, IdentTopic, MessageAuthenticity};
+use libp2p::mdns::{Mdns, MdnsConfig};
+use libp2p::request_response::{ProtocolSupport, RequestResponse, RequestResponseConfig};
+use libp2p::swarm::{Swarm, SwarmEvent};
+use libp2p::{identity, Multiaddr, PeerId};
+use request::{HiCodec, HiRequestProtocol};
 use std::error::Error;
 use std::iter;
 use std::time::Duration;
 use wasm_timer::Delay;
-
-/// Custom network behaviour with mdns, gossipsub, request-response
-#[derive(NetworkBehaviour)]
-struct HiBehaviour {
-    request: RequestResponse<request::HiCodec>,
-    gossip: Gossipsub,
-    mdns: Mdns,
-}
-
-impl NetworkBehaviourEventProcess<RequestResponseEvent<HiRequest, HiResponse>> for HiBehaviour {
-    // hande `request` events
-    fn inject_event(&mut self, message: RequestResponseEvent<HiRequest, HiResponse>) {
-        // create messages
-        let request = HiRequest("hey".to_string().into_bytes());
-        let response = HiResponse("hi".to_string().into_bytes());
-
-        // handle incoming messages
-        if let RequestResponseEvent::Message { peer, message } = message {
-            match message {
-                // handle incoming request message, send back response
-                RequestResponseMessage::Request { channel, .. } => {
-                    println!("received request {:?} from {:?}", request, peer);
-                    self.request
-                        .send_response(channel, response.clone())
-                        .unwrap();
-                    return;
-                }
-
-                // handle incoming response message
-                RequestResponseMessage::Response { response, .. } => {
-                    println!("received response {:?} from {:?}", response, peer);
-                    return;
-                }
-            }
-        }
-
-        // handle response sent event
-        if let RequestResponseEvent::ResponseSent { peer, .. } = message {
-            println!("sent response {:?} to {:?}", response, peer);
-            return;
-        }
-
-        println!("request response error: {:?}", message);
-    }
-}
-
-impl NetworkBehaviourEventProcess<GossipsubEvent> for HiBehaviour {
-    // handle `gossip` events
-    fn inject_event(&mut self, event: GossipsubEvent) {
-        match event {
-            GossipsubEvent::Message { message, .. } => match HiAnnounce::decode(&message.data) {
-                Some(msg) => {
-                    println!(
-                        "Message: {:?} -> {:?}: {:?}",
-                        message.source, message.topic, msg
-                    );
-                }
-                None => {
-                    println!(
-                        "Message: {:?} -> {:?}: {:?}",
-                        message.source, message.topic, message.data
-                    );
-                }
-            },
-            GossipsubEvent::Subscribed { peer_id, topic } => {
-                println!("Subscribed: {:?} {:?}", peer_id, topic);
-            }
-            GossipsubEvent::Unsubscribed { peer_id, topic } => {
-                println!("Unsubscribed: {:?} {:?}", peer_id, topic);
-            }
-        }
-    }
-}
-
-impl NetworkBehaviourEventProcess<MdnsEvent> for HiBehaviour {
-    // handle `mdns` events
-    fn inject_event(&mut self, event: MdnsEvent) {
-        match event {
-            MdnsEvent::Discovered(list) => {
-                for (peer, addr) in list {
-                    println!("Peer discovered: {:?} {:?}", peer, addr);
-                }
-            }
-            MdnsEvent::Expired(list) => {
-                for (peer, addr) in list {
-                    if !self.mdns.has_node(&peer) {
-                        println!("Peer expired: {:?} {:?}", peer, addr);
-                    }
-                }
-            }
-        }
-    }
-}
 
 /// main loop for handling events
 async fn handle_events(swarm: &mut Swarm<HiBehaviour>) {
