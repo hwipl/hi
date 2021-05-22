@@ -1,6 +1,8 @@
+mod gossip;
 mod request;
 
 use futures::{executor::block_on, prelude::*, select};
+use gossip::HiAnnounce;
 use libp2p::gossipsub::{
     Gossipsub, GossipsubConfig, GossipsubEvent, IdentTopic, MessageAuthenticity,
 };
@@ -11,7 +13,6 @@ use libp2p::request_response::{
 };
 use libp2p::swarm::{NetworkBehaviourEventProcess, Swarm, SwarmEvent};
 use libp2p::{identity, Multiaddr, NetworkBehaviour, PeerId};
-use minicbor::{Decode, Encode};
 use request::{HiCodec, HiRequest, HiRequestProtocol, HiResponse};
 use std::error::Error;
 use std::iter;
@@ -106,45 +107,6 @@ impl NetworkBehaviourEventProcess<MdnsEvent> for HiBehaviour {
                         println!("Peer expired: {:?} {:?}", peer, addr);
                     }
                 }
-            }
-        }
-    }
-}
-
-/// announce message that is sent over gossipsub
-#[derive(Debug, Encode, Decode)]
-struct HiAnnounce {
-    #[n(0)]
-    version: u8,
-    #[n(1)]
-    name: String,
-}
-
-impl HiAnnounce {
-    fn new() -> Self {
-        HiAnnounce {
-            version: 0,
-            name: String::new(),
-        }
-    }
-
-    fn encode(&self) -> Option<Vec<u8>> {
-        let mut buffer = Vec::new();
-        match minicbor::encode(self, &mut buffer) {
-            Ok(()) => Some(buffer),
-            Err(e) => {
-                println!("HiAnnounce encoding error: {:?}", e);
-                None
-            }
-        }
-    }
-
-    fn decode(buffer: &[u8]) -> Option<Self> {
-        match minicbor::decode(buffer) {
-            Ok(msg) => Some(msg),
-            Err(e) => {
-                println!("HiAnnounce decoding error: {:?}", e);
-                None
             }
         }
     }
