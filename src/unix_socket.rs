@@ -1,5 +1,7 @@
+use async_std::fs;
 use async_std::io;
 use async_std::os::unix::net::{UnixListener, UnixStream};
+use async_std::path::Path;
 use async_std::prelude::*;
 use async_std::task;
 
@@ -13,7 +15,12 @@ async fn handle_client(stream: UnixStream) {
 }
 
 async fn run_server() -> async_std::io::Result<()> {
-    let listener = UnixListener::bind(SOCKET_FILE).await?;
+    let socket = Path::new(SOCKET_FILE);
+    if socket.exists().await {
+        // remove old socket file
+        fs::remove_file(&socket).await?;
+    }
+    let listener = UnixListener::bind(&socket).await?;
     let mut incoming = listener.incoming();
 
     while let Some(stream) = incoming.next().await {
