@@ -55,5 +55,9 @@ pub fn run(server: bool) {
     }
 
     // run client
-    task::spawn(run_client());
+    task::spawn(async {
+        if let Err(e) = run_client().await {
+            eprintln!("unix socket client error: {}", e);
+        }
+    });
 }
