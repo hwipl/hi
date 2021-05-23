@@ -8,5 +8,5 @@ use std::error::Error;
 
 pub fn run() -> Result<(), Box<dyn Error>> {
     unix_socket::run(true);
-    swarm::run()
+    swarm::run(Vec::new())
 }

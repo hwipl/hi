@@ -73,7 +73,7 @@ async fn handle_events(swarm: &mut Swarm<HiBehaviour>) {
     }
 }
 
-pub fn run() -> Result<(), Box<dyn Error>> {
+pub fn run(peer_addrs: Vec<String>) -> Result<(), Box<dyn Error>> {
     // create key and peer id
     let local_key = identity::Keypair::generate_ed25519();
     let local_peer_id = PeerId::from(local_key.public());
@@ -114,7 +114,7 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     swarm.listen_on("/ip4/0.0.0.0/tcp/0".parse()?)?;
 
     // connect to peer address in first command line argument if present
-    if let Some(addr) = std::env::args().nth(1) {
+    for addr in peer_addrs {
         let remote: Multiaddr = addr.parse()?;
         swarm.dial_addr(remote.clone())?;
         println!("Connecting to {}", addr);
