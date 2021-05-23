@@ -46,7 +46,11 @@ async fn run_client() -> async_std::io::Result<()> {
 pub fn run(server: bool) {
     // run server
     if server {
-        task::spawn(run_server());
+        task::spawn(async {
+            if let Err(e) = run_server().await {
+                eprintln!("unix socket server error: {}", e);
+            }
+        });
         return;
     }
 
