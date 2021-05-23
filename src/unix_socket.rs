@@ -3,6 +3,8 @@ use async_std::os::unix::net::{UnixListener, UnixStream};
 use async_std::prelude::*;
 use async_std::task;
 
+const SOCKET_FILE: &str = "hi.sock";
+
 async fn handle_client(stream: UnixStream) {
     let (mut reader, mut writer) = (&stream, &stream);
     if let Err(e) = io::copy(&mut reader, &mut writer).await {
@@ -11,7 +13,7 @@ async fn handle_client(stream: UnixStream) {
 }
 
 async fn run_server() -> async_std::io::Result<()> {
-    let listener = UnixListener::bind("sockfile.sock").await?;
+    let listener = UnixListener::bind(SOCKET_FILE).await?;
     let mut incoming = listener.incoming();
 
     while let Some(stream) = incoming.next().await {
@@ -22,7 +24,7 @@ async fn run_server() -> async_std::io::Result<()> {
 }
 
 async fn run_client() -> async_std::io::Result<()> {
-    let mut stream = UnixStream::connect("sockfile.sock").await?;
+    let mut stream = UnixStream::connect(SOCKET_FILE).await?;
 
     // sent request
     let request = b"hello world";
