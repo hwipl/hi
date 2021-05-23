@@ -52,6 +52,7 @@ pub fn run(server: bool) {
             if let Err(e) = run_server().await {
                 eprintln!("unix socket server error: {}", e);
             }
+            println!("unix socket server stopped");
         });
         return;
     }
@@ -61,5 +62,6 @@ pub fn run(server: bool) {
         if let Err(e) = run_client().await {
             eprintln!("unix socket client error: {}", e);
         }
+        println!("unix socket client stopped");
     });
 }
