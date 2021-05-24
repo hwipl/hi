@@ -14,7 +14,7 @@ async fn handle_client(stream: UnixStream) {
     }
 }
 
-async fn run_server() -> async_std::io::Result<()> {
+pub async fn run_server() -> async_std::io::Result<()> {
     let socket = Path::new(SOCKET_FILE);
     if socket.exists().await {
         // remove old socket file
@@ -52,18 +52,7 @@ async fn run_client() -> async_std::io::Result<()> {
     Ok(())
 }
 
-pub fn run(server: bool) {
-    // run server
-    if server {
-        task::spawn(async {
-            if let Err(e) = run_server().await {
-                eprintln!("unix socket server error: {}", e);
-            }
-            println!("unix socket server stopped");
-        });
-        return;
-    }
-
+pub fn run(_: bool) {
     // run client
     task::spawn(async {
         if let Err(e) = run_client().await {
