@@ -30,7 +30,7 @@ pub async fn run_server() -> async_std::io::Result<()> {
     Ok(())
 }
 
-async fn run_client() -> async_std::io::Result<()> {
+pub async fn run_client() -> async_std::io::Result<()> {
     let mut stream = UnixStream::connect(SOCKET_FILE).await?;
 
     // sent request
@@ -50,14 +50,4 @@ async fn run_client() -> async_std::io::Result<()> {
     );
 
     Ok(())
-}
-
-pub fn run(_: bool) {
-    // run client
-    task::spawn(async {
-        if let Err(e) = run_client().await {
-            eprintln!("unix socket client error: {}", e);
-        }
-        println!("unix socket client stopped");
-    });
 }
