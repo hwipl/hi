@@ -11,3 +11,4 @@ wasm-timer = "0.2"
 minicbor = { version = "0.8", features = ["std", "derive"] }
 async-trait = "0.1"
 async-std = "1.9"
+clap = "3.0.0-beta"
