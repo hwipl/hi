@@ -1,5 +1,3 @@
-use std::error::Error;
-
-fn main() -> Result<(), Box<dyn Error>> {
-    hi::run()
+fn main() {
+    hi::run();
 }
