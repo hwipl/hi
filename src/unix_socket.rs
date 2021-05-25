@@ -73,6 +73,18 @@ impl UnixClient {
         Ok(())
     }
 
+    /// Receive daemon message
+    pub async fn receive_message(&mut self) -> io::Result<Message> {
+        let bytes = self.receive().await?;
+        match Message::from_bytes(&bytes) {
+            Some(msg) => Ok(msg),
+            None => Err(io::Error::new(
+                io::ErrorKind::Other,
+                "error receiving message",
+            )),
+        }
+    }
+
     /// Unix client and server test
     pub async fn test(&mut self) -> io::Result<()> {
         // send request
@@ -93,6 +105,10 @@ impl UnixClient {
         // send ok message
         self.send_message(Message::Ok).await?;
         println!("Sent message to server: {:?}", Message::Ok);
+
+        // receive ok message
+        let reply = self.receive_message().await?;
+        println!("Read reply from server: {:?}", reply);
 
         Ok(())
     }
