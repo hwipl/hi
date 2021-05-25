@@ -1,15 +1,41 @@
 use crate::config;
+use crate::daemon_message::Message;
 use crate::swarm;
 use crate::unix_socket;
 use async_std::task;
 
-pub fn run(config: config::Config) {
-    // run unix socket server
-    task::spawn(async {
-        if let Err(e) = unix_socket::run_server().await {
-            eprintln!("unix socket server error: {}", e);
+async fn handle_client(mut client: unix_socket::UnixClient) {
+    while let Ok(msg) = client.receive_message().await {
+        println!("received message from client: {:?}", msg);
+        match msg {
+            // handle OK message
+            Message::Ok => {
+                if let Err(e) = client.send_message(Message::Ok).await {
+                    eprintln!("handle client error: {}", e);
+                    return;
+                }
+            }
+
+            // handle error message
+            Message::Error => {}
+
+            // handle connect address request
+            Message::ConnectAddress { .. } => {
+                if let Err(e) = client.send_message(Message::Error).await {
+                    eprintln!("handle client error: {}", e);
+                    return;
+                }
+            }
         }
-        println!("unix socket server stopped");
+    }
+}
+
+async fn run_server(config: config::Config, server: unix_socket::UnixServer) {
+    // handle incoming connections
+    task::spawn(async move {
+        while let Some(client) = server.next().await {
+            task::spawn(handle_client(client));
+        }
     });
 
     // run swarm
@@ -17,4 +43,15 @@ pub fn run(config: config::Config) {
         eprintln!("swarm error: {}", e);
     }
     println!("swarm stopped");
+}
+
+pub fn run(config: config::Config) {
+    // run unix socket server
+    task::block_on(async {
+        match unix_socket::UnixServer::listen().await {
+            Ok(server) => run_server(config, server).await,
+            Err(e) => eprintln!("unix socket server error: {}", e),
+        };
+        println!("unix socket server stopped");
+    });
 }
