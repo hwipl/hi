@@ -9,6 +9,13 @@ pub enum Message {
     /// Error message
     #[n(1)]
     Error,
+
+    /// Connect to peer address
+    #[n(2)]
+    ConnectAddress {
+        #[n(0)]
+        addr: String,
+    },
 }
 
 impl Message {
