@@ -9,6 +9,33 @@ use std::convert::TryFrom;
 
 const SOCKET_FILE: &str = "hi.sock";
 
+/// Unix socket server
+pub struct UnixServer {
+    listener: UnixListener,
+}
+
+impl UnixServer {
+    /// Listen on unix socket
+    pub async fn listen() -> io::Result<Self> {
+        let socket = Path::new(SOCKET_FILE);
+        if socket.exists().await {
+            // remove old socket file
+            fs::remove_file(&socket).await?;
+        }
+        let listener = UnixListener::bind(&socket).await?;
+        Ok(UnixServer { listener })
+    }
+
+    /// Wait for next client connecting to the unix socket
+    pub async fn next(&self) -> Option<UnixClient> {
+        if let Some(Ok(stream)) = self.listener.incoming().next().await {
+            let client = UnixClient { stream };
+            return Some(client);
+        }
+        None
+    }
+}
+
 async fn handle_client(stream: UnixStream) {
     let (mut reader, mut writer) = (&stream, &stream);
     if let Err(e) = io::copy(&mut reader, &mut writer).await {
