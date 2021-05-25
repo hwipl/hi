@@ -2,6 +2,7 @@ mod behaviour;
 mod config;
 mod daemon;
 mod daemon_client;
+mod daemon_message;
 mod gossip;
 mod request;
 mod swarm;
