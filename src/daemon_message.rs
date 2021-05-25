@@ -14,7 +14,7 @@ pub enum Message {
     #[n(2)]
     ConnectAddress {
         #[n(0)]
-        addr: String,
+        address: String,
     },
 }
 

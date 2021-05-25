@@ -6,9 +6,9 @@ use async_std::task;
 /// run daemon client with config
 async fn run_client(config: config::Config, mut client: unix_socket::UnixClient) {
     // handle connect addresses in config
-    for addr in config.connect {
+    for address in config.connect {
         // send connect request
-        let msg = Message::ConnectAddress { addr };
+        let msg = Message::ConnectAddress { address };
         if let Err(e) = client.send_message(msg).await {
             eprintln!("error sending connect message: {}", e);
         }
