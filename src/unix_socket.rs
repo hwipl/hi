@@ -114,21 +114,6 @@ impl UnixClient {
 
     /// Unix client and server test
     pub async fn test(&mut self) -> io::Result<()> {
-        // send request
-        let request = b"hello world";
-        self.send(request.to_vec()).await?;
-        println!(
-            "Sent request to server: {}",
-            String::from_utf8_lossy(request)
-        );
-
-        // read reply
-        let reply = self.receive().await?;
-        println!(
-            "Read reply from server: {}",
-            String::from_utf8_lossy(&reply)
-        );
-
         // send ok message
         self.send_message(Message::Ok).await?;
         println!("Sent message to server: {:?}", Message::Ok);
