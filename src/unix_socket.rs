@@ -54,6 +54,16 @@ impl UnixClient {
         Ok(())
     }
 
+    /// Receive bytes with prefixed length
+    async fn receive(&mut self) -> io::Result<Vec<u8>> {
+        let mut len = [0; 2];
+        self.stream.read_exact(&mut len).await?;
+        let len = u16::from_be_bytes(len).into();
+        let mut bytes = vec![0; len];
+        self.stream.read_exact(&mut bytes).await?;
+        Ok(bytes)
+    }
+
     /// Unix client and server test
     pub async fn test(&mut self) -> io::Result<()> {
         // sent request
@@ -65,8 +75,7 @@ impl UnixClient {
         );
 
         // read reply
-        let mut reply = vec![0; request.len()];
-        self.stream.read_exact(&mut reply).await?;
+        let reply = self.receive().await?;
         println!(
             "Read reply from server: {}",
             String::from_utf8_lossy(&reply)
