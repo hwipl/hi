@@ -5,8 +5,15 @@ use async_std::task;
 pub fn run(_: config::Config) {
     // run unix socket client
     task::block_on(async {
-        if let Err(e) = unix_socket::run_client().await {
-            eprintln!("unix socket client error: {}", e);
+        match unix_socket::UnixClient::connect().await {
+            Ok(mut client) => {
+                if let Err(e) = client.test().await {
+                    eprintln!("unix socket test error: {}", e);
+                }
+            }
+            Err(e) => {
+                eprintln!("unix socket client error: {}", e);
+            }
         }
         println!("unix socket client stopped");
     });

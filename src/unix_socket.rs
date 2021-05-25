@@ -30,24 +30,36 @@ pub async fn run_server() -> async_std::io::Result<()> {
     Ok(())
 }
 
-pub async fn run_client() -> async_std::io::Result<()> {
-    let mut stream = UnixStream::connect(SOCKET_FILE).await?;
+/// Unix socket client
+pub struct UnixClient {
+    stream: UnixStream,
+}
 
-    // sent request
-    let request = b"hello world";
-    stream.write_all(request).await?;
-    println!(
-        "Sent request to server: {}",
-        String::from_utf8_lossy(request)
-    );
+impl UnixClient {
+    /// Connect to unix socket server and return UnixClient if successful
+    pub async fn connect() -> async_std::io::Result<Self> {
+        let stream = UnixStream::connect(SOCKET_FILE).await?;
+        Ok(UnixClient { stream })
+    }
 
-    // read reply
-    let mut reply = vec![0; request.len()];
-    stream.read_exact(&mut reply).await?;
-    println!(
-        "Read reply from server: {}",
-        String::from_utf8_lossy(&reply)
-    );
+    /// Unix client and server test
+    pub async fn test(&mut self) -> async_std::io::Result<()> {
+        // sent request
+        let request = b"hello world";
+        self.stream.write_all(request).await?;
+        println!(
+            "Sent request to server: {}",
+            String::from_utf8_lossy(request)
+        );
 
-    Ok(())
+        // read reply
+        let mut reply = vec![0; request.len()];
+        self.stream.read_exact(&mut reply).await?;
+        println!(
+            "Read reply from server: {}",
+            String::from_utf8_lossy(&reply)
+        );
+
+        Ok(())
+    }
 }
