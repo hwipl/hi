@@ -8,7 +8,10 @@ pub enum Message {
 
     /// Error message
     #[n(1)]
-    Error,
+    Error {
+        #[n(0)]
+        message: String,
+    },
 
     /// Connect to peer address
     #[n(2)]

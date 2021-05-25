@@ -17,11 +17,15 @@ async fn handle_client(mut client: unix_socket::UnixClient) {
             }
 
             // handle error message
-            Message::Error => {}
+            Message::Error { message } => {
+                println!("received error message from client: {:?}", message);
+            }
 
             // handle connect address request
             Message::ConnectAddress { .. } => {
-                if let Err(e) = client.send_message(Message::Error).await {
+                let message = String::from("Not yet implemented");
+                let error = Message::Error { message };
+                if let Err(e) = client.send_message(error).await {
                     eprintln!("handle client error: {}", e);
                     return;
                 }
