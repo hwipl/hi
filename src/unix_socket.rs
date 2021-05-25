@@ -4,6 +4,7 @@ use async_std::os::unix::net::{UnixListener, UnixStream};
 use async_std::path::Path;
 use async_std::prelude::*;
 use async_std::task;
+use std::convert::TryFrom;
 
 const SOCKET_FILE: &str = "hi.sock";
 
@@ -42,11 +43,21 @@ impl UnixClient {
         Ok(UnixClient { stream })
     }
 
+    async fn send(&mut self, bytes: Vec<u8>) -> async_std::io::Result<()> {
+        let len = match u16::try_from(bytes.len()) {
+            Ok(len) => len.to_be_bytes(),
+            Err(e) => return Err(io::Error::new(io::ErrorKind::Other, e)),
+        };
+        self.stream.write_all(&len).await?;
+        self.stream.write_all(&bytes).await?;
+        Ok(())
+    }
+
     /// Unix client and server test
     pub async fn test(&mut self) -> async_std::io::Result<()> {
         // sent request
         let request = b"hello world";
-        self.stream.write_all(request).await?;
+        self.send(request.to_vec()).await?;
         println!(
             "Sent request to server: {}",
             String::from_utf8_lossy(request)
