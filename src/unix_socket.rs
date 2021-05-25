@@ -1,3 +1,4 @@
+use crate::daemon_message::Message;
 use async_std::fs;
 use async_std::io;
 use async_std::os::unix::net::{UnixListener, UnixStream};
@@ -64,6 +65,14 @@ impl UnixClient {
         Ok(bytes)
     }
 
+    /// Send daemon message
+    pub async fn send_message(&mut self, message: Message) -> io::Result<()> {
+        if let Some(bytes) = message.to_bytes() {
+            self.send(bytes).await?;
+        }
+        Ok(())
+    }
+
     /// Unix client and server test
     pub async fn test(&mut self) -> io::Result<()> {
         // sent request
@@ -80,6 +89,10 @@ impl UnixClient {
             "Read reply from server: {}",
             String::from_utf8_lossy(&reply)
         );
+
+        // send ok message
+        self.send_message(Message::Ok).await?;
+        println!("Sent message to server: {:?}", Message::Ok);
 
         Ok(())
     }
