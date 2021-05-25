@@ -4,7 +4,6 @@ use async_std::io;
 use async_std::os::unix::net::{UnixListener, UnixStream};
 use async_std::path::Path;
 use async_std::prelude::*;
-use async_std::task;
 use std::convert::TryFrom;
 
 const SOCKET_FILE: &str = "hi.sock";
@@ -34,29 +33,6 @@ impl UnixServer {
         }
         None
     }
-}
-
-async fn handle_client(stream: UnixStream) {
-    let (mut reader, mut writer) = (&stream, &stream);
-    if let Err(e) = io::copy(&mut reader, &mut writer).await {
-        println!("Error reading from client: {}", e);
-    }
-}
-
-pub async fn run_server() -> io::Result<()> {
-    let socket = Path::new(SOCKET_FILE);
-    if socket.exists().await {
-        // remove old socket file
-        fs::remove_file(&socket).await?;
-    }
-    let listener = UnixListener::bind(&socket).await?;
-    let mut incoming = listener.incoming();
-
-    while let Some(stream) = incoming.next().await {
-        task::spawn(handle_client(stream?));
-    }
-
-    Ok(())
 }
 
 /// Unix socket client
