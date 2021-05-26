@@ -20,6 +20,7 @@ enum Event {
     ClientMessage(usize, Message),
 }
 
+/// handle client connection identified by its `id`
 async fn handle_client(mut server: Sender<Event>, id: usize, mut client: unix_socket::UnixClient) {
     // create channel for server messages and register this client
     let (client_sender, mut client_receiver) = mpsc::unbounded();
@@ -72,6 +73,7 @@ async fn handle_client(mut server: Sender<Event>, id: usize, mut client: unix_so
     }
 }
 
+/// run the server's main loop
 async fn run_server_loop(mut server: Receiver<Event>) {
     // clients and their channels
     let mut clients: HashMap<usize, Sender<Message>> = HashMap::new();
@@ -157,6 +159,7 @@ async fn run_server_loop(mut server: Receiver<Event>) {
     }
 }
 
+/// run server
 async fn run_server(config: config::Config, server: unix_socket::UnixServer) {
     // create channels and data structure for clients
     let (server_sender, server_receiver) = mpsc::unbounded();
@@ -180,6 +183,7 @@ async fn run_server(config: config::Config, server: unix_socket::UnixServer) {
     println!("swarm stopped");
 }
 
+/// entry point for running the daemon server
 pub fn run(config: config::Config) {
     // run unix socket server
     task::block_on(async {
