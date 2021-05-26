@@ -78,16 +78,24 @@ async fn run_server_loop(mut server: Receiver<Event>) {
 
     while let Some(msg) = server.next().await {
         match msg {
-            Event::AddClient(id, sender) => match clients.entry(id) {
-                Entry::Occupied(..) => (),
-                Entry::Vacant(entry) => {
-                    entry.insert(sender);
+            // handle add client
+            Event::AddClient(id, sender) => {
+                println!("received add client event with id {}", id);
+                match clients.entry(id) {
+                    Entry::Occupied(..) => (),
+                    Entry::Vacant(entry) => {
+                        entry.insert(sender);
+                    }
                 }
-            },
+            }
+
+            // handle remove client
             Event::RemoveClient(id) => {
                 println!("received remove client event with id {}", id);
                 clients.remove(&id);
             }
+
+            // handle client message
             Event::ClientMessage(id, msg) => {
                 println!("received message from client: {:?}", msg);
 
