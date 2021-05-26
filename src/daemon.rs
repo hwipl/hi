@@ -15,14 +15,14 @@ type Receiver<T> = mpsc::UnboundedReceiver<T>;
 
 /// Daemon events
 enum Event {
-    NewClient(usize, Sender<Message>),
+    AddClient(usize, Sender<Message>),
     ClientMessage(usize, Message),
 }
 
 async fn handle_client(mut server: Sender<Event>, id: usize, mut client: unix_socket::UnixClient) {
     // create channel for server messages and register this client
     let (client_sender, mut client_receiver) = mpsc::unbounded();
-    if let Err(e) = server.send(Event::NewClient(id, client_sender)).await {
+    if let Err(e) = server.send(Event::AddClient(id, client_sender)).await {
         eprintln!("handle client error: {}", e);
         return;
     }
@@ -71,7 +71,7 @@ async fn run_server_loop(mut server: Receiver<Event>) {
 
     while let Some(msg) = server.next().await {
         match msg {
-            Event::NewClient(id, sender) => match clients.entry(id) {
+            Event::AddClient(id, sender) => match clients.entry(id) {
                 Entry::Occupied(..) => (),
                 Entry::Vacant(entry) => {
                     entry.insert(sender);
