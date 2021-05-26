@@ -16,6 +16,7 @@ type Receiver<T> = mpsc::UnboundedReceiver<T>;
 /// Daemon events
 enum Event {
     AddClient(usize, Sender<Message>),
+    RemoveClient(usize),
     ClientMessage(usize, Message),
 }
 
@@ -37,10 +38,10 @@ async fn handle_client(mut server: Sender<Event>, id: usize, mut client: unix_so
                         println!("received server message: {:?}", msg);
                         if let Err(e) = client.send_message(msg).await {
                             eprintln!("handle client error: {}", e);
-                            return;
+                            break;
                         }
                     }
-                    None => return,
+                    None => break,
                 }
             },
 
@@ -52,16 +53,22 @@ async fn handle_client(mut server: Sender<Event>, id: usize, mut client: unix_so
                         println!("received client message: {:?}", msg);
                         if let Err(e) = server.send(Event::ClientMessage(id, msg)).await {
                             eprintln!("handle client error: {}", e);
-                            return;
+                            break;
                         }
                     }
                     Err(e) => {
                         eprintln!("error receiving client message: {}", e);
-                        return;
+                        break;
                     }
                 }
             },
         }
+    }
+
+    // remove this client
+    if let Err(e) = server.send(Event::RemoveClient(id)).await {
+        eprintln!("error removing client: {}", e);
+        return;
     }
 }
 
@@ -77,6 +84,10 @@ async fn run_server_loop(mut server: Receiver<Event>) {
                     entry.insert(sender);
                 }
             },
+            Event::RemoveClient(id) => {
+                println!("received remove client event with id {}", id);
+                clients.remove(&id);
+            }
             Event::ClientMessage(id, msg) => {
                 println!("received message from client: {:?}", msg);
 
