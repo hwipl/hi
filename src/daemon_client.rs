@@ -19,6 +19,32 @@ async fn run_client(config: config::Config, mut client: unix_socket::UnixClient)
             Err(e) => eprintln!("error receiving reply: {}", e),
         }
     }
+
+    // handle set configuration options in config
+    for option in config.set {
+        // create message
+        let msg = match option.name.as_str() {
+            "name" => Message::SetName { name: option.value },
+            _ => {
+                eprintln!(
+                    "error setting unknown configuration option: {}",
+                    option.name
+                );
+                continue;
+            }
+        };
+
+        // send message
+        if let Err(e) = client.send_message(msg).await {
+            eprintln!("error sending set message: {}", e);
+        }
+
+        // receive reply
+        match client.receive_message().await {
+            Ok(msg) => println!("set reply from server: {:?}", msg),
+            Err(e) => eprintln!("error receiving set reply: {}", e),
+        }
+    }
 }
 
 /// initialize client connection and run daemon client
