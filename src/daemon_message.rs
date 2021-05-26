@@ -19,6 +19,13 @@ pub enum Message {
         #[n(0)]
         address: String,
     },
+
+    /// Get name of this peer; request contains empty name, reply contains name
+    #[n(3)]
+    GetName {
+        #[n(0)]
+        name: String,
+    },
 }
 
 impl Message {
