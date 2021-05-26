@@ -26,6 +26,13 @@ pub enum Message {
         #[n(0)]
         name: String,
     },
+
+    /// Set name of this peer
+    #[n(4)]
+    SetName {
+        #[n(0)]
+        name: String,
+    },
 }
 
 impl Message {

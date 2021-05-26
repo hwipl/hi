@@ -40,6 +40,16 @@ async fn handle_client(mut client: unix_socket::UnixClient) {
                     return;
                 }
             }
+
+            // handle set name request
+            Message::SetName { .. } => {
+                let message = String::from("Not yet implemented");
+                let error = Message::Error { message };
+                if let Err(e) = client.send_message(error).await {
+                    eprintln!("handle client error: {}", e);
+                    return;
+                }
+            }
         }
     }
 }
