@@ -36,8 +36,16 @@ impl HiSwarm {
         loop {
             select! {
                 // handle events sent to the swarm
-                _ = receiver.next().fuse() => {
+                event = receiver.next().fuse() => {
                     println!("received hi swarm event");
+                    match event {
+                        Some(event) => {
+                            if let Err(e) = sender.send(event).await {
+                                eprintln!("Error sending swarm event: {}", e);
+                            }
+                        }
+                        None => {}
+                    }
                 }
 
                 // handle swarm events
