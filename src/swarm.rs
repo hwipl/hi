@@ -22,11 +22,16 @@ pub enum Event {}
 /// Hi swarm
 pub struct HiSwarm {
     sender: Sender<Event>,
+    receiver: Receiver<Event>,
 }
 
 impl HiSwarm {
     /// main loop for handling events
-    async fn handle_events(swarm: &mut Swarm<HiBehaviour>, mut receiver: Receiver<Event>) {
+    async fn handle_events(
+        swarm: &mut Swarm<HiBehaviour>,
+        mut receiver: Receiver<Event>,
+        mut sender: Sender<Event>,
+    ) {
         let mut timer = Delay::new(Duration::from_secs(5)).fuse();
         loop {
             select! {
@@ -139,22 +144,29 @@ impl HiSwarm {
             println!("Connecting to {}", addr);
         }
 
-        // create channel for sending events to the swarm
+        // create channel for sending/receiving events to/from the swarm
         let (to_swarm_sender, to_swarm_receiver) = mpsc::unbounded();
+        let (from_swarm_sender, from_swarm_receiver) = mpsc::unbounded();
 
         // start main loop
         task::spawn(async move {
-            Self::handle_events(&mut swarm, to_swarm_receiver).await;
+            Self::handle_events(&mut swarm, to_swarm_receiver, from_swarm_sender).await;
             println!("swarm stopped");
         });
 
         Ok(HiSwarm {
             sender: to_swarm_sender,
+            receiver: from_swarm_receiver,
         })
     }
 
     /// send event to the swarm
     pub async fn send(&mut self, event: Event) {
         self.sender.send(event);
+    }
+
+    /// receive event from the swarm
+    pub async fn receive(&mut self) -> Option<Event> {
+        self.receiver.next().await
     }
 }
