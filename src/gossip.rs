@@ -4,9 +4,9 @@ use minicbor::{Decode, Encode};
 #[derive(Debug, Encode, Decode)]
 pub struct HiAnnounce {
     #[n(0)]
-    version: u8,
+    pub version: u8,
     #[n(1)]
-    name: String,
+    pub name: String,
 }
 
 impl HiAnnounce {

@@ -19,6 +19,7 @@ type Receiver<T> = mpsc::UnboundedReceiver<T>;
 /// Hi swarm events
 pub enum Event {
     ConnectAddress(String),
+    SetName(String),
 }
 
 /// Hi swarm
@@ -35,6 +36,7 @@ impl HiSwarm {
         mut sender: Sender<Event>,
     ) {
         let mut timer = Delay::new(Duration::from_secs(5)).fuse();
+        let mut node_name = String::from("");
         loop {
             select! {
                 // handle events sent to the swarm
@@ -53,6 +55,9 @@ impl HiSwarm {
                                     eprintln!("error dialing address: {}", e);
                                 }
                             }
+                        }
+                        Event::SetName(name) => {
+                            node_name = name.clone();
                         }
                     };
                     if let Err(e) = sender.send(event).await {
@@ -105,7 +110,9 @@ impl HiSwarm {
                     }
 
                     // announce presence
-                    if let Some(announce) = HiAnnounce::new().encode() {
+                    let mut announce = HiAnnounce::new();
+                    announce.name = node_name.to_string();
+                    if let Some(announce) = announce.encode() {
                         match swarm.behaviour_mut().gossip.publish(topic, announce) {
                             Ok(_) => (),
                             Err(e) => println!("publish error: {:?}", e),

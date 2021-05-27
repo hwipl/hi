@@ -157,10 +157,10 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                             }
 
                             // handle set name request
-                            Message::SetName { .. } => {
-                                let message = String::from("Not yet implemented");
-                                let error = Message::Error { message };
-                                if let Err(e) = client.send(error).await {
+                            Message::SetName { name } => {
+                                let event = swarm::Event::SetName(name);
+                                swarm.send(event).await;
+                                if let Err(e) = client.send(Message::Ok).await {
                                     eprintln!("handle client error: {}", e);
                                     return;
                                 }
