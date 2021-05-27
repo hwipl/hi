@@ -74,83 +74,95 @@ async fn handle_client(mut server: Sender<Event>, id: usize, mut client: unix_so
 }
 
 /// run the server's main loop
-async fn run_server_loop(mut server: Receiver<Event>, _: swarm::HiSwarm) {
+async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm) {
     // clients and their channels
     let mut clients: HashMap<usize, Sender<Message>> = HashMap::new();
 
-    while let Some(msg) = server.next().await {
-        match msg {
-            // handle add client
-            Event::AddClient(id, sender) => {
-                println!("received add client event with id {}", id);
-                match clients.entry(id) {
-                    Entry::Occupied(..) => (),
-                    Entry::Vacant(entry) => {
-                        entry.insert(sender);
-                    }
-                }
+    loop {
+        select! {
+            _event = swarm.receive().fuse() => {
+                println!("received event from swarm");
             }
 
-            // handle remove client
-            Event::RemoveClient(id) => {
-                println!("received remove client event with id {}", id);
-                clients.remove(&id);
-            }
-
-            // handle client message
-            Event::ClientMessage(id, msg) => {
-                println!("received message from client: {:?}", msg);
-
-                // get client channel
-                let client = match clients.get_mut(&id) {
-                    Some(client) => client,
-                    None => {
-                        eprintln!("unknown client");
-                        continue;
-                    }
+            msg = server.next().fuse() => {
+                let msg = match msg {
+                    Some(msg) => msg,
+                    None => break,
                 };
-
                 match msg {
-                    // handle OK message
-                    Message::Ok => {
-                        if let Err(e) = client.send(Message::Ok).await {
-                            eprintln!("handle client error: {}", e);
-                            return;
+                    // handle add client
+                    Event::AddClient(id, sender) => {
+                        println!("received add client event with id {}", id);
+                        match clients.entry(id) {
+                            Entry::Occupied(..) => (),
+                            Entry::Vacant(entry) => {
+                                entry.insert(sender);
+                            }
                         }
                     }
 
-                    // handle error message
-                    Message::Error { message } => {
-                        println!("received error message from client: {:?}", message);
+                    // handle remove client
+                    Event::RemoveClient(id) => {
+                        println!("received remove client event with id {}", id);
+                        clients.remove(&id);
                     }
 
-                    // handle connect address request
-                    Message::ConnectAddress { .. } => {
-                        let message = String::from("Not yet implemented");
-                        let error = Message::Error { message };
-                        if let Err(e) = client.send(error).await {
-                            eprintln!("handle client error: {}", e);
-                            return;
-                        }
-                    }
+                    // handle client message
+                    Event::ClientMessage(id, msg) => {
+                        println!("received message from client: {:?}", msg);
 
-                    // handle get name request
-                    Message::GetName { .. } => {
-                        let message = String::from("Not yet implemented");
-                        let error = Message::Error { message };
-                        if let Err(e) = client.send(error).await {
-                            eprintln!("handle client error: {}", e);
-                            return;
-                        }
-                    }
+                        // get client channel
+                        let client = match clients.get_mut(&id) {
+                            Some(client) => client,
+                            None => {
+                                eprintln!("unknown client");
+                                continue;
+                            }
+                        };
 
-                    // handle set name request
-                    Message::SetName { .. } => {
-                        let message = String::from("Not yet implemented");
-                        let error = Message::Error { message };
-                        if let Err(e) = client.send(error).await {
-                            eprintln!("handle client error: {}", e);
-                            return;
+                        match msg {
+                            // handle OK message
+                            Message::Ok => {
+                                if let Err(e) = client.send(Message::Ok).await {
+                                    eprintln!("handle client error: {}", e);
+                                    return;
+                                }
+                            }
+
+                            // handle error message
+                            Message::Error { message } => {
+                                println!("received error message from client: {:?}", message);
+                            }
+
+                            // handle connect address request
+                            Message::ConnectAddress { .. } => {
+                                let message = String::from("Not yet implemented");
+                                let error = Message::Error { message };
+                                if let Err(e) = client.send(error).await {
+                                    eprintln!("handle client error: {}", e);
+                                    return;
+                                }
+                            }
+
+                            // handle get name request
+                            Message::GetName { .. } => {
+                                let message = String::from("Not yet implemented");
+                                let error = Message::Error { message };
+                                if let Err(e) = client.send(error).await {
+                                    eprintln!("handle client error: {}", e);
+                                    return;
+                                }
+                            }
+
+                            // handle set name request
+                            Message::SetName { .. } => {
+                                let message = String::from("Not yet implemented");
+                                let error = Message::Error { message };
+                                if let Err(e) = client.send(error).await {
+                                    eprintln!("handle client error: {}", e);
+                                    return;
+                                }
+                            }
                         }
                     }
                 }
