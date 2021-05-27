@@ -135,10 +135,10 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                             }
 
                             // handle connect address request
-                            Message::ConnectAddress { .. } => {
-                                let message = String::from("Not yet implemented");
-                                let error = Message::Error { message };
-                                if let Err(e) = client.send(error).await {
+                            Message::ConnectAddress { address } => {
+                                let event = swarm::Event::ConnectAddress(address);
+                                swarm.send(event).await;
+                                if let Err(e) = client.send(Message::Ok).await {
                                     eprintln!("handle client error: {}", e);
                                     return;
                                 }

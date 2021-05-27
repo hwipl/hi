@@ -17,7 +17,9 @@ type Sender<T> = mpsc::UnboundedSender<T>;
 type Receiver<T> = mpsc::UnboundedReceiver<T>;
 
 /// Hi swarm events
-pub enum Event {}
+pub enum Event {
+    ConnectAddress(String),
+}
 
 /// Hi swarm
 pub struct HiSwarm {
@@ -38,15 +40,19 @@ impl HiSwarm {
                 // handle events sent to the swarm
                 event = receiver.next().fuse() => {
                     println!("received hi swarm event");
-                    match event {
-                        Some(event) => {
-                            if let Err(e) = sender.send(event).await {
-                                eprintln!("Error sending swarm event: {}", e);
-                            }
+                    let event = match event {
+                        Some(event) => event,
+                        None => break,
+                    };
+                    match &event {
+                        Event::ConnectAddress(addr) => {
+                            println!("connecting to address: {}", addr);
                         }
-                        None => {}
+                    };
+                    if let Err(e) = sender.send(event).await {
+                        eprintln!("Error sending swarm event: {}", e);
                     }
-                }
+                },
 
                 // handle swarm events
                 event = swarm.next_event().fuse() => {
