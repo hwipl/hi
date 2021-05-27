@@ -188,13 +188,18 @@ async fn run_server(config: config::Config, server: unix_socket::UnixServer) {
     });
 
     // create and run swarm
-    let swarm = match swarm::HiSwarm::run(config.connect).await {
+    let mut swarm = match swarm::HiSwarm::run().await {
         Ok(swarm) => swarm,
         Err(e) => {
             eprintln!("error creating swarm: {}", e);
             return;
         }
     };
+
+    // handle connect addresses in config
+    for addr in config.connect {
+        swarm.send(swarm::Event::ConnectAddress(addr)).await;
+    }
 
     // handle server events
     task::block_on(run_server_loop(server_receiver, swarm));

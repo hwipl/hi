@@ -7,7 +7,7 @@ use libp2p::gossipsub::{Gossipsub, GossipsubConfig, IdentTopic, MessageAuthentic
 use libp2p::mdns::{Mdns, MdnsConfig};
 use libp2p::request_response::{ProtocolSupport, RequestResponse, RequestResponseConfig};
 use libp2p::swarm::{Swarm, SwarmEvent};
-use libp2p::{identity, Multiaddr, PeerId};
+use libp2p::{identity, PeerId};
 use std::error::Error;
 use std::iter;
 use std::time::Duration;
@@ -117,7 +117,7 @@ impl HiSwarm {
     }
 
     /// create and run swarm
-    pub async fn run(peer_addrs: Vec<String>) -> Result<Self, Box<dyn Error>> {
+    pub async fn run() -> Result<Self, Box<dyn Error>> {
         // create key and peer id
         let local_key = identity::Keypair::generate_ed25519();
         let local_peer_id = PeerId::from(local_key.public());
@@ -156,13 +156,6 @@ impl HiSwarm {
         // listen on all IPs and random ports.
         swarm.listen_on("/ip6/::/tcp/0".parse()?)?;
         swarm.listen_on("/ip4/0.0.0.0/tcp/0".parse()?)?;
-
-        // connect to peer address in first command line argument if present
-        for addr in peer_addrs {
-            let remote: Multiaddr = addr.parse()?;
-            swarm.dial_addr(remote.clone())?;
-            println!("Connecting to {}", addr);
-        }
 
         // create channel for sending/receiving events to/from the swarm
         let (to_swarm_sender, to_swarm_receiver) = mpsc::unbounded();
