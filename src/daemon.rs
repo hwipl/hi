@@ -74,7 +74,7 @@ async fn handle_client(mut server: Sender<Event>, id: usize, mut client: unix_so
 }
 
 /// run the server's main loop
-async fn run_server_loop(mut server: Receiver<Event>) {
+async fn run_server_loop(mut server: Receiver<Event>, _: swarm::HiSwarm) {
     // clients and their channels
     let mut clients: HashMap<usize, Sender<Message>> = HashMap::new();
 
@@ -173,14 +173,17 @@ async fn run_server(config: config::Config, server: unix_socket::UnixServer) {
         }
     });
 
-    // handle server events
-    task::spawn(run_server_loop(server_receiver));
+    // create and run swarm
+    let swarm = match swarm::HiSwarm::run(config.connect).await {
+        Ok(swarm) => swarm,
+        Err(e) => {
+            eprintln!("error creating swarm: {}", e);
+            return;
+        }
+    };
 
-    // run swarm
-    if let Err(e) = swarm::run(config.connect) {
-        eprintln!("swarm error: {}", e);
-    }
-    println!("swarm stopped");
+    // handle server events
+    task::block_on(run_server_loop(server_receiver, swarm));
 }
 
 /// entry point for running the daemon server
