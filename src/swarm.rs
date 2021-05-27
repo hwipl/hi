@@ -2,7 +2,7 @@ use crate::behaviour::HiBehaviour;
 use crate::gossip::HiAnnounce;
 use crate::request::{HiCodec, HiRequestProtocol};
 use async_std::task;
-use futures::{executor::block_on, prelude::*, select};
+use futures::{channel::mpsc, executor::block_on, prelude::*, select, sink::SinkExt};
 use libp2p::gossipsub::{Gossipsub, GossipsubConfig, IdentTopic, MessageAuthenticity};
 use libp2p::mdns::{Mdns, MdnsConfig};
 use libp2p::request_response::{ProtocolSupport, RequestResponse, RequestResponseConfig};
@@ -13,15 +13,28 @@ use std::iter;
 use std::time::Duration;
 use wasm_timer::Delay;
 
+type Sender<T> = mpsc::UnboundedSender<T>;
+type Receiver<T> = mpsc::UnboundedReceiver<T>;
+
+/// Hi swarm events
+pub enum Event {}
+
 /// Hi swarm
-pub struct HiSwarm {}
+pub struct HiSwarm {
+    sender: Sender<Event>,
+}
 
 impl HiSwarm {
     /// main loop for handling events
-    async fn handle_events(swarm: &mut Swarm<HiBehaviour>) {
+    async fn handle_events(swarm: &mut Swarm<HiBehaviour>, mut receiver: Receiver<Event>) {
         let mut timer = Delay::new(Duration::from_secs(5)).fuse();
         loop {
             select! {
+                // handle events sent to the swarm
+                _ = receiver.next().fuse() => {
+                    println!("received hi swarm event");
+                }
+
                 // handle swarm events
                 event = swarm.next_event().fuse() => {
                     match event {
@@ -126,12 +139,22 @@ impl HiSwarm {
             println!("Connecting to {}", addr);
         }
 
+        // create channel for sending events to the swarm
+        let (to_swarm_sender, to_swarm_receiver) = mpsc::unbounded();
+
         // start main loop
         task::spawn(async move {
-            Self::handle_events(&mut swarm).await;
+            Self::handle_events(&mut swarm, to_swarm_receiver).await;
             println!("swarm stopped");
         });
 
-        Ok(HiSwarm {})
+        Ok(HiSwarm {
+            sender: to_swarm_sender,
+        })
+    }
+
+    /// send event to the swarm
+    pub async fn send(&mut self, event: Event) {
+        self.sender.send(event);
     }
 }
