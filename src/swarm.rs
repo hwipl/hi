@@ -170,7 +170,9 @@ impl HiSwarm {
 
     /// send event to the swarm
     pub async fn send(&mut self, event: Event) {
-        self.sender.send(event);
+        if let Err(e) = self.sender.send(event).await {
+            eprintln!("error sending event to swarm: {}", e);
+        }
     }
 
     /// receive event from the swarm
