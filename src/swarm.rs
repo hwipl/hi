@@ -45,8 +45,14 @@ impl HiSwarm {
                         None => break,
                     };
                     match &event {
+                        // handle connect address event
                         Event::ConnectAddress(addr) => {
-                            println!("connecting to address: {}", addr);
+                            if let Ok(remote) = addr.parse() {
+                                println!("connecting to address: {}", addr);
+                                if let Err(e) = swarm.dial_addr(remote) {
+                                    eprintln!("error dialing address: {}", e);
+                                }
+                            }
                         }
                     };
                     if let Err(e) = sender.send(event).await {
