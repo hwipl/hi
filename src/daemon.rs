@@ -181,7 +181,7 @@ async fn run_server(config: config::Config, server: unix_socket::UnixServer) {
         let mut id = 0;
         while let Some(client) = server.next().await {
             task::spawn(handle_client(server_sender.clone(), id, client));
-            id += 1;
+            id = id.wrapping_add(1);
         }
     });
 
