@@ -196,6 +196,13 @@ async fn run_server(config: config::Config, server: unix_socket::UnixServer) {
         }
     };
 
+    // handle set options in config
+    for option in config.set {
+        if option.name == "name" {
+            swarm.send(swarm::Event::SetName(option.value)).await;
+        }
+    }
+
     // handle connect addresses in config
     for addr in config.connect {
         swarm.send(swarm::Event::ConnectAddress(addr)).await;
