@@ -68,11 +68,13 @@ impl HiSwarm {
                             node_name = name.clone();
                         }
 
-                        // event not handled here
-                        _ => {}
-                    };
-                    if let Err(e) = sender.send(event).await {
-                        eprintln!("Error sending swarm event: {}", e);
+                        // events (coming from behaviour) not handled here,
+                        // forward to daemon
+                        Event::AnnouncePeer(..) => {
+                            if let Err(e) = sender.send(event).await {
+                                eprintln!("Error sending swarm event: {}", e);
+                            };
+                        }
                     }
                 },
 
