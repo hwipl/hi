@@ -1,6 +1,14 @@
 use minicbor::{Decode, Encode};
 
 #[derive(Debug, Encode, Decode)]
+pub struct PeerInfo {
+    #[n(0)]
+    pub peer_id: String,
+    #[n(1)]
+    pub name: String,
+}
+
+#[derive(Debug, Encode, Decode)]
 pub enum Message {
     /// Ok message
     #[n(0)]
@@ -32,6 +40,13 @@ pub enum Message {
     SetName {
         #[n(0)]
         name: String,
+    },
+
+    /// Get known peers
+    #[n(5)]
+    GetPeers {
+        #[n(0)]
+        peers: Vec<PeerInfo>,
     },
 }
 
