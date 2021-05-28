@@ -17,6 +17,7 @@ type Sender<T> = mpsc::UnboundedSender<T>;
 type Receiver<T> = mpsc::UnboundedReceiver<T>;
 
 /// Hi swarm events
+#[derive(Debug)]
 pub enum Event {
     ConnectAddress(String),
     SetName(String),

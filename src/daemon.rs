@@ -81,8 +81,8 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
     loop {
         select! {
             // handle events coming from the swarm
-            _event = swarm.receive().fuse() => {
-                println!("received event from swarm");
+            event = swarm.receive().fuse() => {
+                println!("received event from swarm: {:?}", event);
             }
 
             // handle events coming from clients
