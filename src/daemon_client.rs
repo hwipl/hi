@@ -52,6 +52,7 @@ async fn run_client(config: config::Config, mut client: unix_socket::UnixClient)
             "name" => Message::GetName {
                 name: String::from(""),
             },
+            "peers" => Message::GetPeers { peers: Vec::new() },
             _ => {
                 eprintln!(
                     "error getting unknown configuration option: {}",
