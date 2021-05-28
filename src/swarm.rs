@@ -57,6 +57,8 @@ impl HiSwarm {
                                 }
                             }
                         }
+
+                        // hande set name request
                         Event::SetName(name) => {
                             node_name = name.clone();
                         }
