@@ -153,11 +153,17 @@ impl HiSwarm {
         let cfg = RequestResponseConfig::default();
         let request = RequestResponse::new(HiCodec(), protocols.clone(), cfg.clone());
 
+        // create channel for sending/receiving events to/from the swarm
+        let (to_swarm_sender, to_swarm_receiver) = mpsc::unbounded();
+        let (from_swarm_sender, from_swarm_receiver) = mpsc::unbounded();
+
         // create network behaviour
         let behaviour = HiBehaviour {
             request,
             gossip,
             mdns,
+
+            to_swarm: to_swarm_sender.clone(),
         };
 
         // create swarm
@@ -166,10 +172,6 @@ impl HiSwarm {
         // listen on all IPs and random ports.
         swarm.listen_on("/ip6/::/tcp/0".parse()?)?;
         swarm.listen_on("/ip4/0.0.0.0/tcp/0".parse()?)?;
-
-        // create channel for sending/receiving events to/from the swarm
-        let (to_swarm_sender, to_swarm_receiver) = mpsc::unbounded();
-        let (from_swarm_sender, from_swarm_receiver) = mpsc::unbounded();
 
         // start main loop
         task::spawn(async move {
