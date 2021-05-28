@@ -78,11 +78,34 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
     // clients and their channels
     let mut clients: HashMap<usize, Sender<Message>> = HashMap::new();
 
+    // information about known peers
+    let mut peers: HashMap<String, String> = HashMap::new();
+
     loop {
         select! {
             // handle events coming from the swarm
             event = swarm.receive().fuse() => {
                 println!("received event from swarm: {:?}", event);
+                let event = match event {
+                    Some(event) => event,
+                    None => break,
+                };
+
+                match event {
+                    // handle peer announcement
+                    swarm::Event::AnnouncePeer(peer_id, name) => {
+                        // add or update peer entry
+                        match peers.entry(peer_id) {
+                            Entry::Occupied(mut entry) => {
+                                *entry.get_mut() = name;
+                            }
+                            Entry::Vacant(entry) => {
+                                entry.insert(name);
+                            }
+                        }
+                    }
+                    _ => (),
+                }
             }
 
             // handle events coming from clients
