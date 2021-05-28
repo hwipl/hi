@@ -1,7 +1,9 @@
 use crate::gossip::HiAnnounce;
 use crate::request::{HiCodec, HiRequest, HiResponse};
 use crate::swarm;
+use async_std::task;
 use futures::channel::mpsc;
+use futures::sink::SinkExt;
 use libp2p::gossipsub::{Gossipsub, GossipsubEvent};
 use libp2p::mdns::{Mdns, MdnsEvent};
 use libp2p::request_response::{RequestResponse, RequestResponseEvent, RequestResponseMessage};
@@ -67,6 +69,15 @@ impl NetworkBehaviourEventProcess<GossipsubEvent> for HiBehaviour {
                         "Message: {:?} -> {:?}: {:?}",
                         message.source, message.topic, msg
                     );
+                    if let Some(peer) = message.source {
+                        let swarm_event = swarm::Event::AnnouncePeer(peer.to_string(), msg.name);
+                        let mut to_swarm = self.to_swarm.clone();
+                        task::spawn(async move {
+                            if let Err(e) = to_swarm.send(swarm_event).await {
+                                eprintln!("error sending event to swarm: {}", e);
+                            }
+                        });
+                    }
                 }
                 None => {
                     println!(

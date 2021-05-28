@@ -19,8 +19,13 @@ type Receiver<T> = mpsc::UnboundedReceiver<T>;
 /// Hi swarm events
 #[derive(Debug)]
 pub enum Event {
+    /// Connect to peer address: multiaddress
     ConnectAddress(String),
+    /// Set node's name: name
     SetName(String),
+
+    /// Peer announcement event: peer id, name
+    AnnouncePeer(String, String),
 }
 
 /// Hi swarm
@@ -62,6 +67,9 @@ impl HiSwarm {
                         Event::SetName(name) => {
                             node_name = name.clone();
                         }
+
+                        // event not handled here
+                        _ => {}
                     };
                     if let Err(e) = sender.send(event).await {
                         eprintln!("Error sending swarm event: {}", e);
