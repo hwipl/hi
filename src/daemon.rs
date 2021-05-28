@@ -145,49 +145,43 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                             }
                         };
 
-                        match msg {
+                        // parse message and generate reply message
+                        let reply = match msg {
                             // handle OK message
-                            Message::Ok => {
-                                if let Err(e) = client.send(Message::Ok).await {
-                                    eprintln!("handle client error: {}", e);
-                                    return;
-                                }
-                            }
+                            Message::Ok => Message::Ok,
 
                             // handle error message
                             Message::Error { message } => {
                                 println!("received error message from client: {:?}", message);
+                                continue;
                             }
 
                             // handle connect address request
                             Message::ConnectAddress { address } => {
                                 let event = swarm::Event::ConnectAddress(address);
                                 swarm.send(event).await;
-                                if let Err(e) = client.send(Message::Ok).await {
-                                    eprintln!("handle client error: {}", e);
-                                    return;
-                                }
+                                Message::Ok
                             }
 
                             // handle get name request
                             Message::GetName { .. } => {
                                 let message = String::from("Not yet implemented");
-                                let error = Message::Error { message };
-                                if let Err(e) = client.send(error).await {
-                                    eprintln!("handle client error: {}", e);
-                                    return;
-                                }
+                                Message::Error { message }
                             }
 
                             // handle set name request
                             Message::SetName { name } => {
                                 let event = swarm::Event::SetName(name);
                                 swarm.send(event).await;
-                                if let Err(e) = client.send(Message::Ok).await {
-                                    eprintln!("handle client error: {}", e);
-                                    return;
-                                }
+                                Message::Ok
                             }
+
+                        };
+
+                        // send reply to client
+                        if let Err(e) = client.send(reply).await {
+                            eprintln!("handle client error: {}", e);
+                            return;
                         }
                     }
                 }
