@@ -1,5 +1,5 @@
 use crate::config;
-use crate::daemon_message::Message;
+use crate::daemon_message::{Message, PeerInfo};
 use crate::swarm;
 use crate::unix_socket;
 use async_std::prelude::*;
@@ -176,6 +176,17 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                                 Message::Ok
                             }
 
+                            // handle get peers request
+                            Message::GetPeers { .. } => {
+                                let mut peer_infos = Vec::new();
+                                for p in &peers {
+                                    peer_infos.push(PeerInfo {
+                                        peer_id: p.0.clone(),
+                                        name: p.1.clone()
+                                    });
+                                }
+                                Message::GetPeers { peers: peer_infos }
+                            }
                         };
 
                         // send reply to client
