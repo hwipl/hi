@@ -69,7 +69,7 @@ impl HiSwarm {
                 event = swarm.next_event().fuse() => {
                     match event {
                         SwarmEvent::Behaviour(event) => {
-                            println!("{:?}", event);
+                            println!("Behaviour event: {:?}", event);
                         }
                         SwarmEvent::NewListenAddr(addr) => {
                             println!("Started listing on {:?}", addr);
