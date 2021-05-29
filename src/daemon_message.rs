@@ -1,6 +1,6 @@
 use minicbor::{Decode, Encode};
 
-#[derive(Debug, Encode, Decode)]
+#[derive(Clone, Debug, Encode, Decode)]
 pub struct PeerInfo {
     #[n(0)]
     pub peer_id: String,

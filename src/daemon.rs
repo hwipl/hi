@@ -79,7 +79,7 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
     let mut clients: HashMap<usize, Sender<Message>> = HashMap::new();
 
     // information about known peers
-    let mut peers: HashMap<String, String> = HashMap::new();
+    let mut peers: HashMap<String, PeerInfo> = HashMap::new();
 
     loop {
         select! {
@@ -95,12 +95,20 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                     // handle peer announcement
                     swarm::Event::AnnouncePeer(peer_id, name) => {
                         // add or update peer entry
-                        match peers.entry(peer_id) {
+                        match peers.entry(peer_id.clone()) {
                             Entry::Occupied(mut entry) => {
-                                *entry.get_mut() = name;
+                                *entry.get_mut() = PeerInfo {
+                                    peer_id,
+                                    name,
+                                    chat_support: false,
+                                };
                             }
                             Entry::Vacant(entry) => {
-                                entry.insert(name);
+                                entry.insert( PeerInfo {
+                                    peer_id,
+                                    name,
+                                    chat_support: false,
+                                });
                             }
                         }
                     }
@@ -178,14 +186,7 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
 
                             // handle get peers request
                             Message::GetPeers { .. } => {
-                                let mut peer_infos = Vec::new();
-                                for p in &peers {
-                                    peer_infos.push(PeerInfo {
-                                        peer_id: p.0.clone(),
-                                        name: p.1.clone(),
-                                        chat_support: false,
-                                    });
-                                }
+                                let peer_infos = peers.values().cloned().collect();
                                 Message::GetPeers { peers: peer_infos }
                             }
 
