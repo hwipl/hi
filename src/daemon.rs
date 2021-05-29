@@ -187,6 +187,13 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                                 }
                                 Message::GetPeers { peers: peer_infos }
                             }
+
+                            // handle set chat request
+                            Message::SetChat { enabled } => {
+                                let event = swarm::Event::SetChat(enabled);
+                                swarm.send(event).await;
+                                Message::Ok
+                            }
                         };
 
                         // send reply to client

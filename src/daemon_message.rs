@@ -48,6 +48,13 @@ pub enum Message {
         #[n(0)]
         peers: Vec<PeerInfo>,
     },
+
+    /// Set chat support of this node
+    #[n(6)]
+    SetChat {
+        #[n(0)]
+        enabled: bool,
+    },
 }
 
 impl Message {
