@@ -57,7 +57,7 @@ impl RequestResponseCodec for HiCodec {
             .map(|res| match res {
                 Err(e) => Err(io::Error::new(io::ErrorKind::InvalidData, e)),
                 Ok(vec) if vec.is_empty() => Err(io::ErrorKind::UnexpectedEof.into()),
-                Ok(vec) => Ok(HiResponse(vec)),
+                Ok(vec) => Ok(HiResponse::Data(vec)),
             })
             .await
     }
@@ -80,12 +80,14 @@ impl RequestResponseCodec for HiCodec {
         &mut self,
         _: &HiRequestProtocol,
         io: &mut T,
-        HiResponse(data): HiResponse,
+        response: HiResponse,
     ) -> io::Result<()>
     where
         T: AsyncWrite + Unpin + Send,
     {
-        write_one(io, data).await
+        match response {
+            HiResponse::Data(data) => write_one(io, data).await,
+        }
     }
 }
 
@@ -97,4 +99,6 @@ pub enum HiRequest {
 
 /// Response message
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct HiResponse(pub Vec<u8>);
+pub enum HiResponse {
+    Data(Vec<u8>),
+}
