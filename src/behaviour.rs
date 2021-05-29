@@ -27,7 +27,7 @@ impl NetworkBehaviourEventProcess<RequestResponseEvent<HiRequest, HiResponse>> f
     // hande `request` events
     fn inject_event(&mut self, message: RequestResponseEvent<HiRequest, HiResponse>) {
         // create messages
-        let request = HiRequest("hey".to_string().into_bytes());
+        let request = HiRequest::Data("hey".to_string().into_bytes());
         let response = HiResponse("hi".to_string().into_bytes());
 
         // handle incoming messages
