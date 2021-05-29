@@ -182,7 +182,8 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                                 for p in &peers {
                                     peer_infos.push(PeerInfo {
                                         peer_id: p.0.clone(),
-                                        name: p.1.clone()
+                                        name: p.1.clone(),
+                                        chat_support: false,
                                     });
                                 }
                                 Message::GetPeers { peers: peer_infos }

@@ -6,6 +6,8 @@ pub struct PeerInfo {
     pub peer_id: String,
     #[n(1)]
     pub name: String,
+    #[n(2)]
+    pub chat_support: bool,
 }
 
 #[derive(Debug, Encode, Decode)]
