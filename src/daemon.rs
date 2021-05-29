@@ -20,6 +20,11 @@ enum Event {
     ClientMessage(usize, Message),
 }
 
+/// Client information
+struct ClientInfo {
+    sender: Sender<Message>,
+}
+
 /// handle client connection identified by its `id`
 async fn handle_client(mut server: Sender<Event>, id: usize, mut client: unix_socket::UnixClient) {
     // create channel for server messages and register this client
@@ -76,7 +81,7 @@ async fn handle_client(mut server: Sender<Event>, id: usize, mut client: unix_so
 /// run the server's main loop
 async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm) {
     // clients and their channels
-    let mut clients: HashMap<usize, Sender<Message>> = HashMap::new();
+    let mut clients: HashMap<usize, ClientInfo> = HashMap::new();
 
     // information about known peers
     let mut peers: HashMap<String, PeerInfo> = HashMap::new();
@@ -121,7 +126,10 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                         match clients.entry(id) {
                             Entry::Occupied(..) => (),
                             Entry::Vacant(entry) => {
-                                entry.insert(sender);
+                                let client_info = ClientInfo {
+                                    sender,
+                                };
+                                entry.insert(client_info);
                             }
                         }
                     }
@@ -191,7 +199,7 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                         };
 
                         // send reply to client
-                        if let Err(e) = client.send(reply).await {
+                        if let Err(e) = client.sender.send(reply).await {
                             eprintln!("handle client error: {}", e);
                             return;
                         }
