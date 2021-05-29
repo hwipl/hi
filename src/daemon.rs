@@ -23,6 +23,7 @@ enum Event {
 /// Client information
 struct ClientInfo {
     sender: Sender<Message>,
+    chat_support: bool,
 }
 
 /// handle client connection identified by its `id`
@@ -128,6 +129,7 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                             Entry::Vacant(entry) => {
                                 let client_info = ClientInfo {
                                     sender,
+                                    chat_support: false,
                                 };
                                 entry.insert(client_info);
                             }
@@ -192,6 +194,7 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
 
                             // handle set chat request
                             Message::SetChat { enabled } => {
+                                client.chat_support = true;
                                 let event = swarm::Event::SetChat(enabled);
                                 swarm.send(event).await;
                                 Message::Ok
