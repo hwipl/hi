@@ -7,6 +7,8 @@ pub struct HiAnnounce {
     pub version: u8,
     #[n(1)]
     pub name: String,
+    #[n(2)]
+    pub chat: bool,
 }
 
 impl HiAnnounce {
@@ -14,6 +16,7 @@ impl HiAnnounce {
         HiAnnounce {
             version: 0,
             name: String::new(),
+            chat: false,
         }
     }
 
