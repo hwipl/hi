@@ -1,4 +1,5 @@
 use crate::behaviour::HiBehaviour;
+use crate::daemon_message::PeerInfo;
 use crate::gossip::HiAnnounce;
 use crate::request::{HiCodec, HiRequestProtocol};
 use async_std::task;
@@ -26,8 +27,8 @@ pub enum Event {
     /// Set chat support to enabled (true) or disabled (false)
     SetChat(bool),
 
-    /// Peer announcement event: peer id, name
-    AnnouncePeer(String, String),
+    /// Peer announcement event
+    AnnouncePeer(PeerInfo),
 }
 
 /// Hi swarm

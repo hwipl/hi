@@ -93,22 +93,14 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
 
                 match event {
                     // handle peer announcement
-                    swarm::Event::AnnouncePeer(peer_id, name) => {
+                    swarm::Event::AnnouncePeer(peer_info) => {
                         // add or update peer entry
-                        match peers.entry(peer_id.clone()) {
+                        match peers.entry(peer_info.peer_id.clone()) {
                             Entry::Occupied(mut entry) => {
-                                *entry.get_mut() = PeerInfo {
-                                    peer_id,
-                                    name,
-                                    chat_support: false,
-                                };
+                                entry.insert(peer_info);
                             }
                             Entry::Vacant(entry) => {
-                                entry.insert( PeerInfo {
-                                    peer_id,
-                                    name,
-                                    chat_support: false,
-                                });
+                                entry.insert(peer_info);
                             }
                         }
                     }

@@ -1,3 +1,4 @@
+use crate::daemon_message::PeerInfo;
 use crate::gossip::HiAnnounce;
 use crate::request::{HiCodec, HiRequest, HiResponse};
 use crate::swarm;
@@ -70,7 +71,11 @@ impl NetworkBehaviourEventProcess<GossipsubEvent> for HiBehaviour {
                         message.source, message.topic, msg
                     );
                     if let Some(peer) = message.source {
-                        let swarm_event = swarm::Event::AnnouncePeer(peer.to_string(), msg.name);
+                        let swarm_event = swarm::Event::AnnouncePeer(PeerInfo {
+                            peer_id: peer.to_string(),
+                            name: msg.name,
+                            chat_support: msg.chat,
+                        });
                         let mut to_swarm = self.to_swarm.clone();
                         task::spawn(async move {
                             if let Err(e) = to_swarm.send(swarm_event).await {
