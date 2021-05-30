@@ -27,15 +27,21 @@ impl NetworkBehaviourEventProcess<RequestResponseEvent<HiRequest, HiResponse>> f
     // hande `request` events
     fn inject_event(&mut self, message: RequestResponseEvent<HiRequest, HiResponse>) {
         // create messages
-        let request = HiRequest::Data("hey".to_string().into_bytes());
         let response = HiResponse::Data("hi".to_string().into_bytes());
 
         // handle incoming messages
         if let RequestResponseEvent::Message { peer, message } = message {
             match message {
                 // handle incoming request message, send back response
-                RequestResponseMessage::Request { channel, .. } => {
-                    println!("received request {:?} from {:?}", request, peer);
+                RequestResponseMessage::Request {
+                    channel,
+                    request,
+                    request_id,
+                } => {
+                    println!(
+                        "received request {:?} with id {} from {:?}",
+                        request, request_id, peer
+                    );
                     self.request
                         .send_response(channel, response.clone())
                         .unwrap();
@@ -51,8 +57,8 @@ impl NetworkBehaviourEventProcess<RequestResponseEvent<HiRequest, HiResponse>> f
         }
 
         // handle response sent event
-        if let RequestResponseEvent::ResponseSent { peer, .. } = message {
-            println!("sent response {:?} to {:?}", response, peer);
+        if let RequestResponseEvent::ResponseSent { peer, request_id } = message {
+            println!("sent response for request {:?} to {:?}", request_id, peer);
             return;
         }
 
