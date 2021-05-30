@@ -29,6 +29,8 @@ pub enum Event {
 
     /// Peer announcement event
     AnnouncePeer(PeerInfo),
+    /// Chat message
+    ChatMessage(String),
 }
 
 /// Hi swarm
@@ -80,7 +82,9 @@ impl HiSwarm {
 
                         // events (coming from behaviour) not handled here,
                         // forward to daemon
-                        Event::AnnouncePeer(..) => {
+                        | Event::AnnouncePeer(..)
+                        | Event::ChatMessage(..)
+                        => {
                             if let Err(e) = sender.send(event).await {
                                 eprintln!("Error sending swarm event: {}", e);
                             };
