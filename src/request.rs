@@ -114,5 +114,7 @@ pub enum HiResponse {
     #[n(0)]
     Ok,
     #[n(1)]
+    Error(#[n(0)] String),
+    #[n(2)]
     Data(#[n(0)] Vec<u8>),
 }
