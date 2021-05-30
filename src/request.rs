@@ -1,11 +1,11 @@
 use async_trait::async_trait;
-
 use futures::prelude::*;
 use libp2p::core::{
     upgrade::{read_one, write_one},
     ProtocolName,
 };
 use libp2p::request_response::RequestResponseCodec;
+use minicbor::{Decode, Encode};
 use std::io;
 
 /// Request-response protocol for the request-response behaviour
@@ -40,7 +40,9 @@ impl RequestResponseCodec for HiCodec {
             .map(|res| match res {
                 Err(e) => Err(io::Error::new(io::ErrorKind::InvalidData, e)),
                 Ok(vec) if vec.is_empty() => Err(io::ErrorKind::UnexpectedEof.into()),
-                Ok(vec) => Ok(HiRequest::Data(vec)),
+                Ok(vec) => {
+                    minicbor::decode(&vec).map_err(|e| io::Error::new(io::ErrorKind::Other, e))
+                }
             })
             .await
     }
@@ -71,9 +73,12 @@ impl RequestResponseCodec for HiCodec {
     where
         T: AsyncWrite + Unpin + Send,
     {
-        match request {
-            HiRequest::Data(data) => write_one(io, data).await,
+        let mut buffer = Vec::new();
+        if let Err(e) = minicbor::encode(request, &mut buffer) {
+            eprintln!("error encoding request message: {}", e);
+            return Err(io::Error::new(io::ErrorKind::Other, e));
         }
+        write_one(io, buffer).await
     }
 
     async fn write_response<T>(
@@ -92,9 +97,10 @@ impl RequestResponseCodec for HiCodec {
 }
 
 /// Request message
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode)]
 pub enum HiRequest {
-    Data(Vec<u8>),
+    #[n(0)]
+    Data(#[n(0)] Vec<u8>),
 }
 
 /// Response message
