@@ -223,7 +223,9 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                             // handle chat message
                             Message::ChatMessage { to, message, .. } => {
                                 println!("received chat message for {}: {}", to, message);
-                                Message::Error{ message: String::from("Not yet implemented") }
+                                let event = swarm::Event::SendChatMessage(to, message);
+                                swarm.send(event).await;
+                                Message::Ok
                             }
                         };
 
