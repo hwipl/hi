@@ -110,6 +110,26 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                             }
                         }
                     }
+
+                    // handle chat messages
+                    swarm::Event::ChatMessage(msg) => {
+                        for client in clients.values_mut() {
+                            if client.chat_support {
+                                // send msg to client
+                                let msg =  Message::ChatMessage {
+                                    to: String::new(),
+                                    from: String::new(),
+                                    message: msg.clone(),
+                                };
+                                if let Err(e) = client.sender.send(msg).await {
+                                    eprintln!("handle client error: {}", e);
+                                    return;
+                                }
+                            }
+                        }
+                    }
+
+                    // handle other events
                     _ => (),
                 }
             }
