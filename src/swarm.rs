@@ -1,7 +1,7 @@
 use crate::behaviour::HiBehaviour;
 use crate::daemon_message::PeerInfo;
 use crate::gossip::HiAnnounce;
-use crate::request::{HiCodec, HiRequestProtocol};
+use crate::request::{HiCodec, HiRequest, HiRequestProtocol};
 use async_std::task;
 use futures::{channel::mpsc, executor::block_on, prelude::*, select, sink::SinkExt};
 use libp2p::gossipsub::{Gossipsub, GossipsubConfig, IdentTopic, MessageAuthenticity};
@@ -11,6 +11,7 @@ use libp2p::swarm::{Swarm, SwarmEvent};
 use libp2p::{identity, PeerId};
 use std::error::Error;
 use std::iter;
+use std::str::FromStr;
 use std::time::Duration;
 use wasm_timer::Delay;
 
@@ -26,6 +27,8 @@ pub enum Event {
     SetName(String),
     /// Set chat support to enabled (true) or disabled (false)
     SetChat(bool),
+    /// Send chat message: destination, message
+    SendChatMessage(String, String),
 
     /// Peer announcement event
     AnnouncePeer(PeerInfo),
@@ -78,6 +81,16 @@ impl HiSwarm {
                         // handle set chat support request
                         Event::SetChat(enabled) => {
                             chat_support = *enabled;
+                        }
+
+                        // handle set chat message request
+                        Event::SendChatMessage(to, msg) => {
+                            let peer_id = match PeerId::from_str(to) {
+                                Ok(peer_id) => peer_id,
+                                Err(_) => continue,
+                            };
+                            let chat_msg = HiRequest::ChatMessage(msg.to_string());
+                            swarm.behaviour_mut().request.send_request(&peer_id, chat_msg);
                         }
 
                         // events (coming from behaviour) not handled here,
