@@ -26,9 +26,6 @@ pub struct HiBehaviour {
 impl NetworkBehaviourEventProcess<RequestResponseEvent<HiRequest, HiResponse>> for HiBehaviour {
     // hande `request` events
     fn inject_event(&mut self, message: RequestResponseEvent<HiRequest, HiResponse>) {
-        // create messages
-        let response = HiResponse::Data("hi".to_string().into_bytes());
-
         // handle incoming messages
         if let RequestResponseEvent::Message { peer, message } = message {
             match message {
@@ -42,9 +39,14 @@ impl NetworkBehaviourEventProcess<RequestResponseEvent<HiRequest, HiResponse>> f
                         "received request {:?} with id {} from {:?}",
                         request, request_id, peer
                     );
-                    self.request
-                        .send_response(channel, response.clone())
-                        .unwrap();
+                    let response = match request {
+                        HiRequest::ChatMessage(msg) => {
+                            println!("received chat message: {}", msg);
+                            HiResponse::Ok
+                        }
+                        _ => HiResponse::Error(String::from("unknown request")),
+                    };
+                    self.request.send_response(channel, response).unwrap();
                     return;
                 }
 
