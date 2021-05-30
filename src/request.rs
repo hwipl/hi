@@ -59,7 +59,9 @@ impl RequestResponseCodec for HiCodec {
             .map(|res| match res {
                 Err(e) => Err(io::Error::new(io::ErrorKind::InvalidData, e)),
                 Ok(vec) if vec.is_empty() => Err(io::ErrorKind::UnexpectedEof.into()),
-                Ok(vec) => Ok(HiResponse::Data(vec)),
+                Ok(vec) => {
+                    minicbor::decode(&vec).map_err(|e| io::Error::new(io::ErrorKind::Other, e))
+                }
             })
             .await
     }
@@ -90,9 +92,12 @@ impl RequestResponseCodec for HiCodec {
     where
         T: AsyncWrite + Unpin + Send,
     {
-        match response {
-            HiResponse::Data(data) => write_one(io, data).await,
+        let mut buffer = Vec::new();
+        if let Err(e) = minicbor::encode(response, &mut buffer) {
+            eprintln!("error encoding response message: {}", e);
+            return Err(io::Error::new(io::ErrorKind::Other, e));
         }
+        write_one(io, buffer).await
     }
 }
 
@@ -104,7 +109,8 @@ pub enum HiRequest {
 }
 
 /// Response message
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode)]
 pub enum HiResponse {
-    Data(Vec<u8>),
+    #[n(0)]
+    Data(#[n(0)] Vec<u8>),
 }
