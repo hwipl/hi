@@ -57,6 +57,17 @@ pub enum Message {
         #[n(0)]
         enabled: bool,
     },
+
+    /// Incoming chat message
+    #[n(7)]
+    ChatMessage {
+        #[n(0)]
+        to: String,
+        #[n(1)]
+        from: String,
+        #[n(2)]
+        message: String,
+    },
 }
 
 impl Message {
