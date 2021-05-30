@@ -42,6 +42,13 @@ impl NetworkBehaviourEventProcess<RequestResponseEvent<HiRequest, HiResponse>> f
                     let response = match request {
                         HiRequest::ChatMessage(msg) => {
                             println!("received chat message: {}", msg);
+                            let swarm_event = swarm::Event::ChatMessage(msg);
+                            let mut to_swarm = self.to_swarm.clone();
+                            task::spawn(async move {
+                                if let Err(e) = to_swarm.send(swarm_event).await {
+                                    eprintln!("error sending event to swarm: {}", e);
+                                }
+                            });
                             HiResponse::Ok
                         }
                         _ => HiResponse::Error(String::from("unknown request")),
