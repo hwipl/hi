@@ -106,6 +106,8 @@ impl RequestResponseCodec for HiCodec {
 pub enum HiRequest {
     #[n(0)]
     Data(#[n(0)] Vec<u8>),
+    #[n(1)]
+    ChatMessage(#[n(0)] String),
 }
 
 /// Response message
