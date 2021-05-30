@@ -112,5 +112,7 @@ pub enum HiRequest {
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode)]
 pub enum HiResponse {
     #[n(0)]
+    Ok,
+    #[n(1)]
     Data(#[n(0)] Vec<u8>),
 }
