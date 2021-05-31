@@ -116,9 +116,14 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                         for client in clients.values_mut() {
                             if client.chat_support {
                                 // send msg to client
+                                let from_name = match peers.get(&from) {
+                                    Some(peer) => peer.name.clone(),
+                                    None => String::new(),
+                                };
                                 let msg =  Message::ChatMessage {
                                     to: String::new(),
                                     from: from.clone(),
+                                    from_name,
                                     message: msg.clone(),
                                 };
                                 if let Err(e) = client.sender.send(msg).await {

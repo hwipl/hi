@@ -40,8 +40,8 @@ async fn run_chat_client(mut client: unix_socket::UnixClient, destination: Strin
             // handle message coming from daemon
             msg = client.receive_message().fuse() => {
                 match msg {
-                    Ok(Message::ChatMessage{ from, message, .. }) => {
-                        println!("{}: {}", from, message);
+                    Ok(Message::ChatMessage{ from, from_name, message, .. }) => {
+                        println!("{} <{}>: {}", from, from_name, message);
                     }
                     _ => continue,
                 }
@@ -56,6 +56,7 @@ async fn run_chat_client(mut client: unix_socket::UnixClient, destination: Strin
                 let msg = Message::ChatMessage {
                     to: destination.clone(),
                     from: String::new(),
+                    from_name: String::new(),
                     message: line,
                 };
                 if let Err(e) = client.send_message(msg).await {

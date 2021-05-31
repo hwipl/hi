@@ -66,6 +66,8 @@ pub enum Message {
         #[n(1)]
         from: String,
         #[n(2)]
+        from_name: String,
+        #[n(3)]
         message: String,
     },
 }
