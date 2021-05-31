@@ -2,6 +2,8 @@ use crate::config;
 use crate::daemon_message::Message;
 use crate::unix_socket;
 use async_std::{io, prelude::*, task};
+use futures::future::FutureExt;
+use futures::select;
 
 /// run daemon client in chat mode
 async fn run_chat_client(mut client: unix_socket::UnixClient, destination: String) {
@@ -33,15 +35,33 @@ async fn run_chat_client(mut client: unix_socket::UnixClient, destination: Strin
     // enter chat mode
     println!("Chat mode:");
     let mut stdin = io::BufReader::new(io::stdin()).lines();
-    while let Some(Ok(line)) = stdin.next().await {
-        let msg = Message::ChatMessage {
-            to: destination.clone(),
-            from: String::new(),
-            message: line,
-        };
-        if let Err(e) = client.send_message(msg).await {
-            eprintln!("error sending chat message: {}", e);
-            return;
+    loop {
+        select! {
+            // handle message coming from daemon
+            msg = client.receive_message().fuse() => {
+                let msg = match msg {
+                    Ok(msg) => msg,
+                    _ => continue,
+                };
+                println!("{:?}", msg);
+            },
+
+            // handle line read from stdin
+            line = stdin.next().fuse() => {
+                let line = match line {
+                    Some(Ok(line)) => line,
+                    _ => continue,
+                };
+                let msg = Message::ChatMessage {
+                    to: destination.clone(),
+                    from: String::new(),
+                    message: line,
+                };
+                if let Err(e) = client.send_message(msg).await {
+                    eprintln!("error sending chat message: {}", e);
+                    return;
+                }
+            },
         }
     }
 }
