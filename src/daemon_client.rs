@@ -39,11 +39,12 @@ async fn run_chat_client(mut client: unix_socket::UnixClient, destination: Strin
         select! {
             // handle message coming from daemon
             msg = client.receive_message().fuse() => {
-                let msg = match msg {
-                    Ok(msg) => msg,
+                match msg {
+                    Ok(Message::ChatMessage{ from, message, .. }) => {
+                        println!("{}: {}", from, message);
+                    }
                     _ => continue,
-                };
-                println!("{:?}", msg);
+                }
             },
 
             // handle line read from stdin
