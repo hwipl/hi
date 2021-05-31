@@ -32,8 +32,8 @@ pub enum Event {
 
     /// Peer announcement event
     AnnouncePeer(PeerInfo),
-    /// Chat message
-    ChatMessage(String),
+    /// Chat message: sender, message
+    ChatMessage(String, String),
 }
 
 /// Hi swarm
