@@ -223,8 +223,21 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                             // handle chat message
                             Message::ChatMessage { to, message, .. } => {
                                 println!("received chat message for {}: {}", to, message);
-                                let event = swarm::Event::SendChatMessage(to, message);
-                                swarm.send(event).await;
+                                if to == "all" {
+                                    // send message to all known peers with chat support
+                                    for peer in peers.values() {
+                                        if peer.chat_support {
+                                            let event = swarm::Event::SendChatMessage(
+                                                peer.peer_id.clone(),
+                                                message.clone());
+                                                swarm.send(event).await;
+                                        }
+                                    }
+                                } else {
+                                    // send message to peer specified in `to`
+                                    let event = swarm::Event::SendChatMessage(to, message);
+                                    swarm.send(event).await;
+                                }
                                 Message::Ok
                             }
                         };
