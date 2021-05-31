@@ -50,7 +50,7 @@ async fn run_chat_client(mut client: unix_socket::UnixClient, destination: Strin
             // handle line read from stdin
             line = stdin.next().fuse() => {
                 let line = match line {
-                    Some(Ok(line)) => line,
+                    Some(Ok(line)) if line != "" => line,
                     _ => continue,
                 };
                 let msg = Message::ChatMessage {
