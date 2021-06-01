@@ -8,6 +8,8 @@ pub struct PeerInfo {
     pub name: String,
     #[n(2)]
     pub chat_support: bool,
+    #[n(3)]
+    pub last_update: u64,
 }
 
 #[derive(Debug, Encode, Decode)]
