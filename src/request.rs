@@ -108,6 +108,8 @@ pub enum HiRequest {
     Data(#[n(0)] Vec<u8>),
     #[n(1)]
     ChatMessage(#[n(0)] String),
+    #[n(2)]
+    GetFiles,
 }
 
 /// Response message
