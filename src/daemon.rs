@@ -279,6 +279,12 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                                 }
                                 Message::Ok
                             }
+
+                            // handle get files message
+                            Message::GetFiles { .. } => {
+                                let message = String::from("Not yet implemented");
+                                Message::Error { message }
+                            }
                         };
 
                         // send reply to client

@@ -84,6 +84,13 @@ pub enum Message {
         #[n(3)]
         message: String,
     },
+
+    /// get list of files
+    #[n(8)]
+    GetFiles {
+        #[n(0)]
+        files: Vec<FileInfo>,
+    },
 }
 
 impl Message {
