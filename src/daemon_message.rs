@@ -14,6 +14,16 @@ pub struct PeerInfo {
     pub last_update: u64,
 }
 
+#[derive(Clone, Debug, Encode, Decode)]
+pub struct FileInfo {
+    #[n(0)]
+    pub peer_id: String,
+    #[n(1)]
+    pub name: String,
+    #[n(2)]
+    pub size: u64,
+}
+
 #[derive(Debug, Encode, Decode)]
 pub enum Message {
     /// Ok message
