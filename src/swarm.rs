@@ -97,10 +97,12 @@ impl HiSwarm {
 
                         // handle set get files message request
                         Event::SendGetFiles(to) => {
-                            let _peer_id = match PeerId::from_str(to) {
+                            let peer_id = match PeerId::from_str(to) {
                                 Ok(peer_id) => peer_id,
                                 Err(_) => continue,
                             };
+                            let request = HiRequest::GetFiles;
+                            swarm.behaviour_mut().request.send_request(&peer_id, request);
                         }
 
                         // events (coming from behaviour) not handled here,
