@@ -9,6 +9,8 @@ use futures::future::FutureExt;
 use futures::select;
 use futures::sink::SinkExt;
 use std::collections::hash_map::{Entry, HashMap};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use wasm_timer::Delay;
 
 type Sender<T> = mpsc::UnboundedSender<T>;
 type Receiver<T> = mpsc::UnboundedReceiver<T>;
@@ -87,8 +89,32 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
     // information about known peers
     let mut peers: HashMap<String, PeerInfo> = HashMap::new();
 
+    // start timer
+    let mut timer = Delay::new(Duration::from_secs(5)).fuse();
+
     loop {
         select! {
+            // handle timer event
+            event = timer => {
+                println!("daemon timer event: {:?}", event);
+                timer = Delay::new(Duration::from_secs(5)).fuse();
+
+                // remove old entries from peers hash map
+                let current_secs = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .expect("timestamp error")
+                    .as_secs();
+                let mut remove_peers = Vec::new();
+                for peer in peers.values() {
+                    if current_secs - peer.last_update > 30 {
+                        remove_peers.push(peer.peer_id.clone());
+                    }
+                }
+                for peer in remove_peers {
+                    peers.remove(&peer);
+                }
+            }
+
             // handle events coming from the swarm
             event = swarm.receive().fuse() => {
                 println!("received event from swarm: {:?}", event);
