@@ -195,12 +195,18 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                         clients.remove(&id);
 
                         // check if there are still clients with chat support
+                        // and with file support
                         let mut chat_support = false;
+                        let mut file_support = false;
                         for c in clients.values() {
                             chat_support |= c.chat_support;
+                            file_support |= c.file_support;
                         }
                         let event = swarm::Event::SetChat(chat_support);
                         swarm.send(event).await;
+                        let event = swarm::Event::SetFiles(file_support);
+                        swarm.send(event).await;
+
                     }
 
                     // handle client message
