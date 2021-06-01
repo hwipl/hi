@@ -165,6 +165,14 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                     Event::RemoveClient(id) => {
                         println!("received remove client event with id {}", id);
                         clients.remove(&id);
+
+                        // check if there are still clients with chat support
+                        let mut chat_support = false;
+                        for c in clients.values() {
+                            chat_support |= c.chat_support;
+                        }
+                        let event = swarm::Event::SetChat(chat_support);
+                        swarm.send(event).await;
                     }
 
                     // handle client message
