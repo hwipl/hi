@@ -282,8 +282,14 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
 
                             // handle get files message
                             Message::GetFiles { .. } => {
-                                let message = String::from("Not yet implemented");
-                                Message::Error { message }
+                                for peer in peers.values() {
+                                    if peer.file_support {
+                                        let event = swarm::Event::SendGetFiles(
+                                            peer.peer_id.clone());
+                                            swarm.send(event).await;
+                                    }
+                                }
+                                Message::Ok
                             }
                         };
 
