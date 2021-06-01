@@ -62,7 +62,7 @@ pub enum Message {
         enabled: bool,
     },
 
-    /// Incoming chat message
+    /// Chat message
     #[n(7)]
     ChatMessage {
         #[n(0)]
