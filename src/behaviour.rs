@@ -52,6 +52,10 @@ impl NetworkBehaviourEventProcess<RequestResponseEvent<HiRequest, HiResponse>> f
                             });
                             HiResponse::Ok
                         }
+                        HiRequest::GetFiles => {
+                            println!("received get files request");
+                            HiResponse::FileList(Vec::new())
+                        }
                         _ => HiResponse::Error(String::from("unknown request")),
                     };
                     self.request.send_response(channel, response).unwrap();
