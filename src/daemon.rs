@@ -26,6 +26,7 @@ enum Event {
 struct ClientInfo {
     sender: Sender<Message>,
     chat_support: bool,
+    file_support: bool,
 }
 
 /// handle client connection identified by its `id`
@@ -181,6 +182,7 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                                 let client_info = ClientInfo {
                                     sender,
                                     chat_support: false,
+                                    file_support: false,
                                 };
                                 entry.insert(client_info);
                             }
