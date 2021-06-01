@@ -85,8 +85,15 @@ pub enum Message {
         message: String,
     },
 
-    /// get list of files
+    /// Set file support of this node
     #[n(8)]
+    SetFiles {
+        #[n(0)]
+        enabled: bool,
+    },
+
+    /// Get list of files
+    #[n(9)]
     GetFiles {
         #[n(0)]
         files: Vec<FileInfo>,

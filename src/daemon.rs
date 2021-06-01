@@ -282,6 +282,12 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                                 Message::Ok
                             }
 
+                            // handle set files request
+                            Message::SetFiles { enabled } => {
+                                client.file_support = enabled;
+                                Message::Ok
+                            }
+
                             // handle get files message
                             Message::GetFiles { .. } => {
                                 for peer in peers.values() {
