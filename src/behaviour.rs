@@ -91,6 +91,7 @@ impl NetworkBehaviourEventProcess<GossipsubEvent> for HiBehaviour {
                             peer_id: peer.to_string(),
                             name: msg.name,
                             chat_support: msg.chat,
+                            file_support: msg.files,
                             last_update: SystemTime::now()
                                 .duration_since(UNIX_EPOCH)
                                 .expect("timestamp error")

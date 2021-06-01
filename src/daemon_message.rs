@@ -9,6 +9,8 @@ pub struct PeerInfo {
     #[n(2)]
     pub chat_support: bool,
     #[n(3)]
+    pub file_support: bool,
+    #[n(4)]
     pub last_update: u64,
 }
 
