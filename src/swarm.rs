@@ -29,6 +29,8 @@ pub enum Event {
     SetChat(bool),
     /// Send chat message: destination, message
     SendChatMessage(String, String),
+    /// Send get files message to destination
+    SendGetFiles(String),
 
     /// Peer announcement event
     AnnouncePeer(PeerInfo),
@@ -91,6 +93,14 @@ impl HiSwarm {
                             };
                             let chat_msg = HiRequest::ChatMessage(msg.to_string());
                             swarm.behaviour_mut().request.send_request(&peer_id, chat_msg);
+                        }
+
+                        // handle set get files message request
+                        Event::SendGetFiles(to) => {
+                            let _peer_id = match PeerId::from_str(to) {
+                                Ok(peer_id) => peer_id,
+                                Err(_) => continue,
+                            };
                         }
 
                         // events (coming from behaviour) not handled here,
