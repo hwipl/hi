@@ -29,6 +29,8 @@ pub enum Event {
     SetChat(bool),
     /// Send chat message: destination, message
     SendChatMessage(String, String),
+    /// Set file support to enabled (true) or disabled (false)
+    SetFiles(bool),
     /// Send get files message to destination
     SendGetFiles(String),
 
@@ -54,6 +56,7 @@ impl HiSwarm {
         let mut timer = Delay::new(Duration::from_secs(5)).fuse();
         let mut node_name = String::from("");
         let mut chat_support = false;
+        let mut file_support = false;
 
         loop {
             select! {
@@ -93,6 +96,11 @@ impl HiSwarm {
                             };
                             let chat_msg = HiRequest::ChatMessage(msg.to_string());
                             swarm.behaviour_mut().request.send_request(&peer_id, chat_msg);
+                        }
+
+                        // handle set files message request
+                        Event::SetFiles(enabled) => {
+                            file_support = *enabled;
                         }
 
                         // handle set get files message request
@@ -165,6 +173,7 @@ impl HiSwarm {
                     let mut announce = HiAnnounce::new();
                     announce.name = node_name.to_string();
                     announce.chat = chat_support;
+                    announce.files = file_support;
                     if let Some(announce) = announce.encode() {
                         match swarm.behaviour_mut().gossip.publish(topic, announce) {
                             Ok(_) => (),
