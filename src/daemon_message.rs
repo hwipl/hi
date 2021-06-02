@@ -98,6 +98,15 @@ pub enum Message {
         #[n(0)]
         files: Vec<FileInfo>,
     },
+
+    /// (Un)Share files message
+    #[n(10)]
+    ShareFiles {
+        #[n(0)]
+        shared: bool,
+        #[n(1)]
+        files: Vec<FileInfo>,
+    },
 }
 
 impl Message {
