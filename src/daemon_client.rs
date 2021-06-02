@@ -1,5 +1,5 @@
 use crate::config;
-use crate::daemon_message::Message;
+use crate::daemon_message::{FileInfo, Message};
 use crate::unix_socket;
 use async_std::{io, prelude::*, task};
 use futures::future::FutureExt;
@@ -90,10 +90,28 @@ async fn run_file_client(
         }
     }
 
+    // share files if wanted by user
     if file_list.len() > 0 {
-        println!("NYI: Serving files: {:?}", file_list);
+        let mut list = Vec::new();
+        for f in file_list.iter() {
+            list.push(FileInfo {
+                peer_id: String::new(),
+                name: f.clone(),
+                size: 0,
+            });
+        }
+        let msg = Message::ShareFiles {
+            shared: true,
+            files: list,
+        };
+        if let Err(e) = client.send_message(msg).await {
+            eprintln!("error sending share files message: {}", e);
+            return;
+        }
+        println!("Serving files: {:?}", file_list);
     }
 
+    // enter file loop
     println!("File mode:");
     while let Ok(msg) = client.receive_message().await {
         println!("{:?}", msg);
