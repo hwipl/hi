@@ -1,12 +1,14 @@
 use crate::behaviour::HiBehaviour;
 use crate::daemon_message::PeerInfo;
 use crate::gossip::HiAnnounce;
-use crate::request::{HiCodec, HiRequest, HiRequestProtocol};
+use crate::request::{HiCodec, HiRequest, HiRequestProtocol, HiResponse};
 use async_std::task;
 use futures::{channel::mpsc, executor::block_on, prelude::*, select, sink::SinkExt};
 use libp2p::gossipsub::{Gossipsub, GossipsubConfig, IdentTopic, MessageAuthenticity};
 use libp2p::mdns::{Mdns, MdnsConfig};
-use libp2p::request_response::{ProtocolSupport, RequestResponse, RequestResponseConfig};
+use libp2p::request_response::{
+    ProtocolSupport, RequestResponse, RequestResponseConfig, ResponseChannel,
+};
 use libp2p::swarm::{Swarm, SwarmEvent};
 use libp2p::{identity, PeerId};
 use std::error::Error;
@@ -33,6 +35,8 @@ pub enum Event {
     SetFiles(bool),
     /// Send get files message to destination
     SendGetFiles(String),
+    /// Send file list as response to get files list request from other peer
+    SendFileList(ResponseChannel<HiResponse>, Vec<(String, u64)>),
 
     /// Peer announcement event
     AnnouncePeer(PeerInfo),
@@ -115,6 +119,15 @@ impl HiSwarm {
                             };
                             let request = HiRequest::GetFiles;
                             swarm.behaviour_mut().request.send_request(&peer_id, request);
+                        }
+
+                        // handle send file list request
+                        Event::SendFileList(channel, file_list) => {
+                            let response = HiResponse::FileList(file_list.clone());
+                            if let Err(_) =
+                                swarm.behaviour_mut().request.send_response(channel, response) {
+                                eprintln!("Error sending file list response");
+                            }
                         }
 
                         // events (coming from behaviour) not handled here,
