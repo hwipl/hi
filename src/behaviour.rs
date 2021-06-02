@@ -65,6 +65,19 @@ impl NetworkBehaviourEventProcess<RequestResponseEvent<HiRequest, HiResponse>> f
                 // handle incoming response message
                 RequestResponseMessage::Response { response, .. } => {
                     println!("received response {:?} from {:?}", response, peer);
+                    match response {
+                        HiResponse::FileList(list) => {
+                            println!("received file list: {:?}", list);
+                            let swarm_event = swarm::Event::FileList(peer.to_base58(), list);
+                            let mut to_swarm = self.to_swarm.clone();
+                            task::spawn(async move {
+                                if let Err(e) = to_swarm.send(swarm_event).await {
+                                    eprintln!("error sending event to swarm: {}", e);
+                                }
+                            });
+                        }
+                        _ => (),
+                    }
                     return;
                 }
             }
