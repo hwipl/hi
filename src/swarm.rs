@@ -71,7 +71,7 @@ impl HiSwarm {
                         Some(event) => event,
                         None => break,
                     };
-                    match &event {
+                    match event {
                         // handle connect address event
                         Event::ConnectAddress(addr) => {
                             if let Ok(remote) = addr.parse() {
@@ -89,12 +89,12 @@ impl HiSwarm {
 
                         // handle set chat support request
                         Event::SetChat(enabled) => {
-                            chat_support = *enabled;
+                            chat_support = enabled;
                         }
 
                         // handle set chat message request
                         Event::SendChatMessage(to, msg) => {
-                            let peer_id = match PeerId::from_str(to) {
+                            let peer_id = match PeerId::from_str(&to) {
                                 Ok(peer_id) => peer_id,
                                 Err(_) => continue,
                             };
@@ -104,12 +104,12 @@ impl HiSwarm {
 
                         // handle set files message request
                         Event::SetFiles(enabled) => {
-                            file_support = *enabled;
+                            file_support = enabled;
                         }
 
                         // handle set get files message request
                         Event::SendGetFiles(to) => {
-                            let peer_id = match PeerId::from_str(to) {
+                            let peer_id = match PeerId::from_str(&to) {
                                 Ok(peer_id) => peer_id,
                                 Err(_) => continue,
                             };
