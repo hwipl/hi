@@ -54,7 +54,16 @@ impl NetworkBehaviourEventProcess<RequestResponseEvent<HiRequest, HiResponse>> f
                         }
                         HiRequest::GetFiles => {
                             println!("received get files request");
-                            HiResponse::FileList(Vec::new())
+                            // forward request including response channel
+                            let swarm_event =
+                                swarm::Event::ReceivedGetFiles(peer.to_base58(), channel);
+                            let mut to_swarm = self.to_swarm.clone();
+                            task::spawn(async move {
+                                if let Err(e) = to_swarm.send(swarm_event).await {
+                                    eprintln!("error sending event to swarm: {}", e);
+                                }
+                            });
+                            return;
                         }
                         _ => HiResponse::Error(String::from("unknown request")),
                     };
