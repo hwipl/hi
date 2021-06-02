@@ -38,6 +38,8 @@ pub enum Event {
     AnnouncePeer(PeerInfo),
     /// Chat message: sender, message
     ChatMessage(String, String),
+    /// File list: sender, list of names and sizes
+    FileList(String, Vec<(String, u64)>),
 }
 
 /// Hi swarm
@@ -117,6 +119,7 @@ impl HiSwarm {
                         // forward to daemon
                         | Event::AnnouncePeer(..)
                         | Event::ChatMessage(..)
+                        | Event::FileList(..)
                         => {
                             if let Err(e) = sender.send(event).await {
                                 eprintln!("Error sending swarm event: {}", e);
