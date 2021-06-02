@@ -68,6 +68,38 @@ async fn run_chat_client(mut client: unix_socket::UnixClient, destination: Strin
     }
 }
 
+/// run daemon client in file mode
+async fn run_file_client(
+    mut client: unix_socket::UnixClient,
+    file_list: Vec<String>,
+    get_files: bool,
+) {
+    // enable file mode for this client
+    let msg = Message::SetFiles { enabled: true };
+    if let Err(e) = client.send_message(msg).await {
+        eprintln!("error sending set files message: {}", e);
+        return;
+    }
+
+    // send get files request if wanted by user
+    if get_files {
+        let msg = Message::GetFiles { files: Vec::new() };
+        if let Err(e) = client.send_message(msg).await {
+            eprintln!("error sending set files message: {}", e);
+            return;
+        }
+    }
+
+    if file_list.len() > 0 {
+        println!("NYI: Serving files: {:?}", file_list);
+    }
+
+    println!("File mode:");
+    while let Ok(msg) = client.receive_message().await {
+        println!("{:?}", msg);
+    }
+}
+
 /// run daemon client with config
 async fn run_client(config: config::Config, mut client: unix_socket::UnixClient) {
     // handle connect addresses in config
@@ -87,6 +119,7 @@ async fn run_client(config: config::Config, mut client: unix_socket::UnixClient)
 
     // handle set configuration options in config
     let mut chat_partner = String::new();
+    let mut file_list = Vec::new();
     for option in config.set {
         // create message
         let msg = match option.name.as_str() {
@@ -94,6 +127,11 @@ async fn run_client(config: config::Config, mut client: unix_socket::UnixClient)
             "chat" => {
                 // set chat partner for chat mode below
                 chat_partner = option.value;
+                continue;
+            }
+            "file" => {
+                // set files for file mode below
+                file_list.push(option.value);
                 continue;
             }
             _ => {
@@ -118,12 +156,18 @@ async fn run_client(config: config::Config, mut client: unix_socket::UnixClient)
     }
 
     // handle get configuration options in config
+    let mut get_files = false;
     for option in config.get {
         let msg = match option.name.as_str() {
             "name" => Message::GetName {
                 name: String::from(""),
             },
             "peers" => Message::GetPeers { peers: Vec::new() },
+            "files" => {
+                // enable file getting for file mode below
+                get_files = true;
+                continue;
+            }
             _ => {
                 eprintln!(
                     "error getting unknown configuration option: {}",
@@ -148,6 +192,12 @@ async fn run_client(config: config::Config, mut client: unix_socket::UnixClient)
     // handle chat mode
     if chat_partner != "" {
         run_chat_client(client, chat_partner).await;
+        return;
+    }
+
+    // handle file mode
+    if file_list.len() > 0 || get_files {
+        run_file_client(client, file_list, get_files).await;
         return;
     }
 }
