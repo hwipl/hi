@@ -360,9 +360,11 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                             }
 
                             // handle download file request
-                            Message::DownloadFile { .. } => {
-                                let message = String::from("Not yet implemented");
-                                Message::Error { message }
+                            Message::DownloadFile { peer_id, file, destination } => {
+                                let event = swarm::Event::SendDownloadFile(
+                                    peer_id, file,destination);
+                                swarm.send(event).await;
+                                Message::Ok
                             }
                         };
 
