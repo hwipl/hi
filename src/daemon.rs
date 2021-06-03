@@ -238,6 +238,12 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                             chat_support |= c.chat_support;
                             file_support |= c.file_support;
                         }
+
+                        // if we are sharing files, keep file support on
+                        if shared_files.len() > 0 {
+                            file_support = true;
+                        }
+
                         let event = swarm::Event::SetChat(chat_support);
                         swarm.send(event).await;
                         let event = swarm::Event::SetFiles(file_support);
