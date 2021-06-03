@@ -41,6 +41,7 @@ impl NetworkBehaviourEventProcess<RequestResponseEvent<HiRequest, HiResponse>> f
                         request, request_id, peer
                     );
                     let response = match request {
+                        // handle chat message
                         HiRequest::ChatMessage(msg) => {
                             println!("received chat message: {}", msg);
                             let swarm_event = swarm::Event::ChatMessage(peer.to_base58(), msg);
@@ -52,6 +53,8 @@ impl NetworkBehaviourEventProcess<RequestResponseEvent<HiRequest, HiResponse>> f
                             });
                             HiResponse::Ok
                         }
+
+                        // handle get files request
                         HiRequest::GetFiles => {
                             println!("received get files request");
                             // forward request including response channel
@@ -65,6 +68,8 @@ impl NetworkBehaviourEventProcess<RequestResponseEvent<HiRequest, HiResponse>> f
                             });
                             return;
                         }
+
+                        // handle other requests
                         _ => HiResponse::Error(String::from("unknown request")),
                     };
                     self.request.send_response(channel, response).unwrap();
