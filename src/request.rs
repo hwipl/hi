@@ -110,6 +110,8 @@ pub enum HiRequest {
     ChatMessage(#[n(0)] String),
     #[n(2)]
     GetFiles,
+    #[n(3)]
+    DownloadFile(#[n(0)] String),
 }
 
 /// Response message

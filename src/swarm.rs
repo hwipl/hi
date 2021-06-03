@@ -133,7 +133,13 @@ impl HiSwarm {
                         }
 
                         // handle send download file request
-                        Event::SendDownloadFile(..) => {
+                        Event::SendDownloadFile(to, file, ..) => {
+                            let peer_id = match PeerId::from_str(&to) {
+                                Ok(peer_id) => peer_id,
+                                Err(_) => continue,
+                            };
+                            let request = HiRequest::DownloadFile(file);
+                            swarm.behaviour_mut().request.send_request(&peer_id, request);
                         }
 
                         // events (coming from behaviour) not handled here,
