@@ -121,9 +121,16 @@ async fn run_file_client(
     }
 
     // enter file loop
-    println!("File mode:");
+    println!("Files:");
     while let Ok(msg) = client.receive_message().await {
-        println!("{:?}", msg);
+        match msg {
+            Message::GetFiles { files } => {
+                for f in files {
+                    println!("{}: {} ({})", f.peer_id, f.name, f.size);
+                }
+            }
+            _ => (),
+        }
     }
 }
 
