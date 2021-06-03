@@ -80,14 +80,9 @@ async fn run_file_client(
         eprintln!("error sending set files message: {}", e);
         return;
     }
-
-    // send get files request if wanted by user
-    if get_files {
-        let msg = Message::GetFiles { files: Vec::new() };
-        if let Err(e) = client.send_message(msg).await {
-            eprintln!("error sending set files message: {}", e);
-            return;
-        }
+    if let Err(e) = client.receive_message().await {
+        eprintln!("error setting file support: {}", e);
+        return;
     }
 
     // share files if wanted by user
@@ -108,7 +103,21 @@ async fn run_file_client(
             eprintln!("error sending share files message: {}", e);
             return;
         }
+        if let Err(e) = client.receive_message().await {
+            eprintln!("error sharing files: {}", e);
+            return;
+        }
         println!("Serving files: {:?}", file_list);
+    }
+
+    // send get files request if wanted by user
+    if !get_files {
+        return;
+    }
+    let msg = Message::GetFiles { files: Vec::new() };
+    if let Err(e) = client.send_message(msg).await {
+        eprintln!("error sending get files message: {}", e);
+        return;
     }
 
     // enter file loop
