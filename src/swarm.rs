@@ -48,6 +48,8 @@ pub enum Event {
     FileList(String, Vec<(String, u64)>),
     /// Received get files message from source
     ReceivedGetFiles(String, ResponseChannel<HiResponse>),
+    /// Received download file request: peer id, file
+    ReceivedDownloadFile(String, String, ResponseChannel<HiResponse>),
 }
 
 /// Hi swarm
@@ -148,6 +150,7 @@ impl HiSwarm {
                         | Event::ChatMessage(..)
                         | Event::FileList(..)
                         | Event::ReceivedGetFiles(..)
+                        | Event::ReceivedDownloadFile(..)
                         => {
                             if let Err(e) = sender.send(event).await {
                                 eprintln!("Error sending swarm event: {}", e);

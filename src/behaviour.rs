@@ -69,6 +69,21 @@ impl NetworkBehaviourEventProcess<RequestResponseEvent<HiRequest, HiResponse>> f
                             return;
                         }
 
+                        // handle download file request
+                        HiRequest::DownloadFile(file) => {
+                            println!("received download file request");
+                            // forward request including response hannel
+                            let swarm_event =
+                                swarm::Event::ReceivedDownloadFile(peer.to_base58(), file, channel);
+                            let mut to_swarm = self.to_swarm.clone();
+                            task::spawn(async move {
+                                if let Err(e) = to_swarm.send(swarm_event).await {
+                                    eprintln!("error sending event to swarm: {}", e);
+                                }
+                            });
+                            return;
+                        }
+
                         // handle other requests
                         _ => HiResponse::Error(String::from("unknown request")),
                     };
