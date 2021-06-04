@@ -147,7 +147,13 @@ impl HiSwarm {
                         }
 
                         // handle accept download file request
-                        Event::AcceptDownloadFile(..) => {}
+                        Event::AcceptDownloadFile(channel, file) => {
+                            let response = HiResponse::DownloadFile(file, 0);
+                            if let Err(_) =
+                                swarm.behaviour_mut().request.send_response(channel, response) {
+                                eprintln!("Error sending accept download file response");
+                            }
+                        }
 
                         // events (coming from behaviour) not handled here,
                         // forward to daemon

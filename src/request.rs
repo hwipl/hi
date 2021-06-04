@@ -125,4 +125,6 @@ pub enum HiResponse {
     Data(#[n(0)] Vec<u8>),
     #[n(3)]
     FileList(#[n(0)] Vec<(String, u64)>),
+    #[n(4)]
+    DownloadFile(#[n(0)] String, #[n(1)] u64),
 }
