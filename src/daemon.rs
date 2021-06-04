@@ -197,6 +197,20 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                         swarm.send(response).await;
                     }
 
+                    // handle download file request from other peer
+                    swarm::Event::ReceivedDownloadFile(from, file, channel) => {
+                        println!("received download file request for file {} from peer {}", file,
+                            from);
+                        for f in shared_files.iter() {
+                            if file == f.0 {
+                                // found file, accept download file request
+                                let response = swarm::Event::AcceptDownloadFile(channel, file);
+                                swarm.send(response).await;
+                                return;
+                            }
+                        }
+                    }
+
                     // handle other events
                     _ => (),
                 }
