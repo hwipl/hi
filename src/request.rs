@@ -1,4 +1,4 @@
-use async_std::fs::File;
+use async_std::fs::{self, File};
 use async_std::io;
 use async_trait::async_trait;
 use futures::prelude::*;
@@ -102,6 +102,15 @@ impl RequestResponseCodec for HiCodec {
     where
         T: AsyncWrite + Unpin + Send,
     {
+        // special response handling
+        match response {
+            HiResponse::DownloadFile(file, ..) => {
+                return upload_file(file, io).await;
+            }
+            _ => (),
+        }
+
+        // send message
         let mut buffer = Vec::new();
         if let Err(e) = minicbor::encode(response, &mut buffer) {
             eprintln!("error encoding response message: {}", e);
@@ -149,4 +158,30 @@ where
             eprintln!("error downloading file {}: {}", file, e);
         }
     }
+}
+
+/// upload file to other peer
+async fn upload_file<T>(file: String, io: &mut T) -> io::Result<()>
+where
+    T: AsyncWrite + Unpin + Send,
+{
+    // check actual file size
+    let size = fs::metadata(&file).await?.len();
+
+    // send response with actual file size
+    let response = HiResponse::DownloadFile(file.clone(), size);
+    let mut buffer = Vec::new();
+    if let Err(e) = minicbor::encode(response, &mut buffer) {
+        eprintln!("error encoding response message: {}", e);
+        return Err(io::Error::new(io::ErrorKind::Other, e));
+    }
+    write_one(io, buffer).await?;
+
+    // upload file
+    let mut input = File::open(file.clone()).await?;
+    if let Err(e) = io::copy(&mut input, io).await {
+        eprintln!("error uploading file {}: {}", file, e);
+        return Err(io::Error::new(io::ErrorKind::Other, e));
+    }
+    Ok(())
 }
