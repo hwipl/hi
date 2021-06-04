@@ -206,7 +206,7 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                                 // found file, accept download file request
                                 let response = swarm::Event::AcceptDownloadFile(channel, file);
                                 swarm.send(response).await;
-                                return;
+                                break;
                             }
                         }
                     }
