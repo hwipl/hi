@@ -39,6 +39,8 @@ pub enum Event {
     SendFileList(ResponseChannel<HiResponse>, Vec<(String, u64)>),
     /// Send download file request to other peer: peer id, file, destination
     SendDownloadFile(String, String, String),
+    /// Accept download file request from other peer
+    AcceptDownloadFile(ResponseChannel<HiResponse>, String),
 
     /// Peer announcement event
     AnnouncePeer(PeerInfo),
@@ -143,6 +145,9 @@ impl HiSwarm {
                             let request = HiRequest::DownloadFile(file);
                             swarm.behaviour_mut().request.send_request(&peer_id, request);
                         }
+
+                        // handle accept download file request
+                        Event::AcceptDownloadFile(..) => {}
 
                         // events (coming from behaviour) not handled here,
                         // forward to daemon
