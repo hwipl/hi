@@ -73,6 +73,8 @@ async fn run_file_client(
     mut client: unix_socket::UnixClient,
     file_list: Vec<String>,
     get_files: bool,
+    download_from: String,
+    download_file: String,
 ) {
     // enable file mode for this client
     let msg = Message::SetFiles { enabled: true };
@@ -108,6 +110,24 @@ async fn run_file_client(
             return;
         }
         println!("Serving files: {:?}", file_list);
+    }
+
+    // send download request if wanted by user
+    if download_from != "" {
+        let msg = Message::DownloadFile {
+            peer_id: download_from.clone(),
+            file: download_file.clone(),
+            destination: String::new(),
+        };
+        if let Err(e) = client.send_message(msg).await {
+            eprintln!("error sending share files message: {}", e);
+            return;
+        }
+        if let Err(e) = client.receive_message().await {
+            eprintln!("error sharing files: {}", e);
+            return;
+        }
+        println!("Downloading file {} from {}", download_file, download_from);
     }
 
     // send get files request if wanted by user
@@ -154,6 +174,8 @@ async fn run_client(config: config::Config, mut client: unix_socket::UnixClient)
     // handle set configuration options in config
     let mut chat_partner = String::new();
     let mut file_list = Vec::new();
+    let mut download_from = String::new();
+    let mut download_file = String::new();
     for option in config.set {
         // create message
         let msg = match option.name.as_str() {
@@ -166,6 +188,14 @@ async fn run_client(config: config::Config, mut client: unix_socket::UnixClient)
             "file" => {
                 // set files for file mode below
                 file_list.push(option.value);
+                continue;
+            }
+            "download_from" => {
+                download_from = option.value;
+                continue;
+            }
+            "download_file" => {
+                download_file = option.value;
                 continue;
             }
             _ => {
@@ -230,8 +260,8 @@ async fn run_client(config: config::Config, mut client: unix_socket::UnixClient)
     }
 
     // handle file mode
-    if file_list.len() > 0 || get_files {
-        run_file_client(client, file_list, get_files).await;
+    if file_list.len() > 0 || get_files || download_from != "" && download_file != "" {
+        run_file_client(client, file_list, get_files, download_from, download_file).await;
         return;
     }
 }
