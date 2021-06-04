@@ -3,7 +3,7 @@ use async_std::io;
 use async_trait::async_trait;
 use futures::prelude::*;
 use libp2p::core::{
-    upgrade::{read_one, write_one},
+    upgrade::{read_one, write_one, write_with_len_prefix},
     ProtocolName,
 };
 use libp2p::request_response::RequestResponseCodec;
@@ -175,7 +175,7 @@ where
         eprintln!("error encoding response message: {}", e);
         return Err(io::Error::new(io::ErrorKind::Other, e));
     }
-    write_one(io, buffer).await?;
+    write_with_len_prefix(io, buffer).await?;
 
     // upload file
     let mut input = File::open(file.clone()).await?;
@@ -183,5 +183,7 @@ where
         eprintln!("error uploading file {}: {}", file, e);
         return Err(io::Error::new(io::ErrorKind::Other, e));
     }
-    Ok(())
+
+    // close connection
+    io.close().await
 }
