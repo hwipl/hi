@@ -1,3 +1,5 @@
+use async_std::fs::File;
+use async_std::io;
 use async_trait::async_trait;
 use futures::prelude::*;
 use libp2p::core::{
@@ -6,7 +8,6 @@ use libp2p::core::{
 };
 use libp2p::request_response::RequestResponseCodec;
 use minicbor::{Decode, Encode};
-use std::io;
 
 /// Request-response protocol for the request-response behaviour
 #[derive(Debug, Clone)]
@@ -55,7 +56,7 @@ impl RequestResponseCodec for HiCodec {
     where
         T: AsyncRead + Unpin + Send,
     {
-        read_one(io, 1024)
+        let response = read_one(io, 1024)
             .map(|res| match res {
                 Err(e) => Err(io::Error::new(io::ErrorKind::InvalidData, e)),
                 Ok(vec) if vec.is_empty() => Err(io::ErrorKind::UnexpectedEof.into()),
@@ -63,7 +64,16 @@ impl RequestResponseCodec for HiCodec {
                     minicbor::decode(&vec).map_err(|e| io::Error::new(io::ErrorKind::Other, e))
                 }
             })
-            .await
+            .await;
+
+        match &response {
+            Ok(HiResponse::DownloadFile(file, size)) => {
+                println!("got download file response: {} ({})", file, size);
+                download_file(file.clone(), *size, io).await;
+            }
+            _ => (),
+        }
+        response
     }
 
     async fn write_request<T>(
@@ -127,4 +137,16 @@ pub enum HiResponse {
     FileList(#[n(0)] Vec<(String, u64)>),
     #[n(4)]
     DownloadFile(#[n(0)] String, #[n(1)] u64),
+}
+
+/// download file coming from other peer
+async fn download_file<T>(file: String, size: u64, io: &mut T)
+where
+    T: AsyncRead + Unpin + Send,
+{
+    if let Ok(mut out) = File::create(format!("temp-{}", file)).await {
+        if let Err(e) = io::copy(&mut io.take(size), &mut out).await {
+            eprintln!("error downloading file {}: {}", file, e);
+        }
+    }
 }
