@@ -1,4 +1,5 @@
 use clap::{AppSettings, Clap};
+use std::fs::create_dir_all;
 use std::path::PathBuf;
 use std::str::FromStr;
 
@@ -63,7 +64,13 @@ pub fn get() -> Config {
 
     // check working directory
     if let None = config.dir {
-        config.dir = Some(PathBuf::from(""));
+        if let Some(mut dir) = dirs::config_dir() {
+            dir.push("hi");
+            create_dir_all(&dir).expect("could not create directory");
+            config.dir = Some(dir);
+        } else {
+            config.dir = Some(PathBuf::from(""));
+        }
     }
     config
 }
