@@ -270,7 +270,7 @@ async fn run_client(config: config::Config, mut client: unix_socket::UnixClient)
 pub fn run(config: config::Config) {
     // run unix socket client
     task::block_on(async {
-        match unix_socket::UnixClient::connect().await {
+        match unix_socket::UnixClient::connect(&config).await {
             Ok(mut client) => {
                 if let Err(e) = client.test().await {
                     eprintln!("unix socket test error: {}", e);

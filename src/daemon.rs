@@ -437,7 +437,7 @@ async fn run_server(config: config::Config, server: unix_socket::UnixServer) {
 pub fn run(config: config::Config) {
     // run unix socket server
     task::block_on(async {
-        match unix_socket::UnixServer::listen().await {
+        match unix_socket::UnixServer::listen(&config).await {
             Ok(server) => run_server(config, server).await,
             Err(e) => eprintln!("unix socket server error: {}", e),
         };

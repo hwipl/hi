@@ -1,4 +1,5 @@
 use clap::{AppSettings, Clap};
+use std::path::PathBuf;
 use std::str::FromStr;
 
 /// Configuration option for setting and getting:
@@ -39,6 +40,10 @@ pub struct Config {
     #[clap(short, long)]
     pub daemon: bool,
 
+    /// Set directory
+    #[clap(long)]
+    pub dir: Option<PathBuf>,
+
     /// Connect to peer addresses.
     #[clap(short, long, name = "address")]
     pub connect: Vec<String>,
@@ -54,5 +59,11 @@ pub struct Config {
 
 /// get config
 pub fn get() -> Config {
-    Config::parse()
+    let mut config = Config::parse();
+
+    // check working directory
+    if let None = config.dir {
+        config.dir = Some(PathBuf::from(""));
+    }
+    config
 }

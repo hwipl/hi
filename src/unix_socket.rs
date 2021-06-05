@@ -1,8 +1,8 @@
+use crate::config::Config;
 use crate::daemon_message::Message;
 use async_std::fs;
 use async_std::io;
 use async_std::os::unix::net::{UnixListener, UnixStream};
-use async_std::path::Path;
 use async_std::prelude::*;
 use std::convert::TryFrom;
 
@@ -15,9 +15,10 @@ pub struct UnixServer {
 
 impl UnixServer {
     /// Listen on unix socket
-    pub async fn listen() -> io::Result<Self> {
-        let socket = Path::new(SOCKET_FILE);
-        if socket.exists().await {
+    pub async fn listen(config: &Config) -> io::Result<Self> {
+        let mut socket = config.dir.clone().unwrap();
+        socket.push(SOCKET_FILE);
+        if socket.exists() {
             // remove old socket file
             fs::remove_file(&socket).await?;
         }
@@ -42,8 +43,10 @@ pub struct UnixClient {
 
 impl UnixClient {
     /// Connect to unix socket server and return UnixClient if successful
-    pub async fn connect() -> io::Result<Self> {
-        let stream = UnixStream::connect(SOCKET_FILE).await?;
+    pub async fn connect(config: &Config) -> io::Result<Self> {
+        let mut socket = config.dir.clone().unwrap();
+        socket.push(SOCKET_FILE);
+        let stream = UnixStream::connect(socket).await?;
         Ok(UnixClient { stream })
     }
 
