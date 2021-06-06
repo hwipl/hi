@@ -34,6 +34,12 @@ impl FromStr for ConfigOption {
 }
 
 #[derive(Clap)]
+pub enum Command {
+    /// Run in chat mode
+    Chat,
+}
+
+#[derive(Clap)]
 #[clap(version)]
 #[clap(setting = AppSettings::ColoredHelp)]
 pub struct Config {
@@ -56,6 +62,10 @@ pub struct Config {
     /// Get configuration options
     #[clap(long, name = "option")]
     pub get: Vec<ConfigOption>,
+
+    /// Run command
+    #[clap(subcommand)]
+    pub command: Option<Command>,
 }
 
 /// get config

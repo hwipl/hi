@@ -172,7 +172,6 @@ async fn run_client(config: config::Config, mut client: unix_socket::UnixClient)
     }
 
     // handle set configuration options in config
-    let mut chat_partner = String::new();
     let mut file_list = Vec::new();
     let mut download_from = String::new();
     let mut download_file = String::new();
@@ -180,11 +179,6 @@ async fn run_client(config: config::Config, mut client: unix_socket::UnixClient)
         // create message
         let msg = match option.name.as_str() {
             "name" => Message::SetName { name: option.value },
-            "chat" => {
-                // set chat partner for chat mode below
-                chat_partner = option.value;
-                continue;
-            }
             "file" => {
                 // set files for file mode below
                 file_list.push(option.value);
@@ -254,8 +248,8 @@ async fn run_client(config: config::Config, mut client: unix_socket::UnixClient)
     }
 
     // handle chat mode
-    if chat_partner != "" {
-        run_chat_client(client, chat_partner).await;
+    if let Some(config::Command::Chat) = config.command {
+        run_chat_client(client, String::from("all")).await;
         return;
     }
 
