@@ -6,7 +6,7 @@ use futures::future::FutureExt;
 use futures::select;
 
 /// run daemon client in chat mode
-async fn run_chat_client(mut client: unix_socket::UnixClient, config: config::Config) {
+async fn run_chat_client(mut client: unix_socket::UnixClient, _config: config::Config) {
     let destination = String::from("all");
 
     // enable chat mode for this client
@@ -159,9 +159,11 @@ async fn run_file_client(
 /// run daemon client with config
 async fn run_client(config: config::Config, mut client: unix_socket::UnixClient) {
     // handle connect addresses in config
-    for address in config.connect {
+    for address in config.connect.iter() {
         // send connect request
-        let msg = Message::ConnectAddress { address };
+        let msg = Message::ConnectAddress {
+            address: address.clone(),
+        };
         if let Err(e) = client.send_message(msg).await {
             eprintln!("error sending connect message: {}", e);
         }
@@ -177,21 +179,23 @@ async fn run_client(config: config::Config, mut client: unix_socket::UnixClient)
     let mut file_list = Vec::new();
     let mut download_from = String::new();
     let mut download_file = String::new();
-    for option in config.set {
+    for option in config.set.iter() {
         // create message
         let msg = match option.name.as_str() {
-            "name" => Message::SetName { name: option.value },
+            "name" => Message::SetName {
+                name: option.value.to_string(),
+            },
             "file" => {
                 // set files for file mode below
-                file_list.push(option.value);
+                file_list.push(option.value.to_string());
                 continue;
             }
             "download_from" => {
-                download_from = option.value;
+                download_from = option.value.to_string();
                 continue;
             }
             "download_file" => {
-                download_file = option.value;
+                download_file = option.value.to_string();
                 continue;
             }
             _ => {
@@ -217,7 +221,7 @@ async fn run_client(config: config::Config, mut client: unix_socket::UnixClient)
 
     // handle get configuration options in config
     let mut get_files = false;
-    for option in config.get {
+    for option in config.get.iter() {
         let msg = match option.name.as_str() {
             "name" => Message::GetName {
                 name: String::from(""),
