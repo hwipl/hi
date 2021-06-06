@@ -6,8 +6,12 @@ use futures::future::FutureExt;
 use futures::select;
 
 /// run daemon client in chat mode
-async fn run_chat_client(mut client: unix_socket::UnixClient, _config: config::Config) {
-    let destination = String::from("all");
+async fn run_chat_client(mut client: unix_socket::UnixClient, config: config::Config) {
+    // set chat destination
+    let destination = match config.command {
+        Some(config::Command::Chat(opts)) => opts.peer,
+        _ => String::from("all"),
+    };
 
     // enable chat mode for this client
     let msg = Message::SetChat { enabled: true };
@@ -254,7 +258,7 @@ async fn run_client(config: config::Config, mut client: unix_socket::UnixClient)
     }
 
     // handle chat mode
-    if let Some(config::Command::Chat) = config.command {
+    if let Some(config::Command::Chat(..)) = config.command {
         run_chat_client(client, config).await;
         return;
     }

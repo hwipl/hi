@@ -34,9 +34,18 @@ impl FromStr for ConfigOption {
 }
 
 #[derive(Clap)]
+#[clap(version)]
+#[clap(setting = AppSettings::ColoredHelp)]
+pub struct ChatOpts {
+    /// Peer ID of chat partner
+    #[clap(long, default_value = "all")]
+    pub peer: String,
+}
+
+#[derive(Clap)]
 pub enum Command {
     /// Run in chat mode
-    Chat,
+    Chat(ChatOpts),
 }
 
 #[derive(Clap)]
