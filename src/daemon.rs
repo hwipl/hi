@@ -380,6 +380,14 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                                 swarm.send(event).await;
                                 Message::Ok
                             }
+
+                            // handle file message
+                            Message::FileMessage { .. } => {
+                                println!("received chat message");
+                                Message::Error {
+                                    message: String::from("Not yet implemented"),
+                                }
+                            }
                         };
 
                         // send reply to client

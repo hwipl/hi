@@ -118,6 +118,17 @@ pub enum Message {
         #[n(2)]
         destination: String,
     },
+
+    /// File message
+    #[n(12)]
+    FileMessage {
+        #[n(0)]
+        to: String,
+        #[n(1)]
+        from: String,
+        #[n(2)]
+        content: Vec<u8>,
+    },
 }
 
 impl Message {
