@@ -131,6 +131,8 @@ pub enum HiRequest {
     GetFiles,
     #[n(3)]
     DownloadFile(#[n(0)] String),
+    #[n(4)]
+    FileMessage(#[n(0)] Vec<u8>),
 }
 
 /// Response message
