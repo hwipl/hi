@@ -211,6 +211,24 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                         }
                     }
 
+                    // handle file messages
+                    swarm::Event::FileMessage(from, content) => {
+                        for client in clients.values_mut() {
+                            if client.file_support {
+                                // send message to client
+                                let msg =  Message::FileMessage {
+                                    to: String::new(),
+                                    from: from.clone(),
+                                    content: content.clone(),
+                                };
+                                if let Err(e) = client.sender.send(msg).await {
+                                    eprintln!("handle client error: {}", e);
+                                    return;
+                                }
+                            }
+                        }
+                    }
+
                     // handle other events
                     _ => (),
                 }
