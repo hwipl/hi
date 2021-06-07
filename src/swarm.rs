@@ -41,6 +41,8 @@ pub enum Event {
     SendDownloadFile(String, String, String),
     /// Accept download file request from other peer
     AcceptDownloadFile(ResponseChannel<HiResponse>, String),
+    /// Send file message: destination, content
+    SendFileMessage(String, Vec<u8>),
 
     /// Peer announcement event
     AnnouncePeer(PeerInfo),
@@ -153,6 +155,16 @@ impl HiSwarm {
                                 swarm.behaviour_mut().request.send_response(channel, response) {
                                 eprintln!("Error sending accept download file response");
                             }
+                        }
+
+                        // handle send file message request
+                        Event::SendFileMessage(to, content) => {
+                            let peer_id = match PeerId::from_str(&to) {
+                                Ok(peer_id) => peer_id,
+                                Err(_) => continue,
+                            };
+                            let file_msg = HiRequest::FileMessage(content);
+                            swarm.behaviour_mut().request.send_request(&peer_id, file_msg);
                         }
 
                         // events (coming from behaviour) not handled here,
