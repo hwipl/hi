@@ -382,11 +382,24 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                             }
 
                             // handle file message
-                            Message::FileMessage { .. } => {
-                                println!("received chat message");
-                                Message::Error {
-                                    message: String::from("Not yet implemented"),
+                            Message::FileMessage { to, content, .. } => {
+                                println!("received file message for {}", to);
+                                if to == "all" {
+                                    // send message to all known peers with file support
+                                    for peer in peers.values() {
+                                        if peer.file_support {
+                                            let event = swarm::Event::SendFileMessage(
+                                                peer.peer_id.clone(),
+                                                content.clone());
+                                                swarm.send(event).await;
+                                        }
+                                    }
+                                } else {
+                                    // send message to peer specified in `to`
+                                    let event = swarm::Event::SendFileMessage(to, content);
+                                    swarm.send(event).await;
                                 }
+                                Message::Ok
                             }
                         };
 
