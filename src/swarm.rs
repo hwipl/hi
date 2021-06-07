@@ -102,7 +102,7 @@ impl HiSwarm {
                             chat_support = enabled;
                         }
 
-                        // handle set chat message request
+                        // handle send chat message request
                         Event::SendChatMessage(to, msg) => {
                             let peer_id = match PeerId::from_str(&to) {
                                 Ok(peer_id) => peer_id,
