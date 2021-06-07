@@ -84,6 +84,19 @@ impl NetworkBehaviourEventProcess<RequestResponseEvent<HiRequest, HiResponse>> f
                             return;
                         }
 
+                        // handle chat message
+                        HiRequest::FileMessage(content) => {
+                            println!("received file message: {:?}", content);
+                            let swarm_event = swarm::Event::FileMessage(peer.to_base58(), content);
+                            let mut to_swarm = self.to_swarm.clone();
+                            task::spawn(async move {
+                                if let Err(e) = to_swarm.send(swarm_event).await {
+                                    eprintln!("error sending event to swarm: {}", e);
+                                }
+                            });
+                            HiResponse::Ok
+                        }
+
                         // handle other requests
                         _ => HiResponse::Error(String::from("unknown request")),
                     };
