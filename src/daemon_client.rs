@@ -26,8 +26,6 @@ async fn run_client(config: config::Config, mut client: unix_socket::UnixClient)
 
     // handle set configuration options in config
     let mut file_list = Vec::new();
-    let mut download_from = String::new();
-    let mut download_file = String::new();
     for option in config.set.iter() {
         // create message
         let msg = match option.name.as_str() {
@@ -37,14 +35,6 @@ async fn run_client(config: config::Config, mut client: unix_socket::UnixClient)
             "file" => {
                 // set files for file mode below
                 file_list.push(option.value.to_string());
-                continue;
-            }
-            "download_from" => {
-                download_from = option.value.to_string();
-                continue;
-            }
-            "download_file" => {
-                download_file = option.value.to_string();
                 continue;
             }
             _ => {
@@ -109,9 +99,8 @@ async fn run_client(config: config::Config, mut client: unix_socket::UnixClient)
     }
 
     // handle file mode
-    if file_list.len() > 0 || get_files || download_from != "" && download_file != "" {
-        file_client::run_file_client(client, file_list, get_files, download_from, download_file)
-            .await;
+    if file_list.len() > 0 || get_files {
+        file_client::run_file_client(client, file_list, get_files).await;
         return;
     }
 }

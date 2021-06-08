@@ -9,8 +9,6 @@ pub async fn run_file_client(
     mut client: unix_socket::UnixClient,
     file_list: Vec<String>,
     get_files: bool,
-    download_from: String,
-    download_file: String,
 ) {
     // enable file mode for this client
     let msg = Message::SetFiles { enabled: true };
@@ -46,24 +44,6 @@ pub async fn run_file_client(
             return;
         }
         println!("Serving files: {:?}", file_list);
-    }
-
-    // send download request if wanted by user
-    if download_from != "" {
-        let msg = Message::DownloadFile {
-            peer_id: download_from.clone(),
-            file: download_file.clone(),
-            destination: String::new(),
-        };
-        if let Err(e) = client.send_message(msg).await {
-            eprintln!("error sending share files message: {}", e);
-            return;
-        }
-        if let Err(e) = client.receive_message().await {
-            eprintln!("error sharing files: {}", e);
-            return;
-        }
-        println!("Downloading file {} from {}", download_file, download_from);
     }
 
     // send get files request if wanted by user
