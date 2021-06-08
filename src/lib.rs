@@ -1,4 +1,5 @@
 mod behaviour;
+mod chat_client;
 mod config;
 mod daemon;
 mod daemon_client;
