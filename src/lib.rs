@@ -4,6 +4,7 @@ mod config;
 mod daemon;
 mod daemon_client;
 mod daemon_message;
+mod file_client;
 mod gossip;
 mod request;
 mod swarm;
