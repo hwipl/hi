@@ -87,8 +87,10 @@ async fn run_client(config: config::Config, mut client: unix_socket::UnixClient)
     }
 
     // handle file mode
-    file_client::run_file_client(client).await;
-    return;
+    if let Some(config::Command::Files) = config.command {
+        file_client::run_file_client(client).await;
+        return;
+    }
 }
 
 /// initialize client connection and run daemon client

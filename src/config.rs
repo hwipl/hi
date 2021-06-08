@@ -46,6 +46,8 @@ pub struct ChatOpts {
 pub enum Command {
     /// Run in chat mode
     Chat(ChatOpts),
+    /// Run in file mode
+    Files,
 }
 
 #[derive(Clap)]
