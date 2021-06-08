@@ -88,7 +88,7 @@ async fn run_client(config: config::Config, mut client: unix_socket::UnixClient)
 
     // handle file mode
     if let Some(config::Command::Files) = config.command {
-        file_client::run_file_client(client).await;
+        file_client::run_file_client(client, config).await;
         return;
     }
 }

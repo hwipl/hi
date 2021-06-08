@@ -1,3 +1,4 @@
+use crate::config;
 use crate::daemon_message::Message;
 use crate::unix_socket;
 use async_std::{io, prelude::*};
@@ -5,7 +6,7 @@ use futures::future::FutureExt;
 use futures::select;
 
 /// run daemon client in file mode
-pub async fn run_file_client(mut client: unix_socket::UnixClient) {
+pub async fn run_file_client(mut client: unix_socket::UnixClient, _config: config::Config) {
     // enable file mode for this client
     let msg = Message::SetFiles { enabled: true };
     if let Err(e) = client.send_message(msg).await {
