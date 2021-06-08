@@ -53,18 +53,12 @@ async fn run_client(config: config::Config, mut client: unix_socket::UnixClient)
     }
 
     // handle get configuration options in config
-    let mut get_files = false;
     for option in config.get.iter() {
         let msg = match option.name.as_str() {
             "name" => Message::GetName {
                 name: String::from(""),
             },
             "peers" => Message::GetPeers { peers: Vec::new() },
-            "files" => {
-                // enable file getting for file mode below
-                get_files = true;
-                continue;
-            }
             _ => {
                 eprintln!(
                     "error getting unknown configuration option: {}",
@@ -93,10 +87,8 @@ async fn run_client(config: config::Config, mut client: unix_socket::UnixClient)
     }
 
     // handle file mode
-    if get_files {
-        file_client::run_file_client(client, get_files).await;
-        return;
-    }
+    file_client::run_file_client(client).await;
+    return;
 }
 
 /// initialize client connection and run daemon client

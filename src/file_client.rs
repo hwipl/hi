@@ -5,7 +5,7 @@ use futures::future::FutureExt;
 use futures::select;
 
 /// run daemon client in file mode
-pub async fn run_file_client(mut client: unix_socket::UnixClient, get_files: bool) {
+pub async fn run_file_client(mut client: unix_socket::UnixClient) {
     // enable file mode for this client
     let msg = Message::SetFiles { enabled: true };
     if let Err(e) = client.send_message(msg).await {
@@ -14,16 +14,6 @@ pub async fn run_file_client(mut client: unix_socket::UnixClient, get_files: boo
     }
     if let Err(e) = client.receive_message().await {
         eprintln!("error setting file support: {}", e);
-        return;
-    }
-
-    // send get files request if wanted by user
-    if !get_files {
-        return;
-    }
-    let msg = Message::GetFiles { files: Vec::new() };
-    if let Err(e) = client.send_message(msg).await {
-        eprintln!("error sending get files message: {}", e);
         return;
     }
 
