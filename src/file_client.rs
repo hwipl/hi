@@ -5,6 +5,15 @@ use async_std::{io, prelude::*};
 use futures::future::FutureExt;
 use futures::select;
 
+/// handle user command and return daemon message
+pub async fn handle_user_command(command: String) -> Message {
+    Message::FileMessage {
+        to: String::from("all"),
+        from: String::new(),
+        content: command.into_bytes(),
+    }
+}
+
 /// run daemon client in file mode
 pub async fn run_file_client(mut client: unix_socket::UnixClient, _config: config::Config) {
     // enable file mode for this client
@@ -41,11 +50,7 @@ pub async fn run_file_client(mut client: unix_socket::UnixClient, _config: confi
                     Some(Ok(line)) if line != "" => line,
                     _ => continue,
                 };
-                let msg = Message::FileMessage {
-                    to: String::from("all"),
-                    from: String::new(),
-                    content: line.into_bytes(),
-                };
+                let msg = handle_user_command(line).await;
                 if let Err(e) = client.send_message(msg).await {
                     eprintln!("error sending file message: {}", e);
                     return;
