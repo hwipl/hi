@@ -14,21 +14,26 @@ enum FileMessage {
 }
 
 /// handle user command and return daemon message
-pub async fn handle_daemon_message(message: Message) {
+pub async fn handle_daemon_message(message: Message) -> Option<Message> {
     let (file_message, from) = match message {
         Message::FileMessage { from, content, .. } => {
             match minicbor::decode::<FileMessage>(&content) {
                 Ok(msg) => (msg, from),
                 Err(e) => {
                     eprintln!("error decoding file message: {}", e);
-                    return;
+                    return None;
                 }
             }
         }
-        _ => return,
+        _ => return None,
     };
 
+    match file_message {
+        FileMessage::List => {}
+    }
+
     println!("Got file message {:?} from {}", file_message, from);
+    None
 }
 
 pub async fn handle_user_command(command: String) -> Option<Message> {
