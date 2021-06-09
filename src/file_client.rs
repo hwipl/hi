@@ -14,6 +14,23 @@ enum FileMessage {
 }
 
 /// handle user command and return daemon message
+pub async fn handle_daemon_message(message: Message) {
+    let (file_message, from) = match message {
+        Message::FileMessage { from, content, .. } => {
+            match minicbor::decode::<FileMessage>(&content) {
+                Ok(msg) => (msg, from),
+                Err(e) => {
+                    eprintln!("error decoding file message: {}", e);
+                    return;
+                }
+            }
+        }
+        _ => return,
+    };
+
+    println!("Got file message {:?} from {}", file_message, from);
+}
+
 pub async fn handle_user_command(command: String) -> Option<Message> {
     // create file message according to user command
     let file_message = match command.as_str() {
@@ -57,13 +74,8 @@ pub async fn run_file_client(mut client: unix_socket::UnixClient, _config: confi
         select! {
             // handle message coming from daemon
             msg = client.receive_message().fuse() => {
-                match msg {
-                    Ok(Message::GetFiles { files }) => {
-                        for f in files {
-                            println!("{}: {} ({})", f.peer_id, f.name, f.size);
-                        }
-                    }
-                    _ => (),
+                if let Ok(msg) = msg {
+                    handle_daemon_message(msg).await;
                 }
             },
 
