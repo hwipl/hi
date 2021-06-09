@@ -15,9 +15,26 @@ enum FileMessage {
 
 /// handle user command and return daemon message
 pub async fn handle_user_command(command: String) -> Option<Message> {
-    match command.as_str() {
-        _ => None,
-    }
+    // create file message according to user command
+    let file_message = match command.as_str() {
+        "ls" => FileMessage::List,
+        _ => return None,
+    };
+
+    // create and return daemon message
+    let message = {
+        let mut content = Vec::new();
+        if let Err(e) = minicbor::encode(file_message, &mut content) {
+            eprintln!("error encoding file message: {}", e);
+            return None;
+        }
+        Message::FileMessage {
+            to: String::from("all"),
+            from: String::new(),
+            content,
+        }
+    };
+    Some(message)
 }
 
 /// run daemon client in file mode
