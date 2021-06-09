@@ -11,10 +11,13 @@ use minicbor::{Decode, Encode};
 enum FileMessage {
     #[n(0)]
     List,
+    #[n(1)]
+    ListReply(#[n(0)] Vec<(String, u64)>),
 }
 
 /// handle user command and return daemon message
 pub async fn handle_daemon_message(message: Message) -> Option<Message> {
+    // get file message and sender
     let (file_message, from) = match message {
         Message::FileMessage { from, content, .. } => {
             match minicbor::decode::<FileMessage>(&content) {
@@ -28,11 +31,27 @@ pub async fn handle_daemon_message(message: Message) -> Option<Message> {
         _ => return None,
     };
 
-    match file_message {
-        FileMessage::List => {}
+    // handle file message and create response file message
+    println!("Got file message {:?} from {}", file_message, from);
+    let response = match file_message {
+        FileMessage::List => Some(FileMessage::ListReply(Vec::new())),
+        FileMessage::ListReply(..) => None,
+    };
+
+    // if there is a response file message, create daemon message and return it
+    if let Some(response) = response {
+        let mut content = Vec::new();
+        if let Err(e) = minicbor::encode(response, &mut content) {
+            eprintln!("error encoding file message: {}", e);
+            return None;
+        }
+        return Some(Message::FileMessage {
+            to: from,
+            from: String::new(),
+            content,
+        });
     }
 
-    println!("Got file message {:?} from {}", file_message, from);
     None
 }
 
