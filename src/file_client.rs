@@ -76,11 +76,13 @@ pub async fn run_file_client(mut client: unix_socket::UnixClient, _config: confi
     println!("File mode:");
     let mut stdin = io::BufReader::new(io::stdin()).lines();
     loop {
+        let mut daemon_message = None;
+
         select! {
             // handle message coming from daemon
             msg = client.receive_message().fuse() => {
                 if let Ok(msg) = msg {
-                    handle_daemon_message(msg).await;
+                    daemon_message = handle_daemon_message(msg).await;
                 }
             },
 
@@ -90,13 +92,16 @@ pub async fn run_file_client(mut client: unix_socket::UnixClient, _config: confi
                     Some(Ok(line)) if line != "" => line,
                     _ => continue,
                 };
-                if let Some(msg) = handle_user_command(line).await {
-                    if let Err(e) = client.send_message(msg).await {
-                        eprintln!("error sending file message: {}", e);
-                        return;
-                    }
-                }
+                daemon_message = handle_user_command(line).await;
             },
+        }
+
+        // if theres a message for the daemon, send it
+        if let Some(msg) = daemon_message {
+            if let Err(e) = client.send_message(msg).await {
+                eprintln!("error sending file message: {}", e);
+                return;
+            }
         }
     }
 }
