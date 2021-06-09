@@ -4,6 +4,14 @@ use crate::unix_socket;
 use async_std::{io, prelude::*};
 use futures::future::FutureExt;
 use futures::select;
+use minicbor::{Decode, Encode};
+
+/// file message
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode)]
+enum FileMessage {
+    #[n(0)]
+    List,
+}
 
 /// handle user command and return daemon message
 pub async fn handle_user_command(command: String) -> Option<Message> {
