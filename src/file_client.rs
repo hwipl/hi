@@ -15,7 +15,7 @@ enum FileMessage {
     ListReply(#[n(0)] Vec<(String, u64)>),
 }
 
-/// handle user command and return daemon message
+/// handle message coming from daemon and return daemon message as reply
 pub async fn handle_daemon_message(message: Message) -> Option<Message> {
     // get file message and sender
     let (file_message, from) = match message {
@@ -55,6 +55,7 @@ pub async fn handle_daemon_message(message: Message) -> Option<Message> {
     None
 }
 
+/// handle user command and return daemon message
 pub async fn handle_user_command(command: String) -> Option<Message> {
     // create file message according to user command
     let file_message = match command.as_str() {
