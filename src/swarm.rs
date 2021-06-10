@@ -37,8 +37,6 @@ pub enum Event {
     SendGetFiles(String),
     /// Send file list as response to get files list request from other peer
     SendFileList(ResponseChannel<HiResponse>, Vec<(String, u64)>),
-    /// Accept download file request from other peer
-    AcceptDownloadFile(ResponseChannel<HiResponse>, String),
     /// Send file message: destination, content
     SendFileMessage(String, Vec<u8>),
 
@@ -133,15 +131,6 @@ impl HiSwarm {
                             if let Err(_) =
                                 swarm.behaviour_mut().request.send_response(channel, response) {
                                 eprintln!("Error sending file list response");
-                            }
-                        }
-
-                        // handle accept download file request
-                        Event::AcceptDownloadFile(channel, file) => {
-                            let response = HiResponse::DownloadFile(file, 0);
-                            if let Err(_) =
-                                swarm.behaviour_mut().request.send_response(channel, response) {
-                                eprintln!("Error sending accept download file response");
                             }
                         }
 
