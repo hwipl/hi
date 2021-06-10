@@ -99,17 +99,8 @@ pub enum Message {
         files: Vec<FileInfo>,
     },
 
-    /// (Un)Share files message
-    #[n(10)]
-    ShareFiles {
-        #[n(0)]
-        shared: bool,
-        #[n(1)]
-        files: Vec<FileInfo>,
-    },
-
     /// File message
-    #[n(11)]
+    #[n(10)]
     FileMessage {
         #[n(0)]
         to: String,

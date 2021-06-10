@@ -91,7 +91,7 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
     let mut peers: HashMap<String, PeerInfo> = HashMap::new();
 
     // shared files
-    let mut shared_files = Vec::new();
+    let shared_files = Vec::new();
 
     // start timer
     let mut timer = Delay::new(Duration::from_secs(5)).fuse();
@@ -364,15 +364,6 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                                             peer.peer_id.clone());
                                             swarm.send(event).await;
                                     }
-                                }
-                                Message::Ok
-                            }
-
-                            // handle shared files message
-                            Message::ShareFiles { files, .. } => {
-                                shared_files = Vec::new();
-                                for f in files {
-                                    shared_files.push((f.name, f.size));
                                 }
                                 Message::Ok
                             }
