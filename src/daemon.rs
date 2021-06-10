@@ -161,9 +161,6 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                         }
                     }
 
-                    // handle file lists
-                    swarm::Event::FileList(..) => {}
-
                     // handle file messages
                     swarm::Event::FileMessage(from, content) => {
                         for client in clients.values_mut() {
