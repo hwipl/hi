@@ -44,8 +44,6 @@ pub enum Event {
     ChatMessage(String, String),
     /// File list: sender, list of names and sizes
     FileList(String, Vec<(String, u64)>),
-    /// Received get files message from source
-    ReceivedGetFiles(String, ResponseChannel<HiResponse>),
     /// file message: sender, message
     FileMessage(String, Vec<u8>),
 }
@@ -137,7 +135,6 @@ impl HiSwarm {
                         | Event::AnnouncePeer(..)
                         | Event::ChatMessage(..)
                         | Event::FileList(..)
-                        | Event::ReceivedGetFiles(..)
                         | Event::FileMessage(..)
                         => {
                             if let Err(e) = sender.send(event).await {

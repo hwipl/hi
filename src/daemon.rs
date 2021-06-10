@@ -90,9 +90,6 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
     // information about known peers
     let mut peers: HashMap<String, PeerInfo> = HashMap::new();
 
-    // shared files
-    let shared_files = Vec::new();
-
     // start timer
     let mut timer = Delay::new(Duration::from_secs(5)).fuse();
 
@@ -167,13 +164,6 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                     // handle file lists
                     swarm::Event::FileList(..) => {}
 
-                    // handle get file list request from other peer
-                    swarm::Event::ReceivedGetFiles(from, channel) => {
-                        println!("received get files request from peer {}", from);
-                        let response = swarm::Event::SendFileList(channel, shared_files.clone());
-                        swarm.send(response).await;
-                    }
-
                     // handle file messages
                     swarm::Event::FileMessage(from, content) => {
                         for client in clients.values_mut() {
@@ -232,11 +222,6 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                         for c in clients.values() {
                             chat_support |= c.chat_support;
                             file_support |= c.file_support;
-                        }
-
-                        // if we are sharing files, keep file support on
-                        if shared_files.len() > 0 {
-                            file_support = true;
                         }
 
                         let event = swarm::Event::SetChat(chat_support);
