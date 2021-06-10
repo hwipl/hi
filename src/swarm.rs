@@ -1,14 +1,12 @@
 use crate::behaviour::HiBehaviour;
 use crate::daemon_message::PeerInfo;
 use crate::gossip::HiAnnounce;
-use crate::request::{HiCodec, HiRequest, HiRequestProtocol, HiResponse};
+use crate::request::{HiCodec, HiRequest, HiRequestProtocol};
 use async_std::task;
 use futures::{channel::mpsc, executor::block_on, prelude::*, select, sink::SinkExt};
 use libp2p::gossipsub::{Gossipsub, GossipsubConfig, IdentTopic, MessageAuthenticity};
 use libp2p::mdns::{Mdns, MdnsConfig};
-use libp2p::request_response::{
-    ProtocolSupport, RequestResponse, RequestResponseConfig, ResponseChannel,
-};
+use libp2p::request_response::{ProtocolSupport, RequestResponse, RequestResponseConfig};
 use libp2p::swarm::{Swarm, SwarmEvent};
 use libp2p::{identity, PeerId};
 use std::error::Error;
@@ -33,8 +31,6 @@ pub enum Event {
     SendChatMessage(String, String),
     /// Set file support to enabled (true) or disabled (false)
     SetFiles(bool),
-    /// Send file list as response to get files list request from other peer
-    SendFileList(ResponseChannel<HiResponse>, Vec<(String, u64)>),
     /// Send file message: destination, content
     SendFileMessage(String, Vec<u8>),
 
@@ -109,15 +105,6 @@ impl HiSwarm {
                         // handle set files message request
                         Event::SetFiles(enabled) => {
                             file_support = enabled;
-                        }
-
-                        // handle send file list request
-                        Event::SendFileList(channel, file_list) => {
-                            let response = HiResponse::FileList(file_list.clone());
-                            if let Err(_) =
-                                swarm.behaviour_mut().request.send_response(channel, response) {
-                                eprintln!("Error sending file list response");
-                            }
                         }
 
                         // handle send file message request
