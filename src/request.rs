@@ -121,6 +121,4 @@ pub enum HiResponse {
     Error(#[n(0)] String),
     #[n(2)]
     Data(#[n(0)] Vec<u8>),
-    #[n(3)]
-    FileList(#[n(0)] Vec<(String, u64)>),
 }
