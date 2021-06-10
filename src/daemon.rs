@@ -1,5 +1,5 @@
 use crate::config;
-use crate::daemon_message::{FileInfo, Message, PeerInfo};
+use crate::daemon_message::{Message, PeerInfo};
 use crate::swarm;
 use crate::unix_socket;
 use async_std::prelude::*;
@@ -165,30 +165,7 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                     }
 
                     // handle file lists
-                    swarm::Event::FileList(from, list) => {
-                        let mut files = Vec::new();
-                        // create file list
-                        for file in list {
-                            let file = FileInfo {
-                                peer_id: from.clone(),
-                                name: file.0,
-                                size: file.1,
-                            };
-                            files.push(file);
-                        }
-
-                        // send file list to each file client
-                        for client in clients.values_mut() {
-                            if client.file_support {
-                                // send file list to client
-                                let msg = Message::GetFiles { files: files.clone() };
-                                if let Err(e) = client.sender.send(msg).await {
-                                    eprintln!("handle client error: {}", e);
-                                    return;
-                                }
-                            }
-                        }
-                    }
+                    swarm::Event::FileList(..) => {}
 
                     // handle get file list request from other peer
                     swarm::Event::ReceivedGetFiles(from, channel) => {
@@ -353,18 +330,6 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                                 client.file_support = enabled;
                                 let event = swarm::Event::SetFiles(enabled);
                                 swarm.send(event).await;
-                                Message::Ok
-                            }
-
-                            // handle get files message
-                            Message::GetFiles { .. } => {
-                                for peer in peers.values() {
-                                    if peer.file_support {
-                                        let event = swarm::Event::SendGetFiles(
-                                            peer.peer_id.clone());
-                                            swarm.send(event).await;
-                                    }
-                                }
                                 Message::Ok
                             }
 

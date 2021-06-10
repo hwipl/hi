@@ -92,15 +92,8 @@ pub enum Message {
         enabled: bool,
     },
 
-    /// Get list of files
-    #[n(9)]
-    GetFiles {
-        #[n(0)]
-        files: Vec<FileInfo>,
-    },
-
     /// File message
-    #[n(10)]
+    #[n(9)]
     FileMessage {
         #[n(0)]
         to: String,
