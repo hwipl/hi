@@ -108,19 +108,8 @@ pub enum Message {
         files: Vec<FileInfo>,
     },
 
-    /// Download file
-    #[n(11)]
-    DownloadFile {
-        #[n(0)]
-        peer_id: String,
-        #[n(1)]
-        file: String,
-        #[n(2)]
-        destination: String,
-    },
-
     /// File message
-    #[n(12)]
+    #[n(11)]
     FileMessage {
         #[n(0)]
         to: String,

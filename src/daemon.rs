@@ -391,14 +391,6 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                                 Message::Ok
                             }
 
-                            // handle download file request
-                            Message::DownloadFile { peer_id, file, destination } => {
-                                let event = swarm::Event::SendDownloadFile(
-                                    peer_id, file,destination);
-                                swarm.send(event).await;
-                                Message::Ok
-                            }
-
                             // handle file message
                             Message::FileMessage { to, content, .. } => {
                                 println!("received file message for {}", to);
