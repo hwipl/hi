@@ -15,6 +15,66 @@ enum FileMessage {
     ListReply(#[n(0)] Vec<(String, u64)>),
 }
 
+/// file client
+struct FileClient {
+    _config: config::Config,
+    client: unix_socket::UnixClient,
+}
+
+impl FileClient {
+    /// create new file Client
+    pub async fn new(_config: config::Config, client: unix_socket::UnixClient) -> Self {
+        FileClient { _config, client }
+    }
+
+    /// run file client
+    pub async fn run(&mut self) {
+        // enable file mode for this client
+        let msg = Message::SetFiles { enabled: true };
+        if let Err(e) = self.client.send_message(msg).await {
+            eprintln!("error sending set files message: {}", e);
+            return;
+        }
+        if let Err(e) = self.client.receive_message().await {
+            eprintln!("error setting file support: {}", e);
+            return;
+        }
+
+        // enter file loop
+        println!("File mode:");
+        let mut stdin = io::BufReader::new(io::stdin()).lines();
+        loop {
+            let mut daemon_message = None;
+
+            select! {
+                // handle message coming from daemon
+                msg = self.client.receive_message().fuse() => {
+                    if let Ok(msg) = msg {
+                        daemon_message = handle_daemon_message(msg).await;
+                    }
+                },
+
+                // handle line read from stdin
+                line = stdin.next().fuse() => {
+                    let line = match line {
+                        Some(Ok(line)) if line != "" => line,
+                        _ => continue,
+                    };
+                    daemon_message = handle_user_command(line).await;
+                },
+            }
+
+            // if theres a message for the daemon, send it
+            if let Some(msg) = daemon_message {
+                if let Err(e) = self.client.send_message(msg).await {
+                    eprintln!("error sending file message: {}", e);
+                    return;
+                }
+            }
+        }
+    }
+}
+
 /// handle message coming from daemon and return daemon message as reply
 pub async fn handle_daemon_message(message: Message) -> Option<Message> {
     // get file message and sender
@@ -80,48 +140,6 @@ pub async fn handle_user_command(command: String) -> Option<Message> {
 }
 
 /// run daemon client in file mode
-pub async fn run_file_client(mut client: unix_socket::UnixClient, _config: config::Config) {
-    // enable file mode for this client
-    let msg = Message::SetFiles { enabled: true };
-    if let Err(e) = client.send_message(msg).await {
-        eprintln!("error sending set files message: {}", e);
-        return;
-    }
-    if let Err(e) = client.receive_message().await {
-        eprintln!("error setting file support: {}", e);
-        return;
-    }
-
-    // enter file loop
-    println!("File mode:");
-    let mut stdin = io::BufReader::new(io::stdin()).lines();
-    loop {
-        let mut daemon_message = None;
-
-        select! {
-            // handle message coming from daemon
-            msg = client.receive_message().fuse() => {
-                if let Ok(msg) = msg {
-                    daemon_message = handle_daemon_message(msg).await;
-                }
-            },
-
-            // handle line read from stdin
-            line = stdin.next().fuse() => {
-                let line = match line {
-                    Some(Ok(line)) if line != "" => line,
-                    _ => continue,
-                };
-                daemon_message = handle_user_command(line).await;
-            },
-        }
-
-        // if theres a message for the daemon, send it
-        if let Some(msg) = daemon_message {
-            if let Err(e) = client.send_message(msg).await {
-                eprintln!("error sending file message: {}", e);
-                return;
-            }
-        }
-    }
+pub async fn run_file_client(client: unix_socket::UnixClient, config: config::Config) {
+    FileClient::new(config, client).await.run().await
 }
