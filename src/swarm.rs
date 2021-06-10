@@ -33,8 +33,6 @@ pub enum Event {
     SendChatMessage(String, String),
     /// Set file support to enabled (true) or disabled (false)
     SetFiles(bool),
-    /// Send get files message to destination
-    SendGetFiles(String),
     /// Send file list as response to get files list request from other peer
     SendFileList(ResponseChannel<HiResponse>, Vec<(String, u64)>),
     /// Send file message: destination, content
@@ -113,16 +111,6 @@ impl HiSwarm {
                         // handle set files message request
                         Event::SetFiles(enabled) => {
                             file_support = enabled;
-                        }
-
-                        // handle set get files message request
-                        Event::SendGetFiles(to) => {
-                            let peer_id = match PeerId::from_str(&to) {
-                                Ok(peer_id) => peer_id,
-                                Err(_) => continue,
-                            };
-                            let request = HiRequest::GetFiles;
-                            swarm.behaviour_mut().request.send_request(&peer_id, request);
                         }
 
                         // handle send file list request
