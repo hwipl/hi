@@ -50,7 +50,7 @@ impl FileClient {
                 // handle message coming from daemon
                 msg = self.client.receive_message().fuse() => {
                     if let Ok(msg) = msg {
-                        daemon_message = handle_daemon_message(msg).await;
+                        daemon_message = self.handle_daemon_message(msg).await;
                     }
                 },
 
@@ -73,46 +73,46 @@ impl FileClient {
             }
         }
     }
-}
 
-/// handle message coming from daemon and return daemon message as reply
-pub async fn handle_daemon_message(message: Message) -> Option<Message> {
-    // get file message and sender
-    let (file_message, from) = match message {
-        Message::FileMessage { from, content, .. } => {
-            match minicbor::decode::<FileMessage>(&content) {
-                Ok(msg) => (msg, from),
-                Err(e) => {
-                    eprintln!("error decoding file message: {}", e);
-                    return None;
+    /// handle message coming from daemon and return daemon message as reply
+    async fn handle_daemon_message(&self, message: Message) -> Option<Message> {
+        // get file message and sender
+        let (file_message, from) = match message {
+            Message::FileMessage { from, content, .. } => {
+                match minicbor::decode::<FileMessage>(&content) {
+                    Ok(msg) => (msg, from),
+                    Err(e) => {
+                        eprintln!("error decoding file message: {}", e);
+                        return None;
+                    }
                 }
             }
-        }
-        _ => return None,
-    };
+            _ => return None,
+        };
 
-    // handle file message and create response file message
-    println!("Got file message {:?} from {}", file_message, from);
-    let response = match file_message {
-        FileMessage::List => Some(FileMessage::ListReply(Vec::new())),
-        FileMessage::ListReply(..) => None,
-    };
+        // handle file message and create response file message
+        println!("Got file message {:?} from {}", file_message, from);
+        let response = match file_message {
+            FileMessage::List => Some(FileMessage::ListReply(Vec::new())),
+            FileMessage::ListReply(..) => None,
+        };
 
-    // if there is a response file message, create daemon message and return it
-    if let Some(response) = response {
-        let mut content = Vec::new();
-        if let Err(e) = minicbor::encode(response, &mut content) {
-            eprintln!("error encoding file message: {}", e);
-            return None;
+        // if there is a response file message, create daemon message and return it
+        if let Some(response) = response {
+            let mut content = Vec::new();
+            if let Err(e) = minicbor::encode(response, &mut content) {
+                eprintln!("error encoding file message: {}", e);
+                return None;
+            }
+            return Some(Message::FileMessage {
+                to: from,
+                from: String::new(),
+                content,
+            });
         }
-        return Some(Message::FileMessage {
-            to: from,
-            from: String::new(),
-            content,
-        });
+
+        None
     }
-
-    None
 }
 
 /// handle user command and return daemon message
