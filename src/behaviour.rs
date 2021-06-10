@@ -54,21 +54,6 @@ impl NetworkBehaviourEventProcess<RequestResponseEvent<HiRequest, HiResponse>> f
                             HiResponse::Ok
                         }
 
-                        // handle get files request
-                        HiRequest::GetFiles => {
-                            println!("received get files request");
-                            // forward request including response channel
-                            let swarm_event =
-                                swarm::Event::ReceivedGetFiles(peer.to_base58(), channel);
-                            let mut to_swarm = self.to_swarm.clone();
-                            task::spawn(async move {
-                                if let Err(e) = to_swarm.send(swarm_event).await {
-                                    eprintln!("error sending event to swarm: {}", e);
-                                }
-                            });
-                            return;
-                        }
-
                         // handle chat message
                         HiRequest::FileMessage(content) => {
                             println!("received file message: {:?}", content);

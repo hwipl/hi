@@ -109,8 +109,6 @@ pub enum HiRequest {
     #[n(1)]
     ChatMessage(#[n(0)] String),
     #[n(2)]
-    GetFiles,
-    #[n(3)]
     FileMessage(#[n(0)] Vec<u8>),
 }
 
