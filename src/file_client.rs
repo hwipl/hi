@@ -19,12 +19,17 @@ enum FileMessage {
 struct FileClient {
     _config: config::Config,
     client: unix_socket::UnixClient,
+    shares: Vec<(String, u64)>,
 }
 
 impl FileClient {
     /// create new file Client
     pub async fn new(_config: config::Config, client: unix_socket::UnixClient) -> Self {
-        FileClient { _config, client }
+        FileClient {
+            _config,
+            client,
+            shares: Vec::new(),
+        }
     }
 
     /// run file client
@@ -93,7 +98,7 @@ impl FileClient {
         // handle file message and create response file message
         println!("Got file message {:?} from {}", file_message, from);
         let response = match file_message {
-            FileMessage::List => Some(FileMessage::ListReply(Vec::new())),
+            FileMessage::List => Some(FileMessage::ListReply(self.shares.clone())),
             FileMessage::ListReply(..) => None,
         };
 
