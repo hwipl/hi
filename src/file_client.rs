@@ -120,7 +120,7 @@ impl FileClient {
     }
 
     /// handle user command and return daemon message
-    pub async fn handle_user_command(&self, command: String) -> Option<Message> {
+    async fn handle_user_command(&self, command: String) -> Option<Message> {
         // split command into its parts
         let cmd: Vec<&str> = command.split_whitespace().collect();
         if cmd.len() == 0 {
