@@ -1,7 +1,7 @@
 use crate::config;
 use crate::daemon_message::Message;
 use crate::unix_socket;
-use async_std::{io, prelude::*};
+use async_std::{fs, io, prelude::*};
 use futures::future::FutureExt;
 use futures::select;
 use minicbor::{Decode, Encode};
@@ -157,6 +157,14 @@ impl FileClient {
             }
         }
         return false;
+    }
+
+    /// get size of the file
+    async fn get_file_size(file: &str) -> Option<u64> {
+        if let Ok(meta) = fs::metadata(&file).await {
+            return Some(meta.len());
+        }
+        None
     }
 }
 
