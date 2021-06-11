@@ -127,9 +127,9 @@ impl FileClient {
             return None;
         }
 
-        // create file message according to user command
-        let file_message = match cmd[0] {
-            "ls" => FileMessage::List,
+        // create file message and destination according to user command
+        let (file_message, to) = match cmd[0] {
+            "ls" => (FileMessage::List, String::from("all")),
             "share" => {
                 self.share_files(&cmd[1..]).await;
                 return None;
@@ -145,7 +145,7 @@ impl FileClient {
                 return None;
             }
             Message::FileMessage {
-                to: String::from("all"),
+                to,
                 from: String::new(),
                 content,
             }
