@@ -137,6 +137,12 @@ impl FileClient {
                 self.share_files(&cmd[1..]).await;
                 return None;
             }
+            "get" => {
+                if cmd.len() < 3 {
+                    return None;
+                }
+                (FileMessage::Get(String::from(cmd[2])), String::from(cmd[1]))
+            }
             _ => return None,
         };
 
