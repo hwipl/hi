@@ -18,6 +18,8 @@ enum FileMessage {
     Get(#[n(0)] u32, #[n(1)] String),
     #[n(3)]
     Chunk(#[n(0)] u32, #[n(1)] Vec<u8>),
+    #[n(4)]
+    ChunkAck(#[n(0)] u32),
 }
 
 /// file transfer
@@ -126,7 +128,7 @@ impl FileClient {
                 self.handle_get_request(file, id, from.clone()).await;
                 None
             }
-            FileMessage::Chunk(..) => None,
+            FileMessage::Chunk(..) | FileMessage::ChunkAck(..) => None,
         };
 
         // if there is a response file message, create daemon message and return it
