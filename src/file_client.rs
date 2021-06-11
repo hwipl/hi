@@ -32,8 +32,17 @@ struct FileTransfer {
 }
 
 impl FileTransfer {
+    /// create new file transfer
     fn new(id: u32, from: String, to: String, file: String) -> Self {
         FileTransfer { id, from, to, file }
+    }
+
+    /// is file transfer an upload?
+    fn is_upload(&self) -> bool {
+        if self.from == "" {
+            return true;
+        }
+        false
     }
 }
 
