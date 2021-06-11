@@ -165,7 +165,14 @@ impl FileClient {
                 self.handle_get_request(file, id, from.clone()).await;
                 None
             }
-            FileMessage::Chunk(..) | FileMessage::ChunkAck(..) => None,
+            FileMessage::Chunk(id, ..) | FileMessage::ChunkAck(id, ..) => {
+                if self.transfers.contains_key(&id) {
+                    self.transfers[&id].handle(file_message).await;
+                    self.transfers[&id].next().await
+                } else {
+                    None
+                }
+            }
         };
 
         // if there is a response file message, create daemon message and return it
