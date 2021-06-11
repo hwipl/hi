@@ -146,6 +146,10 @@ impl FileClient {
                     String::from(cmd[1]),
                 )
             }
+            "show" => {
+                println!("Shared files: {:?}", self.shares);
+                return None;
+            }
             _ => return None,
         };
 
