@@ -44,6 +44,29 @@ impl FileTransfer {
         }
         false
     }
+
+    /// handle incoming file messages for this file upload
+    async fn handle_upload(&self, message: FileMessage) {
+        match message {
+            _ => (),
+        }
+    }
+
+    /// handle incoming file messages for this file download
+    async fn handle_download(&self, message: FileMessage) {
+        match message {
+            _ => (),
+        }
+    }
+
+    /// handle incoming file message for this transfer and get next message
+    async fn handle(&self, message: FileMessage) {
+        if self.is_upload() {
+            self.handle_upload(message).await;
+            return;
+        }
+        self.handle_download(message).await;
+    }
 }
 
 /// file client
