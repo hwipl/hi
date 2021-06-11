@@ -100,7 +100,7 @@ impl FileClient {
     }
 
     /// handle message coming from daemon and return daemon message as reply
-    async fn handle_daemon_message(&self, message: Message) -> Option<Message> {
+    async fn handle_daemon_message(&mut self, message: Message) -> Option<Message> {
         // get file message and sender
         let (file_message, from) = match message {
             Message::FileMessage { from, content, .. } => {
@@ -120,7 +120,10 @@ impl FileClient {
         let response = match file_message {
             FileMessage::List => Some(FileMessage::ListReply(self.shares.clone())),
             FileMessage::ListReply(..) => None,
-            _ => None,
+            FileMessage::Get(id, file) => {
+                self.handle_get_request(file, id, from.clone()).await;
+                None
+            }
         };
 
         // if there is a response file message, create daemon message and return it
@@ -216,6 +219,23 @@ impl FileClient {
                 self.shares.push((f.to_string(), size));
             }
         }
+    }
+
+    /// handle get request from other peer
+    async fn handle_get_request(&mut self, file: String, id: u32, from: String) {
+        // only accept new transfers
+        if self.transfers.contains_key(&id) {
+            return;
+        }
+
+        // only accept shared files
+        if !self.is_shared(&file) {
+            return;
+        }
+
+        // create new file transfer
+        let file_transfer = FileTransfer::new(id, from, String::new(), file);
+        self.transfers.insert(id, file_transfer);
     }
 }
 
