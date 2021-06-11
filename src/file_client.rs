@@ -148,6 +148,16 @@ impl FileClient {
         };
         Some(message)
     }
+
+    /// check if file is shared
+    fn is_shared(&self, file: &str) -> bool {
+        for s in self.shares.iter() {
+            if s.0 == file {
+                return true;
+            }
+        }
+        return false;
+    }
 }
 
 /// run daemon client in file mode
