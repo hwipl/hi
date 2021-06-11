@@ -67,6 +67,11 @@ impl FileTransfer {
         }
         self.handle_download(message).await;
     }
+
+    /// get next outgoing message for this transfer
+    async fn next(&self) -> Option<FileMessage> {
+        None
+    }
 }
 
 /// file client
