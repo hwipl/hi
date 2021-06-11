@@ -14,7 +14,7 @@ enum FileMessage {
     #[n(1)]
     ListReply(#[n(0)] Vec<(String, u64)>),
     #[n(2)]
-    Get(#[n(0)] String),
+    Get(#[n(0)] u32, #[n(1)] String),
 }
 
 /// file client
@@ -141,7 +141,10 @@ impl FileClient {
                 if cmd.len() < 3 {
                     return None;
                 }
-                (FileMessage::Get(String::from(cmd[2])), String::from(cmd[1]))
+                (
+                    FileMessage::Get(0, String::from(cmd[2])),
+                    String::from(cmd[1]),
+                )
             }
             _ => return None,
         };
