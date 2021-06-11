@@ -13,6 +13,8 @@ enum FileMessage {
     List,
     #[n(1)]
     ListReply(#[n(0)] Vec<(String, u64)>),
+    #[n(2)]
+    Get(#[n(0)] String),
 }
 
 /// file client
@@ -100,6 +102,7 @@ impl FileClient {
         let response = match file_message {
             FileMessage::List => Some(FileMessage::ListReply(self.shares.clone())),
             FileMessage::ListReply(..) => None,
+            _ => None,
         };
 
         // if there is a response file message, create daemon message and return it
