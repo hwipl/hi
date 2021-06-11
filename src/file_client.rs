@@ -120,7 +120,7 @@ impl FileClient {
     }
 
     /// handle user command and return daemon message
-    async fn handle_user_command(&self, command: String) -> Option<Message> {
+    async fn handle_user_command(&mut self, command: String) -> Option<Message> {
         // split command into its parts
         let cmd: Vec<&str> = command.split_whitespace().collect();
         if cmd.len() == 0 {
@@ -130,6 +130,10 @@ impl FileClient {
         // create file message according to user command
         let file_message = match cmd[0] {
             "ls" => FileMessage::List,
+            "share" => {
+                self.share_files(&cmd[1..]).await;
+                return None;
+            }
             _ => return None,
         };
 
@@ -165,6 +169,18 @@ impl FileClient {
             return Some(meta.len());
         }
         None
+    }
+
+    /// share files
+    async fn share_files(&mut self, files: &[&str]) {
+        for f in files {
+            if self.is_shared(f) {
+                continue;
+            }
+            if let Some(size) = Self::get_file_size(f).await {
+                self.shares.push((f.to_string(), size));
+            }
+        }
     }
 }
 
