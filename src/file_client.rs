@@ -5,6 +5,7 @@ use async_std::{fs, io, prelude::*};
 use futures::future::FutureExt;
 use futures::select;
 use minicbor::{Decode, Encode};
+use std::collections::HashMap;
 
 /// file message
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode)]
@@ -37,6 +38,7 @@ struct FileClient {
     _config: config::Config,
     client: unix_socket::UnixClient,
     shares: Vec<(String, u64)>,
+    transfers: HashMap<u32, FileTransfer>,
 }
 
 impl FileClient {
@@ -46,6 +48,7 @@ impl FileClient {
             _config,
             client,
             shares: Vec::new(),
+            transfers: HashMap::new(),
         }
     }
 
@@ -163,6 +166,7 @@ impl FileClient {
             }
             "show" => {
                 println!("Shared files: {:?}", self.shares);
+                println!("Transfers: {:?}", self.transfers);
                 return None;
             }
             _ => return None,
