@@ -17,6 +17,21 @@ enum FileMessage {
     Get(#[n(0)] u32, #[n(1)] String),
 }
 
+/// file transfer
+#[derive(Debug)]
+struct FileTransfer {
+    id: u32,
+    from: String,
+    to: String,
+    file: String,
+}
+
+impl FileTransfer {
+    fn new(id: u32, from: String, to: String, file: String) -> Self {
+        FileTransfer { id, from, to, file }
+    }
+}
+
 /// file client
 struct FileClient {
     _config: config::Config,
