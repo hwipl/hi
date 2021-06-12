@@ -114,10 +114,10 @@ impl FileTransfer {
             FTState::New => {
                 if self.is_upload() {
                     self.state = FTState::WaitAck;
-                    return Some(FileMessage::Get(self.id, self.file.clone()));
+                    return Some(FileMessage::Chunk(self.id, self.get_next_chunk().await));
                 } else {
                     self.state = FTState::WaitChunk;
-                    return Some(FileMessage::Chunk(self.id, self.get_next_chunk().await));
+                    return Some(FileMessage::Get(self.id, self.file.clone()));
                 }
             }
 
