@@ -357,8 +357,8 @@ impl FileClient {
             return;
         }
 
-        // create new file transfer
-        let file_transfer = FileTransfer::new(id, from, String::new(), file);
+        // create new upload file transfer to request sender (from)
+        let file_transfer = FileTransfer::new(id, String::new(), from, file);
         self.transfers.insert(id, file_transfer);
     }
 }
