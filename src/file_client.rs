@@ -48,7 +48,8 @@ impl FileTransfer {
     /// handle incoming file messages for this file upload
     async fn handle_upload(&self, message: FileMessage) {
         match message {
-            _ => (),
+            FileMessage::ChunkAck(..) => (),
+            _ => return,
         }
     }
 
