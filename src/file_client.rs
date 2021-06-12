@@ -108,6 +108,7 @@ impl FileTransfer {
     /// get next outgoing message for this transfer
     async fn next(&mut self) -> Option<FileMessage> {
         match self.state {
+            // new file transfer
             FTState::New => {
                 if self.is_upload() {
                     self.state = FTState::WaitAck;
@@ -117,8 +118,14 @@ impl FileTransfer {
                     return Some(FileMessage::Chunk(self.id, self.get_next_chunk().await));
                 }
             }
+
+            // send next chunk
             FTState::SendChunk => (),
+
+            // send ack for received chunk
             FTState::SendAck => (),
+
+            // handle other states
             FTState::WaitChunk => (),
             FTState::WaitAck => (),
         }
