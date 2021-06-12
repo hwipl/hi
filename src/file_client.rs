@@ -130,7 +130,10 @@ impl FileTransfer {
             }
 
             // send ack for received chunk
-            FTState::SendAck => (),
+            FTState::SendAck => {
+                self.state = FTState::WaitChunk;
+                return Some(FileMessage::ChunkAck(self.id));
+            }
 
             // handle other states
             FTState::WaitChunk => (),
