@@ -64,11 +64,17 @@ impl FileTransfer {
     }
 
     /// handle incoming file messages for this file upload
-    async fn handle_upload(&self, message: FileMessage) {
+    async fn handle_upload(&mut self, message: FileMessage) {
         match message {
             FileMessage::ChunkAck(..) => (),
             _ => return,
         }
+
+        match self.state {
+            FTState::WaitAck => (),
+            _ => return,
+        }
+        self.state = FTState::SendChunk;
     }
 
     /// handle incoming file messages for this file download
@@ -80,7 +86,7 @@ impl FileTransfer {
     }
 
     /// handle incoming file message for this transfer and get next message
-    async fn handle(&self, message: FileMessage) {
+    async fn handle(&mut self, message: FileMessage) {
         if self.is_upload() {
             self.handle_upload(message).await;
             return;
@@ -207,7 +213,11 @@ impl FileClient {
             }
             FileMessage::Chunk(id, ..) | FileMessage::ChunkAck(id, ..) => {
                 if self.transfers.contains_key(&id) {
-                    self.transfers[&id].handle(file_message).await;
+                    self.transfers
+                        .get_mut(&id)
+                        .unwrap()
+                        .handle(file_message)
+                        .await;
                     self.transfers.get_mut(&id).unwrap().next().await
                 } else {
                     None
