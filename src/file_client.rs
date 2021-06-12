@@ -56,7 +56,8 @@ impl FileTransfer {
     /// handle incoming file messages for this file download
     async fn handle_download(&self, message: FileMessage) {
         match message {
-            _ => (),
+            FileMessage::Chunk(..) => (),
+            _ => return,
         }
     }
 
