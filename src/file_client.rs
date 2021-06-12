@@ -44,7 +44,9 @@ struct FileTransfer {
 }
 
 impl FileTransfer {
-    /// create new file transfer
+    /// create new file transfer:
+    /// upload is from "" to other peer id
+    /// download is from other peer id to ""
     fn new(id: u32, from: String, to: String, file: String) -> Self {
         FileTransfer {
             id,
