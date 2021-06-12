@@ -27,6 +27,7 @@ enum FileMessage {
 enum FTState {
     New,
     WaitChunk,
+    WaitAck,
 }
 
 /// file transfer
@@ -90,6 +91,7 @@ impl FileTransfer {
         match self.state {
             FTState::New => (),
             FTState::WaitChunk => (),
+            FTState::WaitAck => (),
         }
         None
     }
