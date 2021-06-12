@@ -22,6 +22,12 @@ enum FileMessage {
     ChunkAck(#[n(0)] u32),
 }
 
+/// file transfer state
+#[derive(Debug)]
+enum FTState {
+    New,
+}
+
 /// file transfer
 #[derive(Debug)]
 struct FileTransfer {
@@ -29,12 +35,20 @@ struct FileTransfer {
     from: String,
     to: String,
     file: String,
+
+    state: FTState,
 }
 
 impl FileTransfer {
     /// create new file transfer
     fn new(id: u32, from: String, to: String, file: String) -> Self {
-        FileTransfer { id, from, to, file }
+        FileTransfer {
+            id,
+            from,
+            to,
+            file,
+            state: FTState::New,
+        }
     }
 
     /// is file transfer an upload?
@@ -72,6 +86,9 @@ impl FileTransfer {
 
     /// get next outgoing message for this transfer
     async fn next(&self) -> Option<FileMessage> {
+        match self.state {
+            FTState::New => (),
+        }
         None
     }
 }
