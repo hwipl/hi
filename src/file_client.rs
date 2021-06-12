@@ -26,6 +26,7 @@ enum FileMessage {
 #[derive(Debug)]
 enum FTState {
     New,
+    SendChunk,
     WaitChunk,
     WaitAck,
 }
@@ -90,6 +91,7 @@ impl FileTransfer {
     async fn next(&self) -> Option<FileMessage> {
         match self.state {
             FTState::New => (),
+            FTState::SendChunk => (),
             FTState::WaitChunk => (),
             FTState::WaitAck => (),
         }
