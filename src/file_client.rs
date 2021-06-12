@@ -234,7 +234,11 @@ impl FileClient {
             FileMessage::ListReply(..) => None,
             FileMessage::Get(id, file) => {
                 self.handle_get_request(file, id, from.clone()).await;
-                None
+                if self.transfers.contains_key(&id) {
+                    self.transfers.get_mut(&id).unwrap().next().await
+                } else {
+                    None
+                }
             }
             FileMessage::Chunk(id, ..) | FileMessage::ChunkAck(id, ..) => {
                 if self.transfers.contains_key(&id) {
