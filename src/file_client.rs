@@ -88,6 +88,11 @@ impl FileTransfer {
         self.handle_download(message).await;
     }
 
+    /// get next chunk to send in file upload
+    async fn get_next_chunk(&self) -> Vec<u8> {
+        Vec::new()
+    }
+
     /// get next outgoing message for this transfer
     async fn next(&self) -> Option<FileMessage> {
         match self.state {
