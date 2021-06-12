@@ -94,9 +94,17 @@ impl FileTransfer {
     }
 
     /// get next outgoing message for this transfer
-    async fn next(&self) -> Option<FileMessage> {
+    async fn next(&mut self) -> Option<FileMessage> {
         match self.state {
-            FTState::New => (),
+            FTState::New => {
+                if self.is_upload() {
+                    self.state = FTState::WaitAck;
+                    return Some(FileMessage::Get(self.id, self.file.clone()));
+                } else {
+                    self.state = FTState::WaitChunk;
+                    return Some(FileMessage::Chunk(self.id, self.get_next_chunk().await));
+                }
+            }
             FTState::SendChunk => (),
             FTState::SendAck => (),
             FTState::WaitChunk => (),
@@ -200,7 +208,7 @@ impl FileClient {
             FileMessage::Chunk(id, ..) | FileMessage::ChunkAck(id, ..) => {
                 if self.transfers.contains_key(&id) {
                     self.transfers[&id].handle(file_message).await;
-                    self.transfers[&id].next().await
+                    self.transfers.get_mut(&id).unwrap().next().await
                 } else {
                     None
                 }
