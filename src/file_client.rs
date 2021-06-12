@@ -319,6 +319,15 @@ impl FileClient {
         Some(message)
     }
 
+    /// get new file transfer id
+    fn new_id(&self) -> u32 {
+        let mut id = 0;
+        while self.transfers.contains_key(&id) {
+            id += 1;
+        }
+        return id;
+    }
+
     /// check if file is shared
     fn is_shared(&self, file: &str) -> bool {
         for s in self.shares.iter() {
