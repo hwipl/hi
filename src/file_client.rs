@@ -78,11 +78,17 @@ impl FileTransfer {
     }
 
     /// handle incoming file messages for this file download
-    async fn handle_download(&self, message: FileMessage) {
+    async fn handle_download(&mut self, message: FileMessage) {
         match message {
             FileMessage::Chunk(..) => (),
             _ => return,
         }
+
+        match self.state {
+            FTState::WaitChunk => (),
+            _ => return,
+        }
+        self.state = FTState::SendAck;
     }
 
     /// handle incoming file message for this transfer and get next message
