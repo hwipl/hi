@@ -120,7 +120,14 @@ impl FileTransfer {
             }
 
             // send next chunk
-            FTState::SendChunk => (),
+            FTState::SendChunk => {
+                self.state = FTState::WaitAck;
+                let data = self.get_next_chunk().await;
+                if data.len() == 0 {
+                    return None;
+                }
+                return Some(FileMessage::Chunk(self.id, data));
+            }
 
             // send ack for received chunk
             FTState::SendAck => (),
