@@ -290,10 +290,16 @@ impl FileClient {
                 if cmd.len() < 3 {
                     return None;
                 }
-                (
-                    FileMessage::Get(0, String::from(cmd[2])),
-                    String::from(cmd[1]),
-                )
+
+                // create new download file transfer
+                let id = self.new_id();
+                let peer = String::from(cmd[1]);
+                let file = String::from(cmd[2]);
+                let file_transfer = FileTransfer::new(id, peer.clone(), String::new(), file);
+                self.transfers.insert(id, file_transfer);
+                let next = self.transfers.get_mut(&id).unwrap().next().await;
+
+                (next.unwrap(), peer)
             }
             "show" => {
                 println!("Shared files: {:?}", self.shares);
