@@ -104,6 +104,16 @@ impl FileTransfer {
         self.handle_download(message).await;
     }
 
+    /// open file for reading
+    async fn open_read_file(&mut self) {
+        if let None = self.io {
+            match fs::File::open(self.file.clone()).await {
+                Err(e) => eprintln!("error opening file: {}", e),
+                Ok(io) => self.io = Some(io),
+            }
+        };
+    }
+
     /// get next chunk to send in file upload
     async fn get_next_chunk(&self) -> Vec<u8> {
         Vec::new()
@@ -115,6 +125,7 @@ impl FileTransfer {
             // new file transfer
             FTState::New => {
                 if self.is_upload() {
+                    self.open_read_file().await;
                     self.state = FTState::WaitAck;
                     return Some(FileMessage::Chunk(self.id, self.get_next_chunk().await));
                 } else {
