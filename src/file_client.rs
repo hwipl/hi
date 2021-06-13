@@ -41,6 +41,7 @@ struct FileTransfer {
     file: String,
 
     state: FTState,
+    io: Option<fs::File>,
 }
 
 impl FileTransfer {
@@ -54,6 +55,7 @@ impl FileTransfer {
             to,
             file,
             state: FTState::New,
+            io: None,
         }
     }
 
