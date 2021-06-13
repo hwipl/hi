@@ -115,7 +115,21 @@ impl FileTransfer {
     }
 
     /// get next chunk to send in file upload
-    async fn get_next_chunk(&self) -> Vec<u8> {
+    async fn get_next_chunk(&mut self) -> Vec<u8> {
+        match self.io {
+            Some(ref mut io) => {
+                let mut buf = Vec::new();
+                match io.take(512).read_to_end(&mut buf).await {
+                    Ok(_) => {
+                        return buf;
+                    }
+                    Err(e) => {
+                        eprintln!("error reading file: {}", e);
+                    }
+                }
+            }
+            None => (),
+        }
         Vec::new()
     }
 
