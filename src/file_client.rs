@@ -175,6 +175,8 @@ impl FileTransfer {
             }
             return Some(FileMessage::Chunk(self.id, data));
         };
+
+        self.state = FTState::Error("Error reading file".into());
         None
     }
 
