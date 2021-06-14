@@ -36,6 +36,7 @@ enum FTState {
     WaitAck,
     WaitLastAck,
     Done,
+    Error(String),
 }
 
 /// file transfer
@@ -220,6 +221,7 @@ impl FileTransfer {
             FTState::WaitAck => (),
             FTState::WaitLastAck => (),
             FTState::Done => (),
+            FTState::Error(..) => (),
         }
         None
     }
