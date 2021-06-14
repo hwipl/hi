@@ -33,6 +33,7 @@ enum FTState {
     SendAck,
     WaitChunk,
     WaitAck,
+    WaitLastAck,
     Done,
 }
 
@@ -79,10 +80,14 @@ impl FileTransfer {
         }
 
         match self.state {
-            FTState::WaitAck => (),
-            _ => return,
+            FTState::WaitAck => {
+                self.state = FTState::SendChunk;
+            }
+            FTState::WaitLastAck => {
+                self.state = FTState::Done;
+            }
+            _ => (),
         }
-        self.state = FTState::SendChunk;
     }
 
     /// handle incoming file messages for this file download
@@ -180,7 +185,11 @@ impl FileTransfer {
                 if self.is_upload() {
                     self.open_read_file().await;
                     self.state = FTState::WaitAck;
-                    return Some(FileMessage::Chunk(self.id, self.read_next_chunk().await));
+                    let data = self.read_next_chunk().await;
+                    if data.len() < CHUNK_SIZE {
+                        self.state = FTState::WaitLastAck;
+                    }
+                    return Some(FileMessage::Chunk(self.id, data));
                 } else {
                     self.open_write_file().await;
                     self.state = FTState::WaitChunk;
@@ -192,8 +201,8 @@ impl FileTransfer {
             FTState::SendChunk => {
                 self.state = FTState::WaitAck;
                 let data = self.read_next_chunk().await;
-                if data.len() == 0 {
-                    return None;
+                if data.len() < CHUNK_SIZE {
+                    self.state = FTState::WaitLastAck;
                 }
                 return Some(FileMessage::Chunk(self.id, data));
             }
@@ -207,6 +216,7 @@ impl FileTransfer {
             // handle other states
             FTState::WaitChunk => (),
             FTState::WaitAck => (),
+            FTState::WaitLastAck => (),
             FTState::Done => (),
         }
         None
