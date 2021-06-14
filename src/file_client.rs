@@ -1,7 +1,7 @@
 use crate::config;
 use crate::daemon_message::Message;
 use crate::unix_socket;
-use async_std::{fs, io, prelude::*};
+use async_std::{fs, io, path, prelude::*};
 use futures::future::FutureExt;
 use futures::select;
 use minicbor::{Decode, Encode};
@@ -114,6 +114,24 @@ impl FileTransfer {
         };
     }
 
+    /// open file for writing
+    async fn open_write_file(&mut self) {
+        if let None = self.io {
+            let file_name = match path::Path::new(&self.file).file_name() {
+                None => return,
+                Some(file_name) => file_name,
+            };
+            if path::Path::new(&file_name).exists().await {
+                eprintln!("file already exists");
+                return;
+            }
+            match fs::File::create(self.file.clone()).await {
+                Err(e) => eprintln!("error opening file: {}", e),
+                Ok(io) => self.io = Some(io),
+            }
+        };
+    }
+
     /// read next chunk to send in file upload
     async fn read_next_chunk(&mut self) -> Vec<u8> {
         match self.io {
@@ -143,6 +161,7 @@ impl FileTransfer {
                     self.state = FTState::WaitAck;
                     return Some(FileMessage::Chunk(self.id, self.read_next_chunk().await));
                 } else {
+                    self.open_write_file().await;
                     self.state = FTState::WaitChunk;
                     return Some(FileMessage::Get(self.id, self.file.clone()));
                 }
