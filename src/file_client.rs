@@ -182,6 +182,16 @@ impl FileTransfer {
         }
     }
 
+    /// get next chunk message
+    async fn next_chunk_message(&mut self) -> Option<FileMessage> {
+        self.state = FTState::WaitAck;
+        let data = self.read_next_chunk().await;
+        if data.len() < CHUNK_SIZE {
+            self.state = FTState::WaitLastAck;
+        }
+        return Some(FileMessage::Chunk(self.id, data));
+    }
+
     /// get next outgoing message for this transfer
     async fn next(&mut self) -> Option<FileMessage> {
         match self.state {
@@ -189,12 +199,7 @@ impl FileTransfer {
             FTState::New => {
                 if self.is_upload() {
                     self.open_read_file().await;
-                    self.state = FTState::WaitAck;
-                    let data = self.read_next_chunk().await;
-                    if data.len() < CHUNK_SIZE {
-                        self.state = FTState::WaitLastAck;
-                    }
-                    return Some(FileMessage::Chunk(self.id, data));
+                    return self.next_chunk_message().await;
                 } else {
                     self.open_write_file().await;
                     self.state = FTState::WaitChunk;
@@ -204,12 +209,7 @@ impl FileTransfer {
 
             // send next chunk
             FTState::SendChunk => {
-                self.state = FTState::WaitAck;
-                let data = self.read_next_chunk().await;
-                if data.len() < CHUNK_SIZE {
-                    self.state = FTState::WaitLastAck;
-                }
-                return Some(FileMessage::Chunk(self.id, data));
+                return self.next_chunk_message().await;
             }
 
             // send ack for received chunk
