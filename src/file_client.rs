@@ -8,7 +8,7 @@ use minicbor::{Decode, Encode};
 use std::collections::HashMap;
 
 /// size of data in a chunk in bytes
-const CHUNK_SIZE: u64 = 512;
+const CHUNK_SIZE: usize = 512;
 
 /// file message
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode)]
@@ -142,7 +142,7 @@ impl FileTransfer {
         match self.io {
             Some(ref mut io) => {
                 let mut buf = Vec::new();
-                match io.take(CHUNK_SIZE).read_to_end(&mut buf).await {
+                match io.take(CHUNK_SIZE as u64).read_to_end(&mut buf).await {
                     Ok(_) => {
                         return buf;
                     }
