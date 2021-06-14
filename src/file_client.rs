@@ -114,8 +114,8 @@ impl FileTransfer {
         };
     }
 
-    /// get next chunk to send in file upload
-    async fn get_next_chunk(&mut self) -> Vec<u8> {
+    /// read next chunk to send in file upload
+    async fn read_next_chunk(&mut self) -> Vec<u8> {
         match self.io {
             Some(ref mut io) => {
                 let mut buf = Vec::new();
@@ -141,7 +141,7 @@ impl FileTransfer {
                 if self.is_upload() {
                     self.open_read_file().await;
                     self.state = FTState::WaitAck;
-                    return Some(FileMessage::Chunk(self.id, self.get_next_chunk().await));
+                    return Some(FileMessage::Chunk(self.id, self.read_next_chunk().await));
                 } else {
                     self.state = FTState::WaitChunk;
                     return Some(FileMessage::Get(self.id, self.file.clone()));
@@ -151,7 +151,7 @@ impl FileTransfer {
             // send next chunk
             FTState::SendChunk => {
                 self.state = FTState::WaitAck;
-                let data = self.get_next_chunk().await;
+                let data = self.read_next_chunk().await;
                 if data.len() == 0 {
                     return None;
                 }
