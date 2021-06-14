@@ -33,6 +33,7 @@ enum FTState {
     SendAck,
     WaitChunk,
     WaitAck,
+    Done,
 }
 
 /// file transfer
@@ -206,6 +207,7 @@ impl FileTransfer {
             // handle other states
             FTState::WaitChunk => (),
             FTState::WaitAck => (),
+            FTState::Done => (),
         }
         None
     }
