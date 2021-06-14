@@ -122,13 +122,11 @@ impl FileTransfer {
     }
 
     /// open file for reading
-    async fn open_read_file(&mut self) {
+    async fn open_read_file(&self) -> Option<fs::File> {
         if let None = self.io {
-            match fs::File::open(self.file.clone()).await {
-                Err(e) => eprintln!("error opening file: {}", e),
-                Ok(io) => self.io = Some(io),
-            }
+            return fs::File::open(self.file.clone()).await.ok();
         };
+        None
     }
 
     /// open file for writing
@@ -189,7 +187,7 @@ impl FileTransfer {
             // new file transfer
             FTState::New => {
                 if self.is_upload() {
-                    self.open_read_file().await;
+                    self.io = self.open_read_file().await;
                     return self.next_chunk_message().await;
                 } else {
                     self.open_write_file().await;
