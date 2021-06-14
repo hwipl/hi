@@ -384,9 +384,9 @@ impl FileClient {
                 let file = String::from(cmd[2]);
                 let file_transfer = FileTransfer::new(id, peer.clone(), String::new(), file);
                 self.transfers.insert(id, file_transfer);
-                let next = self.transfers.get_mut(&id).unwrap().next().await;
+                let next = self.transfers.get_mut(&id).unwrap().next().await?;
 
-                (next.unwrap(), peer)
+                (next, peer)
             }
             "show" => {
                 println!("Shared files: {:?}", self.shares);
