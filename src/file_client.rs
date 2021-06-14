@@ -31,6 +31,7 @@ enum FTState {
     New,
     SendChunk,
     SendAck,
+    SendLastAck,
     WaitChunk,
     WaitAck,
     WaitLastAck,
@@ -102,8 +103,11 @@ impl FileTransfer {
             _ => return,
         }
 
-        self.write_next_chunk(data).await;
         self.state = FTState::SendAck;
+        if data.len() < CHUNK_SIZE {
+            self.state = FTState::SendLastAck;
+        }
+        self.write_next_chunk(data).await;
     }
 
     /// handle incoming file message for this transfer and get next message
@@ -210,6 +214,12 @@ impl FileTransfer {
             // send ack for received chunk
             FTState::SendAck => {
                 self.state = FTState::WaitChunk;
+                return Some(FileMessage::ChunkAck(self.id));
+            }
+
+            // send last ack for received chunk
+            FTState::SendLastAck => {
+                self.state = FTState::Done;
                 return Some(FileMessage::ChunkAck(self.id));
             }
 
