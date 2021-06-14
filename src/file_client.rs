@@ -162,18 +162,12 @@ impl FileTransfer {
     }
 
     /// write next chunk received in file download
-    async fn write_next_chunk(&mut self, chunk: Vec<u8>) {
-        match self.io {
-            Some(ref mut io) => match io.write_all(&chunk).await {
-                Ok(_) => {
-                    return;
-                }
-                Err(e) => {
-                    eprintln!("error writing file: {}", e);
-                }
-            },
-            None => (),
-        }
+    async fn write_next_chunk(&mut self, chunk: Vec<u8>) -> Option<()> {
+        if let Some(ref mut io) = self.io {
+            io.write_all(&chunk).await.ok()?;
+            return Some(());
+        };
+        None
     }
 
     /// get next chunk message
