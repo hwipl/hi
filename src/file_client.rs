@@ -86,6 +86,7 @@ impl FileTransfer {
             }
             FTState::WaitLastAck => {
                 self.state = FTState::Done;
+                self.io = None;
             }
             _ => (),
         }
@@ -220,6 +221,7 @@ impl FileTransfer {
             // send last ack for received chunk
             FTState::SendLastAck => {
                 self.state = FTState::Done;
+                self.io = None;
                 return Some(FileMessage::ChunkAck(self.id));
             }
 
