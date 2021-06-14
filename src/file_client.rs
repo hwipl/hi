@@ -149,22 +149,16 @@ impl FileTransfer {
     }
 
     /// read next chunk to send in file upload
-    async fn read_next_chunk(&mut self) -> Vec<u8> {
-        match self.io {
-            Some(ref mut io) => {
-                let mut buf = Vec::new();
-                match io.take(CHUNK_SIZE as u64).read_to_end(&mut buf).await {
-                    Ok(_) => {
-                        return buf;
-                    }
-                    Err(e) => {
-                        eprintln!("error reading file: {}", e);
-                    }
-                }
-            }
-            None => (),
-        }
-        Vec::new()
+    async fn read_next_chunk(&mut self) -> Option<Vec<u8>> {
+        if let Some(ref mut io) = self.io {
+            let mut buf = Vec::new();
+            io.take(CHUNK_SIZE as u64)
+                .read_to_end(&mut buf)
+                .await
+                .ok()?;
+            return Some(buf);
+        };
+        None
     }
 
     /// write next chunk received in file download
@@ -185,11 +179,13 @@ impl FileTransfer {
     /// get next chunk message
     async fn next_chunk_message(&mut self) -> Option<FileMessage> {
         self.state = FTState::WaitAck;
-        let data = self.read_next_chunk().await;
-        if data.len() < CHUNK_SIZE {
-            self.state = FTState::WaitLastAck;
-        }
-        return Some(FileMessage::Chunk(self.id, data));
+        if let Some(data) = self.read_next_chunk().await {
+            if data.len() < CHUNK_SIZE {
+                self.state = FTState::WaitLastAck;
+            }
+            return Some(FileMessage::Chunk(self.id, data));
+        };
+        None
     }
 
     /// get next outgoing message for this transfer
