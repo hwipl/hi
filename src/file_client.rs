@@ -187,9 +187,17 @@ impl FileTransfer {
             FTState::New => {
                 if self.is_upload() {
                     self.io = self.open_read_file().await;
+                    if let None = self.io {
+                        self.state = FTState::Error("Error opening file".into());
+                        return None;
+                    }
                     return self.next_chunk_message().await;
                 } else {
                     self.io = self.open_write_file().await;
+                    if let None = self.io {
+                        self.state = FTState::Error("Error opening file".into());
+                        return None;
+                    }
                     self.state = FTState::WaitChunk;
                     return Some(FileMessage::Get(self.id, self.file.clone()));
                 }
