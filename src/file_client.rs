@@ -109,7 +109,9 @@ impl FileTransfer {
         if data.len() < CHUNK_SIZE {
             self.state = FTState::SendLastAck;
         }
-        self.write_next_chunk(data).await;
+        if let None = self.write_next_chunk(data).await {
+            self.state = FTState::Error("Error writing file".into());
+        }
     }
 
     /// handle incoming file message for this transfer and get next message
