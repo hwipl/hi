@@ -83,15 +83,17 @@ impl FileTransfer {
 
     /// handle incoming file messages for this file download
     async fn handle_download(&mut self, message: FileMessage) {
-        match message {
-            FileMessage::Chunk(..) => (),
+        let data = match message {
+            FileMessage::Chunk(.., data) => data,
             _ => return,
-        }
+        };
 
         match self.state {
             FTState::WaitChunk => (),
             _ => return,
         }
+
+        self.write_next_chunk(data).await;
         self.state = FTState::SendAck;
     }
 
@@ -149,6 +151,21 @@ impl FileTransfer {
             None => (),
         }
         Vec::new()
+    }
+
+    /// write next chunk received in file download
+    async fn write_next_chunk(&mut self, chunk: Vec<u8>) {
+        match self.io {
+            Some(ref mut io) => match io.write_all(&chunk).await {
+                Ok(_) => {
+                    return;
+                }
+                Err(e) => {
+                    eprintln!("error writing file: {}", e);
+                }
+            },
+            None => (),
+        }
     }
 
     /// get next outgoing message for this transfer
