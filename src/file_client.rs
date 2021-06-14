@@ -130,21 +130,16 @@ impl FileTransfer {
     }
 
     /// open file for writing
-    async fn open_write_file(&mut self) {
+    async fn open_write_file(&self) -> Option<fs::File> {
         if let None = self.io {
-            let file_name = match path::Path::new(&self.file).file_name() {
-                None => return,
-                Some(file_name) => file_name,
-            };
+            let file_name = path::Path::new(&self.file).file_name()?;
             if path::Path::new(&file_name).exists().await {
                 eprintln!("file already exists");
-                return;
+                return None;
             }
-            match fs::File::create(self.file.clone()).await {
-                Err(e) => eprintln!("error opening file: {}", e),
-                Ok(io) => self.io = Some(io),
-            }
+            return fs::File::create(self.file.clone()).await.ok();
         };
+        None
     }
 
     /// read next chunk to send in file upload
@@ -190,7 +185,7 @@ impl FileTransfer {
                     self.io = self.open_read_file().await;
                     return self.next_chunk_message().await;
                 } else {
-                    self.open_write_file().await;
+                    self.io = self.open_write_file().await;
                     self.state = FTState::WaitChunk;
                     return Some(FileMessage::Get(self.id, self.file.clone()));
                 }
