@@ -389,8 +389,17 @@ impl FileClient {
                 (next, peer)
             }
             "show" => {
-                println!("Shared files: {:?}", self.shares);
-                println!("Transfers: {:?}", self.transfers);
+                println!("Shared files:");
+                for share in self.shares.iter() {
+                    println!("  {} ({} bytes)", share.0, share.1);
+                }
+                println!("Transfers:");
+                for transfer in self.transfers.values() {
+                    println!(
+                        "  {}: {:?} -> {:?}: {} [{:?}]",
+                        transfer.id, transfer.from, transfer.to, transfer.file, transfer.state,
+                    );
+                }
                 return None;
             }
             _ => return None,
