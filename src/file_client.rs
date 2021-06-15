@@ -6,7 +6,8 @@ use futures::future::FutureExt;
 use futures::select;
 use minicbor::{Decode, Encode};
 use std::collections::HashMap;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use wasm_timer::Delay;
 
 /// size of data in a chunk in bytes
 const CHUNK_SIZE: usize = 512;
@@ -337,6 +338,7 @@ impl FileClient {
         // enter file loop
         println!("File mode:");
         let mut stdin = io::BufReader::new(io::stdin()).lines();
+        let mut timer = Delay::new(Duration::from_secs(5)).fuse();
         loop {
             let mut daemon_message = None;
 
@@ -356,6 +358,14 @@ impl FileClient {
                     };
                     daemon_message = self.handle_user_command(line).await;
                 },
+
+                // handle timer event
+                _ = timer => {
+                    timer = Delay::new(Duration::from_secs(5)).fuse();
+                    for transfer in self.transfers.values_mut() {
+                        transfer.check_timeout();
+                    }
+                }
             }
 
             // if theres a message for the daemon, send it
