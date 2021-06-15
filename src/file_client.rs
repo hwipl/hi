@@ -89,6 +89,15 @@ impl FileTransfer {
         }
     }
 
+    /// reset timeout of the transfer
+    fn reset_timeout(&mut self) {
+        let current_secs = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("timestamp error")
+            .as_secs();
+        self.last_active = current_secs;
+    }
+
     /// is file transfer an upload?
     fn is_upload(&self) -> bool {
         if self.from == "" {
@@ -186,6 +195,7 @@ impl FileTransfer {
 
     /// read next chunk to send in file upload
     async fn read_next_chunk(&mut self) -> Option<Vec<u8>> {
+        self.reset_timeout();
         if let Some(ref mut io) = self.io {
             let mut buf = Vec::new();
             io.take(CHUNK_SIZE as u64)
@@ -199,6 +209,7 @@ impl FileTransfer {
 
     /// write next chunk received in file download
     async fn write_next_chunk(&mut self, chunk: Vec<u8>) -> Option<()> {
+        self.reset_timeout();
         if let Some(ref mut io) = self.io {
             io.write_all(&chunk).await.ok()?;
             return Some(());
