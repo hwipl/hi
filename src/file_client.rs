@@ -11,6 +11,9 @@ use std::time::{SystemTime, UNIX_EPOCH};
 /// size of data in a chunk in bytes
 const CHUNK_SIZE: usize = 512;
 
+/// idle timeout of a transfer in seconds
+const IDLE_TIMEOUT: u64 = 30;
+
 /// file message
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode)]
 enum FileMessage {
@@ -96,6 +99,22 @@ impl FileTransfer {
             .expect("timestamp error")
             .as_secs();
         self.last_active = current_secs;
+    }
+
+    /// check timeout of the transfer and set error state accordingly
+    fn check_timeout(&mut self) {
+        if self.is_done() || self.is_error() {
+            return;
+        }
+        let current_secs = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("timestamp error")
+            .as_secs();
+        if current_secs - self.last_active > IDLE_TIMEOUT {
+            eprintln!("transfer timed out");
+            self.state = FTState::Error("Timeout".into());
+            self.io = None;
+        }
     }
 
     /// is file transfer an upload?
