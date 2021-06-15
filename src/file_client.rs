@@ -6,6 +6,7 @@ use futures::future::FutureExt;
 use futures::select;
 use minicbor::{Decode, Encode};
 use std::collections::HashMap;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 /// size of data in a chunk in bytes
 const CHUNK_SIZE: usize = 512;
@@ -49,6 +50,7 @@ struct FileTransfer {
 
     state: FTState,
     io: Option<fs::File>,
+    last_active: u64,
 }
 
 impl FileTransfer {
@@ -56,6 +58,10 @@ impl FileTransfer {
     /// upload is from "" to other peer id
     /// download is from other peer id to ""
     fn new(id: u32, from: String, to: String, file: String) -> Self {
+        let current_secs = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("timestamp error")
+            .as_secs();
         FileTransfer {
             id,
             from,
@@ -63,6 +69,7 @@ impl FileTransfer {
             file,
             state: FTState::New,
             io: None,
+            last_active: current_secs,
         }
     }
 
