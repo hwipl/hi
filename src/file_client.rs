@@ -74,6 +74,23 @@ impl FileTransfer {
         false
     }
 
+    /// is `from` a valid sender for this transfer?
+    fn is_valid_sender(&self, from: String) -> bool {
+        // upload
+        if self.is_upload() {
+            if from == self.to {
+                return true;
+            }
+            return false;
+        }
+
+        // download
+        if from == self.from {
+            return true;
+        }
+        return false;
+    }
+
     /// handle incoming file messages for this file upload
     async fn handle_upload(&mut self, message: FileMessage) {
         match message {
@@ -329,6 +346,18 @@ impl FileClient {
             }
             FileMessage::Chunk(id, ..) | FileMessage::ChunkAck(id, ..) => {
                 if self.transfers.contains_key(&id) {
+                    if !self
+                        .transfers
+                        .get(&id)
+                        .unwrap()
+                        .is_valid_sender(from.clone())
+                    {
+                        eprintln!(
+                            "got message for transfer {} from invalid sender {}",
+                            id, from
+                        );
+                        return None;
+                    }
                     self.transfers
                         .get_mut(&id)
                         .unwrap()
