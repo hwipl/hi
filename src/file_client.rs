@@ -73,6 +73,14 @@ impl FileTransfer {
         }
     }
 
+    /// is file transfer done?
+    fn is_done(&self) -> bool {
+        match self.state {
+            FTState::Done => true,
+            _ => false,
+        }
+    }
+
     /// is file transfer an upload?
     fn is_upload(&self) -> bool {
         if self.from == "" {
