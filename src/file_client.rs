@@ -140,6 +140,11 @@ impl FileTransfer {
         }
     }
 
+    /// cancel the transfer
+    fn cancel(&mut self) {
+        self.complete(Some("Canceled by user".into()));
+    }
+
     /// get the data rate of the transfer
     fn get_data_rate(&self) -> u64 {
         let time = match self.completed_at {
@@ -533,6 +538,18 @@ impl FileClient {
                         transfer.state,
                     );
                 }
+                return None;
+            }
+            "cancel" => {
+                if cmd.len() < 2 {
+                    return None;
+                }
+
+                // cancel file transfer
+                let id = cmd[1].parse().ok()?;
+                if let Some(transfer) = self.transfers.get_mut(&id) {
+                    transfer.cancel();
+                };
                 return None;
             }
             _ => return None,
