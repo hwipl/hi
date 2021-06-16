@@ -55,6 +55,7 @@ struct FileTransfer {
     state: FTState,
     io: Option<fs::File>,
     last_active: u64,
+    num_bytes: u64,
 }
 
 impl FileTransfer {
@@ -74,6 +75,7 @@ impl FileTransfer {
             state: FTState::New,
             io: None,
             last_active: current_secs,
+            num_bytes: 0,
         }
     }
 
@@ -222,6 +224,7 @@ impl FileTransfer {
                 .read_to_end(&mut buf)
                 .await
                 .ok()?;
+            self.num_bytes += buf.len() as u64;
             return Some(buf);
         };
         None
@@ -230,6 +233,7 @@ impl FileTransfer {
     /// write next chunk received in file download
     async fn write_next_chunk(&mut self, chunk: Vec<u8>) -> Option<()> {
         self.reset_timeout();
+        self.num_bytes += chunk.len() as u64;
         if let Some(ref mut io) = self.io {
             io.write_all(&chunk).await.ok()?;
             return Some(());
@@ -488,8 +492,13 @@ impl FileClient {
                 println!("Transfers:");
                 for transfer in self.transfers.values() {
                     println!(
-                        "  {}: {:?} -> {:?}: {} [{:?}]",
-                        transfer.id, transfer.from, transfer.to, transfer.file, transfer.state,
+                        "  {}: {:?} -> {:?}: {} ({} bytes) [{:?}]",
+                        transfer.id,
+                        transfer.from,
+                        transfer.to,
+                        transfer.file,
+                        transfer.num_bytes,
+                        transfer.state,
                     );
                 }
                 return None;
