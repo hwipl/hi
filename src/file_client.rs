@@ -115,8 +115,16 @@ impl FileTransfer {
             .as_secs();
         if current_secs - self.last_active > IDLE_TIMEOUT {
             eprintln!("transfer timed out");
-            self.state = FTState::Error("Timeout".into());
-            self.io = None;
+            self.complete(Some("Timeout".into()));
+        }
+    }
+
+    /// complete transfer and set optional error state/message
+    fn complete(&mut self, error: Option<String>) {
+        self.io = None;
+        match error {
+            None => self.state = FTState::Done,
+            Some(error) => self.state = FTState::Error(error),
         }
     }
 
@@ -157,8 +165,7 @@ impl FileTransfer {
                 self.state = FTState::SendChunk;
             }
             FTState::WaitLastAck => {
-                self.state = FTState::Done;
-                self.io = None;
+                self.complete(None);
             }
             _ => (),
         }
@@ -291,8 +298,7 @@ impl FileTransfer {
 
             // send last ack for received chunk
             FTState::SendLastAck => {
-                self.state = FTState::Done;
-                self.io = None;
+                self.complete(None);
                 return Some(FileMessage::ChunkAck(self.id));
             }
 
