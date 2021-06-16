@@ -125,6 +125,9 @@ impl FileTransfer {
 
     /// complete transfer and set optional error state/message
     fn complete(&mut self, error: Option<String>) {
+        if self.is_done() || self.is_error() {
+            return;
+        }
         self.io = None;
         let current_secs = SystemTime::now()
             .duration_since(UNIX_EPOCH)
