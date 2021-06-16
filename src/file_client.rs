@@ -54,6 +54,7 @@ struct FileTransfer {
 
     state: FTState,
     io: Option<fs::File>,
+    created_at: u64,
     last_active: u64,
     num_bytes: u64,
 }
@@ -74,6 +75,7 @@ impl FileTransfer {
             file,
             state: FTState::New,
             io: None,
+            created_at: current_secs,
             last_active: current_secs,
             num_bytes: 0,
         }
