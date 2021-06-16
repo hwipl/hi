@@ -137,6 +137,19 @@ impl FileTransfer {
         }
     }
 
+    /// get the data rate of the transfer
+    fn get_data_rate(&self) -> u64 {
+        let time = match self.completed_at {
+            x if x > 0 => x,
+            _ => self.last_active,
+        };
+        if time <= self.created_at {
+            return 0;
+        }
+        let secs = time - self.created_at;
+        self.num_bytes / secs
+    }
+
     /// is file transfer an upload?
     fn is_upload(&self) -> bool {
         if self.from == "" {
@@ -507,12 +520,13 @@ impl FileClient {
                 println!("Transfers:");
                 for transfer in self.transfers.values() {
                     println!(
-                        "  {}: {:?} -> {:?}: {} ({} bytes) [{:?}]",
+                        "  {}: {:?} -> {:?}: {} ({} bytes, {} bytes/s) [{:?}]",
                         transfer.id,
                         transfer.from,
                         transfer.to,
                         transfer.file,
                         transfer.num_bytes,
+                        transfer.get_data_rate(),
                         transfer.state,
                     );
                 }
