@@ -56,6 +56,7 @@ struct FileTransfer {
     io: Option<fs::File>,
     created_at: u64,
     last_active: u64,
+    completed_at: u64,
     num_bytes: u64,
 }
 
@@ -77,6 +78,7 @@ impl FileTransfer {
             io: None,
             created_at: current_secs,
             last_active: current_secs,
+            completed_at: 0,
             num_bytes: 0,
         }
     }
@@ -124,6 +126,11 @@ impl FileTransfer {
     /// complete transfer and set optional error state/message
     fn complete(&mut self, error: Option<String>) {
         self.io = None;
+        let current_secs = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("timestamp error")
+            .as_secs();
+        self.completed_at = current_secs;
         match error {
             None => self.state = FTState::Done,
             Some(error) => self.state = FTState::Error(error),
