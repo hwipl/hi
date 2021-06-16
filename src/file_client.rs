@@ -25,7 +25,12 @@ enum FileMessage {
     #[n(2)]
     Get(#[n(0)] u32, #[n(1)] String),
     #[n(3)]
-    Chunk(#[n(0)] u32, #[n(1)] Vec<u8>),
+    Chunk(
+        #[n(0)] u32,
+        #[n(1)]
+        #[cbor(with = "minicbor::bytes")]
+        Vec<u8>,
+    ),
     #[n(4)]
     ChunkAck(#[n(0)] u32),
 }
