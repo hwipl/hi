@@ -247,7 +247,7 @@ impl FileTransfer {
                 eprintln!("file already exists");
                 return None;
             }
-            return fs::File::create(self.file.clone()).await.ok();
+            return fs::File::create(file_name.clone()).await.ok();
         };
         None
     }
