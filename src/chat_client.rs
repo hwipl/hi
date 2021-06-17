@@ -23,7 +23,7 @@ pub async fn run_chat_client(mut client: unix_socket::UnixClient, config: config
     // receive reply
     match client.receive_message().await {
         Ok(msg) => {
-            println!("set chat reply from server: {:?}", msg);
+            debug!("set chat reply from server: {:?}", msg);
             match msg {
                 Message::Ok => (),
                 _ => {
