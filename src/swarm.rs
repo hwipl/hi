@@ -64,7 +64,7 @@ impl HiSwarm {
             select! {
                 // handle events sent to the swarm
                 event = receiver.next().fuse() => {
-                    println!("received hi swarm event");
+                    debug!("received hi swarm event");
                     let event = match event {
                         Some(event) => event,
                         None => break,
@@ -132,7 +132,7 @@ impl HiSwarm {
                 event = swarm.next_event().fuse() => {
                     match event {
                         SwarmEvent::Behaviour(event) => {
-                            println!("Behaviour event: {:?}", event);
+                            debug!("Behaviour event: {:?}", event);
                         }
                         SwarmEvent::NewListenAddr(addr) => {
                             println!("Started listening on {:?}", addr);
@@ -140,19 +140,19 @@ impl HiSwarm {
                         SwarmEvent::ExpiredListenAddr(addr) => {
                             println!("Stopped listening on {:?}", addr);
                         }
-                        event => println!("{:?}", event),
+                        event => debug!("{:?}", event),
                     }
                 },
 
                 // handle timer events
                 event = timer => {
-                    println!("timer event: {:?}", event);
+                    debug!("timer event: {:?}", event);
                     timer = Delay::new(Duration::from_secs(15)).fuse();
 
                     // check number of peers in gossipsub
                     let topic = IdentTopic::new("/hello/world");
                     if swarm.behaviour().gossip.mesh_peers(&topic.hash()).count() == 0 {
-                        println!("No nodes in mesh");
+                        debug!("No nodes in mesh");
 
                         // get peerids of discovered peers
                         let mut peer_ids: Vec<PeerId> = Vec::new();
@@ -167,7 +167,7 @@ impl HiSwarm {
                         for peer_id in peer_ids {
                             match swarm.dial(&peer_id) {
                                 Ok(_) => (),
-                                Err(e) => println!("Dial error: {:?}", e),
+                                Err(e) => eprintln!("Dial error: {:?}", e),
                             }
                         }
                     }
@@ -180,7 +180,7 @@ impl HiSwarm {
                     if let Some(announce) = announce.encode() {
                         match swarm.behaviour_mut().gossip.publish(topic, announce) {
                             Ok(_) => (),
-                            Err(e) => println!("publish error: {:?}", e),
+                            Err(e) => eprintln!("publish error: {:?}", e),
                         }
                     }
                 },
@@ -238,7 +238,7 @@ impl HiSwarm {
         // start main loop
         task::spawn(async move {
             Self::handle_events(&mut swarm, to_swarm_receiver, from_swarm_sender).await;
-            println!("swarm stopped");
+            debug!("swarm stopped");
         });
 
         Ok(HiSwarm {
