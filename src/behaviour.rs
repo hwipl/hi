@@ -36,14 +36,14 @@ impl NetworkBehaviourEventProcess<RequestResponseEvent<HiRequest, HiResponse>> f
                     request,
                     request_id,
                 } => {
-                    println!(
+                    debug!(
                         "received request {:?} with id {} from {:?}",
                         request, request_id, peer
                     );
                     let response = match request {
                         // handle chat message
                         HiRequest::ChatMessage(msg) => {
-                            println!("received chat message: {}", msg);
+                            debug!("received chat message: {}", msg);
                             let swarm_event = swarm::Event::ChatMessage(peer.to_base58(), msg);
                             let mut to_swarm = self.to_swarm.clone();
                             task::spawn(async move {
@@ -56,7 +56,7 @@ impl NetworkBehaviourEventProcess<RequestResponseEvent<HiRequest, HiResponse>> f
 
                         // handle chat message
                         HiRequest::FileMessage(content) => {
-                            println!("received file message: {:?}", content);
+                            debug!("received file message: {:?}", content);
                             let swarm_event = swarm::Event::FileMessage(peer.to_base58(), content);
                             let mut to_swarm = self.to_swarm.clone();
                             task::spawn(async move {
@@ -76,7 +76,7 @@ impl NetworkBehaviourEventProcess<RequestResponseEvent<HiRequest, HiResponse>> f
 
                 // handle incoming response message
                 RequestResponseMessage::Response { response, .. } => {
-                    println!("received response {:?} from {:?}", response, peer);
+                    debug!("received response {:?} from {:?}", response, peer);
                     return;
                 }
             }
@@ -84,11 +84,11 @@ impl NetworkBehaviourEventProcess<RequestResponseEvent<HiRequest, HiResponse>> f
 
         // handle response sent event
         if let RequestResponseEvent::ResponseSent { peer, request_id } = message {
-            println!("sent response for request {:?} to {:?}", request_id, peer);
+            debug!("sent response for request {:?} to {:?}", request_id, peer);
             return;
         }
 
-        println!("request response error: {:?}", message);
+        eprintln!("request response error: {:?}", message);
     }
 }
 
@@ -98,7 +98,7 @@ impl NetworkBehaviourEventProcess<GossipsubEvent> for HiBehaviour {
         match event {
             GossipsubEvent::Message { message, .. } => match HiAnnounce::decode(&message.data) {
                 Some(msg) => {
-                    println!(
+                    debug!(
                         "Message: {:?} -> {:?}: {:?}",
                         message.source, message.topic, msg
                     );
@@ -122,17 +122,17 @@ impl NetworkBehaviourEventProcess<GossipsubEvent> for HiBehaviour {
                     }
                 }
                 None => {
-                    println!(
+                    debug!(
                         "Message: {:?} -> {:?}: {:?}",
                         message.source, message.topic, message.data
                     );
                 }
             },
             GossipsubEvent::Subscribed { peer_id, topic } => {
-                println!("Subscribed: {:?} {:?}", peer_id, topic);
+                debug!("Subscribed: {:?} {:?}", peer_id, topic);
             }
             GossipsubEvent::Unsubscribed { peer_id, topic } => {
-                println!("Unsubscribed: {:?} {:?}", peer_id, topic);
+                debug!("Unsubscribed: {:?} {:?}", peer_id, topic);
             }
         }
     }
@@ -144,13 +144,13 @@ impl NetworkBehaviourEventProcess<MdnsEvent> for HiBehaviour {
         match event {
             MdnsEvent::Discovered(list) => {
                 for (peer, addr) in list {
-                    println!("Peer discovered: {:?} {:?}", peer, addr);
+                    debug!("Peer discovered: {:?} {:?}", peer, addr);
                 }
             }
             MdnsEvent::Expired(list) => {
                 for (peer, addr) in list {
                     if !self.mdns.has_node(&peer) {
-                        println!("Peer expired: {:?} {:?}", peer, addr);
+                        debug!("Peer expired: {:?} {:?}", peer, addr);
                     }
                 }
             }
