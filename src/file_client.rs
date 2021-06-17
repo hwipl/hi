@@ -440,10 +440,14 @@ impl FileClient {
         };
 
         // handle file message and create response file message
-        println!("Got file message {:?} from {}", file_message, from);
         let response = match file_message {
             FileMessage::List => Some(FileMessage::ListReply(self.shares.clone())),
-            FileMessage::ListReply(..) => None,
+            FileMessage::ListReply(list) => {
+                for (file, size) in list {
+                    println!("{}: {} ({} bytes)", from, file, size);
+                }
+                None
+            }
             FileMessage::Get(id, file) => {
                 self.handle_get_request(file, id, from.clone()).await;
                 if self.transfers.contains_key(&id) {
