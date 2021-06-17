@@ -135,7 +135,7 @@ impl HiSwarm {
                             println!("Behaviour event: {:?}", event);
                         }
                         SwarmEvent::NewListenAddr(addr) => {
-                            println!("Started listing on {:?}", addr);
+                            println!("Started listening on {:?}", addr);
                         }
                         SwarmEvent::ExpiredListenAddr(addr) => {
                             println!("Stopped listening on {:?}", addr);
