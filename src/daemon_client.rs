@@ -19,7 +19,7 @@ async fn run_client(config: config::Config, mut client: unix_socket::UnixClient)
 
         // receive reply
         match client.receive_message().await {
-            Ok(msg) => println!("reply from server: {:?}", msg),
+            Ok(msg) => debug!("reply from server: {:?}", msg),
             Err(e) => eprintln!("error receiving reply: {}", e),
         }
     }
@@ -47,7 +47,7 @@ async fn run_client(config: config::Config, mut client: unix_socket::UnixClient)
 
         // receive reply
         match client.receive_message().await {
-            Ok(msg) => println!("set reply from server: {:?}", msg),
+            Ok(msg) => debug!("set reply from server: {:?}", msg),
             Err(e) => eprintln!("error receiving set reply: {}", e),
         }
     }
@@ -75,7 +75,7 @@ async fn run_client(config: config::Config, mut client: unix_socket::UnixClient)
 
         // receive reply
         match client.receive_message().await {
-            Ok(msg) => println!("get reply from server: {:?}", msg),
+            Ok(msg) => debug!("get reply from server: {:?}", msg),
             Err(e) => eprintln!("error receiving get reply: {}", e),
         }
     }
@@ -108,6 +108,6 @@ pub fn run(config: config::Config) {
                 eprintln!("unix socket client error: {}", e);
             }
         }
-        println!("unix socket client stopped");
+        debug!("unix socket client stopped");
     });
 }
