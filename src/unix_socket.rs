@@ -95,11 +95,11 @@ impl UnixClient {
     pub async fn test(&mut self) -> io::Result<()> {
         // send ok message
         self.send_message(Message::Ok).await?;
-        println!("Sent message to server: {:?}", Message::Ok);
+        debug!("Sent message to server: {:?}", Message::Ok);
 
         // receive ok message
         let reply = self.receive_message().await?;
-        println!("Read reply from server: {:?}", reply);
+        debug!("Read reply from server: {:?}", reply);
 
         Ok(())
     }
