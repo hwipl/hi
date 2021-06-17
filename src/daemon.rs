@@ -45,7 +45,7 @@ async fn handle_client(mut server: Sender<Event>, id: usize, mut client: unix_so
                 match msg {
                     Some(msg) => {
                         // forward message to client
-                        println!("received server message: {:?}", msg);
+                        debug!("received server message: {:?}", msg);
                         if let Err(e) = client.send_message(msg).await {
                             eprintln!("handle client error: {}", e);
                             break;
@@ -60,7 +60,7 @@ async fn handle_client(mut server: Sender<Event>, id: usize, mut client: unix_so
                 match msg {
                     Ok(msg) => {
                         // forward message to server
-                        println!("received client message: {:?}", msg);
+                        debug!("received client message: {:?}", msg);
                         if let Err(e) = server.send(Event::ClientMessage(id, msg)).await {
                             eprintln!("handle client error: {}", e);
                             break;
@@ -97,7 +97,7 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
         select! {
             // handle timer event
             event = timer => {
-                println!("daemon timer event: {:?}", event);
+                debug!("daemon timer event: {:?}", event);
                 timer = Delay::new(Duration::from_secs(5)).fuse();
 
                 // remove old entries from peers hash map
@@ -118,7 +118,7 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
 
             // handle events coming from the swarm
             event = swarm.receive().fuse() => {
-                println!("received event from swarm: {:?}", event);
+                debug!("received event from swarm: {:?}", event);
                 let event = match event {
                     Some(event) => event,
                     None => break,
@@ -193,7 +193,7 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                 match event {
                     // handle add client
                     Event::AddClient(id, sender) => {
-                        println!("received add client event with id {}", id);
+                        debug!("received add client event with id {}", id);
                         match clients.entry(id) {
                             Entry::Occupied(..) => (),
                             Entry::Vacant(entry) => {
@@ -209,7 +209,7 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
 
                     // handle remove client
                     Event::RemoveClient(id) => {
-                        println!("received remove client event with id {}", id);
+                        debug!("received remove client event with id {}", id);
                         clients.remove(&id);
 
                         // check if there are still clients with chat support
@@ -230,7 +230,7 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
 
                     // handle client message
                     Event::ClientMessage(id, msg) => {
-                        println!("received message from client: {:?}", msg);
+                        debug!("received message from client: {:?}", msg);
 
                         // get client channel
                         let client = match clients.get_mut(&id) {
@@ -248,7 +248,7 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
 
                             // handle error message
                             Message::Error { message } => {
-                                println!("received error message from client: {:?}", message);
+                                debug!("received error message from client: {:?}", message);
                                 continue;
                             }
 
@@ -288,7 +288,7 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
 
                             // handle chat message
                             Message::ChatMessage { to, message, .. } => {
-                                println!("received chat message for {}: {}", to, message);
+                                debug!("received chat message for {}: {}", to, message);
                                 if to == "all" {
                                     // send message to all known peers with chat support
                                     for peer in peers.values() {
@@ -317,7 +317,7 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
 
                             // handle file message
                             Message::FileMessage { to, content, .. } => {
-                                println!("received file message for {}", to);
+                                debug!("received file message for {}", to);
                                 if to == "all" {
                                     // send message to all known peers with file support
                                     for peer in peers.values() {
@@ -396,6 +396,6 @@ pub fn run(config: config::Config) {
             Ok(server) => run_server(config, server).await,
             Err(e) => eprintln!("unix socket server error: {}", e),
         };
-        println!("unix socket server stopped");
+        debug!("unix socket server stopped");
     });
 }
