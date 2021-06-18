@@ -48,7 +48,7 @@ impl NetworkBehaviourEventProcess<RequestResponseEvent<HiRequest, HiResponse>> f
                             let mut to_swarm = self.to_swarm.clone();
                             task::spawn(async move {
                                 if let Err(e) = to_swarm.send(swarm_event).await {
-                                    eprintln!("error sending event to swarm: {}", e);
+                                    error!("error sending event to swarm: {}", e);
                                 }
                             });
                             HiResponse::Ok
@@ -61,7 +61,7 @@ impl NetworkBehaviourEventProcess<RequestResponseEvent<HiRequest, HiResponse>> f
                             let mut to_swarm = self.to_swarm.clone();
                             task::spawn(async move {
                                 if let Err(e) = to_swarm.send(swarm_event).await {
-                                    eprintln!("error sending event to swarm: {}", e);
+                                    error!("error sending event to swarm: {}", e);
                                 }
                             });
                             HiResponse::Ok
@@ -88,7 +88,7 @@ impl NetworkBehaviourEventProcess<RequestResponseEvent<HiRequest, HiResponse>> f
             return;
         }
 
-        eprintln!("request response error: {:?}", message);
+        error!("request response error: {:?}", message);
     }
 }
 
@@ -116,7 +116,7 @@ impl NetworkBehaviourEventProcess<GossipsubEvent> for HiBehaviour {
                         let mut to_swarm = self.to_swarm.clone();
                         task::spawn(async move {
                             if let Err(e) = to_swarm.send(swarm_event).await {
-                                eprintln!("error sending event to swarm: {}", e);
+                                error!("error sending event to swarm: {}", e);
                             }
                         });
                     }
