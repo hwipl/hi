@@ -34,7 +34,7 @@ async fn handle_client(mut server: Sender<Event>, id: usize, mut client: unix_so
     // create channel for server messages and register this client
     let (client_sender, mut client_receiver) = mpsc::unbounded();
     if let Err(e) = server.send(Event::AddClient(id, client_sender)).await {
-        eprintln!("handle client error: {}", e);
+        error!("handle client error: {}", e);
         return;
     }
 
@@ -47,7 +47,7 @@ async fn handle_client(mut server: Sender<Event>, id: usize, mut client: unix_so
                         // forward message to client
                         debug!("received server message: {:?}", msg);
                         if let Err(e) = client.send_message(msg).await {
-                            eprintln!("handle client error: {}", e);
+                            error!("handle client error: {}", e);
                             break;
                         }
                     }
@@ -62,12 +62,12 @@ async fn handle_client(mut server: Sender<Event>, id: usize, mut client: unix_so
                         // forward message to server
                         debug!("received client message: {:?}", msg);
                         if let Err(e) = server.send(Event::ClientMessage(id, msg)).await {
-                            eprintln!("handle client error: {}", e);
+                            error!("handle client error: {}", e);
                             break;
                         }
                     }
                     Err(e) => {
-                        eprintln!("error receiving client message: {}", e);
+                        error!("error receiving client message: {}", e);
                         break;
                     }
                 }
@@ -77,7 +77,7 @@ async fn handle_client(mut server: Sender<Event>, id: usize, mut client: unix_so
 
     // remove this client
     if let Err(e) = server.send(Event::RemoveClient(id)).await {
-        eprintln!("error removing client: {}", e);
+        error!("error removing client: {}", e);
         return;
     }
 }
@@ -154,7 +154,7 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                                     message: msg.clone(),
                                 };
                                 if let Err(e) = client.sender.send(msg).await {
-                                    eprintln!("handle client error: {}", e);
+                                    error!("handle client error: {}", e);
                                     return;
                                 }
                             }
@@ -172,7 +172,7 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                                     content: content.clone(),
                                 };
                                 if let Err(e) = client.sender.send(msg).await {
-                                    eprintln!("handle client error: {}", e);
+                                    error!("handle client error: {}", e);
                                     return;
                                 }
                             }
@@ -236,7 +236,7 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                         let client = match clients.get_mut(&id) {
                             Some(client) => client,
                             None => {
-                                eprintln!("unknown client");
+                                error!("unknown client");
                                 continue;
                             }
                         };
@@ -339,7 +339,7 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
 
                         // send reply to client
                         if let Err(e) = client.sender.send(reply).await {
-                            eprintln!("handle client error: {}", e);
+                            error!("handle client error: {}", e);
                             return;
                         }
                     }
@@ -367,7 +367,7 @@ async fn run_server(config: config::Config, server: unix_socket::UnixServer) {
     let mut swarm = match swarm::HiSwarm::run().await {
         Ok(swarm) => swarm,
         Err(e) => {
-            eprintln!("error creating swarm: {}", e);
+            error!("error creating swarm: {}", e);
             return;
         }
     };
@@ -394,7 +394,7 @@ pub fn run(config: config::Config) {
     task::block_on(async {
         match unix_socket::UnixServer::listen(&config).await {
             Ok(server) => run_server(config, server).await,
-            Err(e) => eprintln!("unix socket server error: {}", e),
+            Err(e) => error!("unix socket server error: {}", e),
         };
         debug!("unix socket server stopped");
     });
