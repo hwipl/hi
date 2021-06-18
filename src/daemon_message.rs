@@ -99,7 +99,7 @@ impl Message {
         match minicbor::decode(bytes) {
             Ok(msg) => Some(msg),
             Err(e) => {
-                eprintln!("daemon message deserialization error: {:?}", e);
+                error!("daemon message deserialization error: {:?}", e);
                 None
             }
         }
@@ -110,7 +110,7 @@ impl Message {
         match minicbor::encode(self, &mut buffer) {
             Ok(()) => Some(buffer),
             Err(e) => {
-                eprintln!("daemon message serialization error: {}", e);
+                error!("daemon message serialization error: {}", e);
                 None
             }
         }
