@@ -75,7 +75,7 @@ impl HiSwarm {
                             if let Ok(remote) = addr.parse() {
                                 println!("connecting to address: {}", addr);
                                 if let Err(e) = swarm.dial_addr(remote) {
-                                    eprintln!("error dialing address: {}", e);
+                                    error!("error dialing address: {}", e);
                                 }
                             }
                         }
@@ -122,7 +122,7 @@ impl HiSwarm {
                         | Event::FileMessage(..)
                         => {
                             if let Err(e) = sender.send(event).await {
-                                eprintln!("Error sending swarm event: {}", e);
+                                error!("Error sending swarm event: {}", e);
                             };
                         }
                     }
@@ -167,7 +167,7 @@ impl HiSwarm {
                         for peer_id in peer_ids {
                             match swarm.dial(&peer_id) {
                                 Ok(_) => (),
-                                Err(e) => eprintln!("Dial error: {:?}", e),
+                                Err(e) => error!("Dial error: {:?}", e),
                             }
                         }
                     }
@@ -180,7 +180,7 @@ impl HiSwarm {
                     if let Some(announce) = announce.encode() {
                         match swarm.behaviour_mut().gossip.publish(topic, announce) {
                             Ok(_) => (),
-                            Err(e) => eprintln!("publish error: {:?}", e),
+                            Err(e) => error!("publish error: {:?}", e),
                         }
                     }
                 },
@@ -250,7 +250,7 @@ impl HiSwarm {
     /// send event to the swarm
     pub async fn send(&mut self, event: Event) {
         if let Err(e) = self.sender.send(event).await {
-            eprintln!("error sending event to swarm: {}", e);
+            error!("error sending event to swarm: {}", e);
         }
     }
 
