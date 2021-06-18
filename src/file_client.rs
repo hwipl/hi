@@ -123,7 +123,7 @@ impl FileTransfer {
             .expect("timestamp error")
             .as_secs();
         if current_secs - self.last_active > IDLE_TIMEOUT {
-            eprintln!("transfer timed out");
+            error!("transfer timed out");
             self.complete(Some("Timeout".into()));
         }
     }
@@ -249,7 +249,7 @@ impl FileTransfer {
         if let None = self.io {
             let file_name = path::Path::new(&self.file).file_name()?;
             if path::Path::new(&file_name).exists().await {
-                eprintln!("file already exists");
+                error!("file already exists");
                 return None;
             }
             return fs::File::create(file_name.clone()).await.ok();
@@ -372,11 +372,11 @@ impl FileClient {
         // enable file mode for this client
         let msg = Message::SetFiles { enabled: true };
         if let Err(e) = self.client.send_message(msg).await {
-            eprintln!("error sending set files message: {}", e);
+            error!("error sending set files message: {}", e);
             return;
         }
         if let Err(e) = self.client.receive_message().await {
-            eprintln!("error setting file support: {}", e);
+            error!("error setting file support: {}", e);
             return;
         }
 
@@ -416,7 +416,7 @@ impl FileClient {
             // if theres a message for the daemon, send it
             if let Some(msg) = daemon_message {
                 if let Err(e) = self.client.send_message(msg).await {
-                    eprintln!("error sending file message: {}", e);
+                    error!("error sending file message: {}", e);
                     return;
                 }
             }
@@ -431,7 +431,7 @@ impl FileClient {
                 match minicbor::decode::<FileMessage>(&content) {
                     Ok(msg) => (msg, from),
                     Err(e) => {
-                        eprintln!("error decoding file message: {}", e);
+                        error!("error decoding file message: {}", e);
                         return None;
                     }
                 }
@@ -464,7 +464,7 @@ impl FileClient {
                         .unwrap()
                         .is_valid_sender(from.clone())
                     {
-                        eprintln!(
+                        error!(
                             "got message for transfer {} from invalid sender {}",
                             id, from
                         );
@@ -486,7 +486,7 @@ impl FileClient {
         if let Some(response) = response {
             let mut content = Vec::new();
             if let Err(e) = minicbor::encode(response, &mut content) {
-                eprintln!("error encoding file message: {}", e);
+                error!("error encoding file message: {}", e);
                 return None;
             }
             return Some(Message::FileMessage {
@@ -568,7 +568,7 @@ impl FileClient {
         let message = {
             let mut content = Vec::new();
             if let Err(e) = minicbor::encode(file_message, &mut content) {
-                eprintln!("error encoding file message: {}", e);
+                error!("error encoding file message: {}", e);
                 return None;
             }
             Message::FileMessage {
