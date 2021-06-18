@@ -14,13 +14,13 @@ async fn run_client(config: config::Config, mut client: unix_socket::UnixClient)
             address: address.clone(),
         };
         if let Err(e) = client.send_message(msg).await {
-            eprintln!("error sending connect message: {}", e);
+            error!("error sending connect message: {}", e);
         }
 
         // receive reply
         match client.receive_message().await {
             Ok(msg) => debug!("reply from server: {:?}", msg),
-            Err(e) => eprintln!("error receiving reply: {}", e),
+            Err(e) => error!("error receiving reply: {}", e),
         }
     }
 
@@ -32,7 +32,7 @@ async fn run_client(config: config::Config, mut client: unix_socket::UnixClient)
                 name: option.value.to_string(),
             },
             _ => {
-                eprintln!(
+                error!(
                     "error setting unknown configuration option: {}",
                     option.name
                 );
@@ -42,13 +42,13 @@ async fn run_client(config: config::Config, mut client: unix_socket::UnixClient)
 
         // send message
         if let Err(e) = client.send_message(msg).await {
-            eprintln!("error sending set message: {}", e);
+            error!("error sending set message: {}", e);
         }
 
         // receive reply
         match client.receive_message().await {
             Ok(msg) => debug!("set reply from server: {:?}", msg),
-            Err(e) => eprintln!("error receiving set reply: {}", e),
+            Err(e) => error!("error receiving set reply: {}", e),
         }
     }
 
@@ -60,7 +60,7 @@ async fn run_client(config: config::Config, mut client: unix_socket::UnixClient)
             },
             "peers" => Message::GetPeers { peers: Vec::new() },
             _ => {
-                eprintln!(
+                error!(
                     "error getting unknown configuration option: {}",
                     option.name
                 );
@@ -70,13 +70,13 @@ async fn run_client(config: config::Config, mut client: unix_socket::UnixClient)
 
         // send message
         if let Err(e) = client.send_message(msg).await {
-            eprintln!("error sending get message: {}", e);
+            error!("error sending get message: {}", e);
         }
 
         // receive reply
         match client.receive_message().await {
             Ok(msg) => debug!("get reply from server: {:?}", msg),
-            Err(e) => eprintln!("error receiving get reply: {}", e),
+            Err(e) => error!("error receiving get reply: {}", e),
         }
     }
 
@@ -100,12 +100,12 @@ pub fn run(config: config::Config) {
         match unix_socket::UnixClient::connect(&config).await {
             Ok(mut client) => {
                 if let Err(e) = client.test().await {
-                    eprintln!("unix socket test error: {}", e);
+                    error!("unix socket test error: {}", e);
                 }
                 run_client(config, client).await;
             }
             Err(e) => {
-                eprintln!("unix socket client error: {}", e);
+                error!("unix socket client error: {}", e);
             }
         }
         debug!("unix socket client stopped");
