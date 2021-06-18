@@ -16,7 +16,7 @@ pub async fn run_chat_client(mut client: unix_socket::UnixClient, config: config
     // enable chat mode for this client
     let msg = Message::SetChat { enabled: true };
     if let Err(e) = client.send_message(msg).await {
-        eprintln!("error sending set chat message: {}", e);
+        error!("error sending set chat message: {}", e);
         return;
     }
 
@@ -27,13 +27,13 @@ pub async fn run_chat_client(mut client: unix_socket::UnixClient, config: config
             match msg {
                 Message::Ok => (),
                 _ => {
-                    eprintln!("unexpected reply from server");
+                    error!("unexpected reply from server");
                     return;
                 }
             }
         }
         Err(e) => {
-            eprintln!("error receiving set chat reply: {}", e);
+            error!("error receiving set chat reply: {}", e);
             return;
         }
     }
@@ -66,7 +66,7 @@ pub async fn run_chat_client(mut client: unix_socket::UnixClient, config: config
                     message: line,
                 };
                 if let Err(e) = client.send_message(msg).await {
-                    eprintln!("error sending chat message: {}", e);
+                    error!("error sending chat message: {}", e);
                     return;
                 }
             },
