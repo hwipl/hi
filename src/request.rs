@@ -77,7 +77,7 @@ impl RequestResponseCodec for HiCodec {
     {
         let mut buffer = Vec::new();
         if let Err(e) = minicbor::encode(request, &mut buffer) {
-            eprintln!("error encoding request message: {}", e);
+            error!("error encoding request message: {}", e);
             return Err(io::Error::new(io::ErrorKind::Other, e));
         }
         write_one(io, buffer).await
@@ -94,7 +94,7 @@ impl RequestResponseCodec for HiCodec {
     {
         let mut buffer = Vec::new();
         if let Err(e) = minicbor::encode(response, &mut buffer) {
-            eprintln!("error encoding response message: {}", e);
+            error!("error encoding response message: {}", e);
             return Err(io::Error::new(io::ErrorKind::Other, e));
         }
         write_one(io, buffer).await
