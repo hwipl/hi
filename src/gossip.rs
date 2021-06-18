@@ -28,7 +28,7 @@ impl HiAnnounce {
         match minicbor::encode(self, &mut buffer) {
             Ok(()) => Some(buffer),
             Err(e) => {
-                eprintln!("HiAnnounce encoding error: {:?}", e);
+                error!("HiAnnounce encoding error: {:?}", e);
                 None
             }
         }
@@ -38,7 +38,7 @@ impl HiAnnounce {
         match minicbor::decode(buffer) {
             Ok(msg) => Some(msg),
             Err(e) => {
-                eprintln!("HiAnnounce decoding error: {:?}", e);
+                error!("HiAnnounce decoding error: {:?}", e);
                 None
             }
         }
