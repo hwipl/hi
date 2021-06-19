@@ -582,9 +582,9 @@ impl FileClient {
 
     /// get new file transfer id
     fn new_id(&self) -> u32 {
-        let mut id = 0;
+        let mut id = rand::random();
         while self.transfers.contains_key(&id) {
-            id += 1;
+            id = rand::random();
         }
         return id;
     }
