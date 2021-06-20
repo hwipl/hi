@@ -280,7 +280,7 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
 
                             // handle set chat request
                             Message::SetChat { enabled } => {
-                                client.chat_support = true;
+                                client.chat_support = enabled;
                                 let event = swarm::Event::SetChat(enabled);
                                 swarm.send(event).await;
                                 Message::Ok
