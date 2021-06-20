@@ -337,7 +337,15 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                             }
 
                             // handle other messages
-                            Message::Register { .. } => continue,
+                            Message::Register { chat, files } => {
+                                client.chat_support = chat;
+                                let event = swarm::Event::SetChat(chat);
+                                swarm.send(event).await;
+                                client.file_support = files;
+                                let event = swarm::Event::SetFiles(files);
+                                swarm.send(event).await;
+                                Message::Ok
+                            }
                         };
 
                         // send reply to client
