@@ -101,6 +101,12 @@ pub enum Message {
         #[n(1)]
         files: bool,
     },
+
+    #[n(11)]
+    RegisterOk {
+        #[n(0)]
+        client_id: usize,
+    },
 }
 
 impl Message {
