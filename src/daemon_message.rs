@@ -92,6 +92,15 @@ pub enum Message {
         #[n(2)]
         content: Vec<u8>,
     },
+
+    /// Register this client on the daemon
+    #[n(10)]
+    Register {
+        #[n(0)]
+        chat: bool,
+        #[n(1)]
+        files: bool,
+    },
 }
 
 impl Message {

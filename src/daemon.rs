@@ -335,6 +335,9 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                                 }
                                 Message::Ok
                             }
+
+                            // handle other messages
+                            Message::Register { .. } => continue,
                         };
 
                         // send reply to client
