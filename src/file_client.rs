@@ -369,7 +369,7 @@ impl FileClient {
 
     /// run file client
     pub async fn run(&mut self) {
-        // enable file mode for this client
+        // register this client and enable file mode
         let msg = Message::Register {
             chat: false,
             files: true,
@@ -378,10 +378,17 @@ impl FileClient {
             error!("error sending register message: {}", e);
             return;
         }
-        if let Err(e) = self.client.receive_message().await {
-            error!("error registering client: {}", e);
-            return;
-        }
+        let _client_id = match self.client.receive_message().await {
+            Ok(Message::RegisterOk { client_id }) => client_id,
+            Err(e) => {
+                error!("error registering client: {}", e);
+                return;
+            }
+            Ok(msg) => {
+                error!("unexpected response during client registration: {:?}", msg);
+                return;
+            }
+        };
 
         // enter file loop
         println!("File mode:");
