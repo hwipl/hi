@@ -370,13 +370,16 @@ impl FileClient {
     /// run file client
     pub async fn run(&mut self) {
         // enable file mode for this client
-        let msg = Message::SetFiles { enabled: true };
+        let msg = Message::Register {
+            chat: false,
+            files: true,
+        };
         if let Err(e) = self.client.send_message(msg).await {
-            error!("error sending set files message: {}", e);
+            error!("error sending register message: {}", e);
             return;
         }
         if let Err(e) = self.client.receive_message().await {
-            error!("error setting file support: {}", e);
+            error!("error registering client: {}", e);
             return;
         }
 
