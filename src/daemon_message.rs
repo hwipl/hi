@@ -75,15 +75,8 @@ pub enum Message {
         message: String,
     },
 
-    /// Set file support of this node
-    #[n(8)]
-    SetFiles {
-        #[n(0)]
-        enabled: bool,
-    },
-
     /// File message
-    #[n(9)]
+    #[n(8)]
     FileMessage {
         #[n(0)]
         to: String,
@@ -94,7 +87,7 @@ pub enum Message {
     },
 
     /// Register this client on the daemon
-    #[n(10)]
+    #[n(9)]
     Register {
         #[n(0)]
         chat: bool,
@@ -102,7 +95,7 @@ pub enum Message {
         files: bool,
     },
 
-    #[n(11)]
+    #[n(10)]
     RegisterOk {
         #[n(0)]
         client_id: usize,

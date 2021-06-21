@@ -307,14 +307,6 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                                 Message::Ok
                             }
 
-                            // handle set files request
-                            Message::SetFiles { enabled } => {
-                                client.file_support = enabled;
-                                let event = swarm::Event::SetFiles(enabled);
-                                swarm.send(event).await;
-                                Message::Ok
-                            }
-
                             // handle file message
                             Message::FileMessage { to, content, .. } => {
                                 debug!("received file message for {}", to);
