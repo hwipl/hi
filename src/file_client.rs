@@ -352,6 +352,7 @@ impl FileTransfer {
 struct FileClient {
     _config: config::Config,
     client: unix_socket::UnixClient,
+    id: u16,
     shares: Vec<(String, u64)>,
     transfers: HashMap<u32, FileTransfer>,
 }
@@ -362,6 +363,7 @@ impl FileClient {
         FileClient {
             _config,
             client,
+            id: 0,
             shares: Vec::new(),
             transfers: HashMap::new(),
         }
@@ -378,7 +380,7 @@ impl FileClient {
             error!("error sending register message: {}", e);
             return;
         }
-        let _client_id = match self.client.receive_message().await {
+        self.id = match self.client.receive_message().await {
             Ok(Message::RegisterOk { client_id }) => client_id,
             Err(e) => {
                 error!("error registering client: {}", e);
@@ -502,8 +504,8 @@ impl FileClient {
             return Some(Message::FileMessage {
                 to_peer: from_peer,
                 from_peer: String::new(),
-                to_client: 0,   // TODO: get id from message?
-                from_client: 0, // TODO: use own id
+                to_client: 0, // TODO: get id from message?
+                from_client: self.id,
                 content,
             });
         }
@@ -587,7 +589,7 @@ impl FileClient {
                 to_peer,
                 from_peer: String::new(),
                 to_client: 0,
-                from_client: 0, // TODO: use own id
+                from_client: self.id,
                 content,
             }
         };
