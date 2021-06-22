@@ -438,11 +438,14 @@ impl FileClient {
     /// handle message coming from daemon and return daemon message as reply
     async fn handle_daemon_message(&mut self, message: Message) -> Option<Message> {
         // get file message and sender
-        let (file_message, from_peer) = match message {
+        let (file_message, from_peer, from_client) = match message {
             Message::FileMessage {
-                from_peer, content, ..
+                from_peer,
+                from_client,
+                content,
+                ..
             } => match minicbor::decode::<FileMessage>(&content) {
-                Ok(msg) => (msg, from_peer),
+                Ok(msg) => (msg, from_peer, from_client),
                 Err(e) => {
                     error!("error decoding file message: {}", e);
                     return None;
@@ -504,7 +507,7 @@ impl FileClient {
             return Some(Message::FileMessage {
                 to_peer: from_peer,
                 from_peer: String::new(),
-                to_client: 0, // TODO: get id from message?
+                to_client: from_client,
                 from_client: self.id,
                 content,
             });
