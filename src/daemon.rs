@@ -17,9 +17,9 @@ type Receiver<T> = mpsc::UnboundedReceiver<T>;
 
 /// Daemon events
 enum Event {
-    AddClient(usize, Sender<Message>),
-    RemoveClient(usize),
-    ClientMessage(usize, Message),
+    AddClient(u16, Sender<Message>),
+    RemoveClient(u16),
+    ClientMessage(u16, Message),
 }
 
 /// Client information
@@ -30,7 +30,7 @@ struct ClientInfo {
 }
 
 /// handle client connection identified by its `id`
-async fn handle_client(mut server: Sender<Event>, id: usize, mut client: unix_socket::UnixClient) {
+async fn handle_client(mut server: Sender<Event>, id: u16, mut client: unix_socket::UnixClient) {
     // create channel for server messages and register this client
     let (client_sender, mut client_receiver) = mpsc::unbounded();
     if let Err(e) = server.send(Event::AddClient(id, client_sender)).await {
@@ -85,7 +85,7 @@ async fn handle_client(mut server: Sender<Event>, id: usize, mut client: unix_so
 /// run the server's main loop
 async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm) {
     // clients and their channels
-    let mut clients: HashMap<usize, ClientInfo> = HashMap::new();
+    let mut clients: HashMap<u16, ClientInfo> = HashMap::new();
 
     // information about known peers
     let mut peers: HashMap<String, PeerInfo> = HashMap::new();

@@ -92,7 +92,7 @@ pub enum Message {
     #[n(9)]
     RegisterOk {
         #[n(0)]
-        client_id: usize,
+        client_id: u16,
     },
 }
 
