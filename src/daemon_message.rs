@@ -55,15 +55,8 @@ pub enum Message {
         peers: Vec<PeerInfo>,
     },
 
-    /// Set chat support of this node
-    #[n(6)]
-    SetChat {
-        #[n(0)]
-        enabled: bool,
-    },
-
     /// Chat message
-    #[n(7)]
+    #[n(6)]
     ChatMessage {
         #[n(0)]
         to: String,
@@ -76,7 +69,7 @@ pub enum Message {
     },
 
     /// File message
-    #[n(8)]
+    #[n(7)]
     FileMessage {
         #[n(0)]
         to: String,
@@ -87,7 +80,7 @@ pub enum Message {
     },
 
     /// Register this client on the daemon
-    #[n(9)]
+    #[n(8)]
     Register {
         #[n(0)]
         chat: bool,
@@ -95,7 +88,8 @@ pub enum Message {
         files: bool,
     },
 
-    #[n(10)]
+    /// Message indicating successful registration of the client
+    #[n(9)]
     RegisterOk {
         #[n(0)]
         client_id: usize,
