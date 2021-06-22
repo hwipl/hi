@@ -169,6 +169,7 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                                 let msg =  Message::FileMessage {
                                     to_peer: String::new(),
                                     from_peer: from.clone(),
+                                    to_client: 0, // TODO: get id from event?
                                     content: content.clone(),
                                 };
                                 if let Err(e) = client.sender.send(msg).await {
