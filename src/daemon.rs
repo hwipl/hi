@@ -302,7 +302,7 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                             }
 
                             // handle file message
-                            Message::FileMessage { to_peer, content, .. } => {
+                            Message::FileMessage { to_peer, to_client, content, .. } => {
                                 debug!("received file message for {}", to_peer);
                                 if to_peer == "all" {
                                     // send message to all known peers with file support
@@ -310,13 +310,14 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                                         if peer.file_support {
                                             let event = swarm::Event::SendFileMessage(
                                                 peer.peer_id.clone(),
+                                                to_client,
                                                 content.clone());
-                                                swarm.send(event).await;
+                                            swarm.send(event).await;
                                         }
                                     }
                                 } else {
                                     // send message to peer specified in `to`
-                                    let event = swarm::Event::SendFileMessage(to_peer, content);
+                                    let event = swarm::Event::SendFileMessage(to_peer, to_client, content);
                                     swarm.send(event).await;
                                 }
                                 Message::Ok

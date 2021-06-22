@@ -31,8 +31,8 @@ pub enum Event {
     SendChatMessage(String, String),
     /// Set file support to enabled (true) or disabled (false)
     SetFiles(bool),
-    /// Send file message: destination, content
-    SendFileMessage(String, Vec<u8>),
+    /// Send file message: destination peer, destination client, content
+    SendFileMessage(String, u16, Vec<u8>),
 
     /// Peer announcement event
     AnnouncePeer(PeerInfo),
@@ -106,8 +106,8 @@ impl HiSwarm {
                         }
 
                         // handle send file message request
-                        Event::SendFileMessage(to, content) => {
-                            let peer_id = match PeerId::from_str(&to) {
+                        Event::SendFileMessage(to_peer, _to_client, content) => {
+                            let peer_id = match PeerId::from_str(&to_peer) {
                                 Ok(peer_id) => peer_id,
                                 Err(_) => continue,
                             };
