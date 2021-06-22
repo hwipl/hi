@@ -78,6 +78,8 @@ pub enum Message {
         #[n(2)]
         to_client: u16,
         #[n(3)]
+        from_client: u16,
+        #[n(4)]
         content: Vec<u8>,
     },
 

@@ -502,7 +502,8 @@ impl FileClient {
             return Some(Message::FileMessage {
                 to_peer: from_peer,
                 from_peer: String::new(),
-                to_client: 0, // TODO: get id from message?
+                to_client: 0,   // TODO: get id from message?
+                from_client: 0, // TODO: use own id
                 content,
             });
         }
@@ -586,6 +587,7 @@ impl FileClient {
                 to_peer,
                 from_peer: String::new(),
                 to_client: 0,
+                from_client: 0, // TODO: use own id
                 content,
             }
         };
