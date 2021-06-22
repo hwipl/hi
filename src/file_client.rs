@@ -436,16 +436,16 @@ impl FileClient {
     /// handle message coming from daemon and return daemon message as reply
     async fn handle_daemon_message(&mut self, message: Message) -> Option<Message> {
         // get file message and sender
-        let (file_message, from) = match message {
-            Message::FileMessage { from, content, .. } => {
-                match minicbor::decode::<FileMessage>(&content) {
-                    Ok(msg) => (msg, from),
-                    Err(e) => {
-                        error!("error decoding file message: {}", e);
-                        return None;
-                    }
+        let (file_message, from_peer) = match message {
+            Message::FileMessage {
+                from_peer, content, ..
+            } => match minicbor::decode::<FileMessage>(&content) {
+                Ok(msg) => (msg, from_peer),
+                Err(e) => {
+                    error!("error decoding file message: {}", e);
+                    return None;
                 }
-            }
+            },
             _ => return None,
         };
 
@@ -454,12 +454,12 @@ impl FileClient {
             FileMessage::List => Some(FileMessage::ListReply(self.shares.clone())),
             FileMessage::ListReply(list) => {
                 for (file, size) in list {
-                    println!("{}: {} ({} bytes)", from, file, size);
+                    println!("{}: {} ({} bytes)", from_peer, file, size);
                 }
                 None
             }
             FileMessage::Get(id, file) => {
-                self.handle_get_request(file, id, from.clone()).await;
+                self.handle_get_request(file, id, from_peer.clone()).await;
                 if self.transfers.contains_key(&id) {
                     self.transfers.get_mut(&id).unwrap().next().await
                 } else {
@@ -472,11 +472,11 @@ impl FileClient {
                         .transfers
                         .get(&id)
                         .unwrap()
-                        .is_valid_sender(from.clone())
+                        .is_valid_sender(from_peer.clone())
                     {
                         error!(
                             "got message for transfer {} from invalid sender {}",
-                            id, from
+                            id, from_peer
                         );
                         return None;
                     }
@@ -500,8 +500,8 @@ impl FileClient {
                 return None;
             }
             return Some(Message::FileMessage {
-                to_peer: from,
-                from: String::new(),
+                to_peer: from_peer,
+                from_peer: String::new(),
                 content,
             });
         }
@@ -583,7 +583,7 @@ impl FileClient {
             }
             Message::FileMessage {
                 to_peer,
-                from: String::new(),
+                from_peer: String::new(),
                 content,
             }
         };

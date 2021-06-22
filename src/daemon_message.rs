@@ -74,7 +74,7 @@ pub enum Message {
         #[n(0)]
         to_peer: String,
         #[n(1)]
-        from: String,
+        from_peer: String,
         #[n(2)]
         content: Vec<u8>,
     },

@@ -168,7 +168,7 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                                 // send message to client
                                 let msg =  Message::FileMessage {
                                     to_peer: String::new(),
-                                    from: from.clone(),
+                                    from_peer: from.clone(),
                                     content: content.clone(),
                                 };
                                 if let Err(e) = client.sender.send(msg).await {
