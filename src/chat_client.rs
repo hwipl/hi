@@ -13,30 +13,26 @@ pub async fn run_chat_client(mut client: unix_socket::UnixClient, config: config
         _ => String::from("all"),
     };
 
-    // enable chat mode for this client
-    let msg = Message::SetChat { enabled: true };
+    // register this client and enable chat mode
+    let msg = Message::Register {
+        chat: true,
+        files: false,
+    };
     if let Err(e) = client.send_message(msg).await {
         error!("error sending set chat message: {}", e);
         return;
     }
-
-    // receive reply
-    match client.receive_message().await {
-        Ok(msg) => {
-            debug!("set chat reply from server: {:?}", msg);
-            match msg {
-                Message::Ok => (),
-                _ => {
-                    error!("unexpected reply from server");
-                    return;
-                }
-            }
-        }
+    let _client_id = match client.receive_message().await {
+        Ok(Message::RegisterOk { client_id }) => client_id,
         Err(e) => {
-            error!("error receiving set chat reply: {}", e);
+            error!("error registering client: {}", e);
             return;
         }
-    }
+        Ok(msg) => {
+            error!("unexpected response during client registration: {:?}", msg);
+            return;
+        }
+    };
 
     // enter chat mode
     println!("Chat mode:");
