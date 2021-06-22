@@ -500,7 +500,7 @@ impl FileClient {
                 return None;
             }
             return Some(Message::FileMessage {
-                to: from,
+                to_peer: from,
                 from: String::new(),
                 content,
             });
@@ -518,7 +518,7 @@ impl FileClient {
         }
 
         // create file message and destination according to user command
-        let (file_message, to) = match cmd[0] {
+        let (file_message, to_peer) = match cmd[0] {
             "ls" => (FileMessage::List, String::from("all")),
             "share" => {
                 self.share_files(&cmd[1..]).await;
@@ -582,7 +582,7 @@ impl FileClient {
                 return None;
             }
             Message::FileMessage {
-                to,
+                to_peer,
                 from: String::new(),
                 content,
             }

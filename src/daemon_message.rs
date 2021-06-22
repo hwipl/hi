@@ -72,7 +72,7 @@ pub enum Message {
     #[n(7)]
     FileMessage {
         #[n(0)]
-        to: String,
+        to_peer: String,
         #[n(1)]
         from: String,
         #[n(2)]
