@@ -38,8 +38,8 @@ pub enum Event {
     AnnouncePeer(PeerInfo),
     /// Chat message: sender, message
     ChatMessage(String, String),
-    /// file message: sender, destination client, message
-    FileMessage(String, u16, Vec<u8>),
+    /// file message: sender, sender client, destination client, message
+    FileMessage(String, u16, u16, Vec<u8>),
 }
 
 /// Hi swarm
