@@ -162,14 +162,14 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                     }
 
                     // handle file messages
-                    swarm::Event::FileMessage(from, content) => {
+                    swarm::Event::FileMessage(from, to_client, content) => {
                         for client in clients.values_mut() {
                             if client.file_support {
                                 // send message to client
                                 let msg =  Message::FileMessage {
                                     to_peer: String::new(),
                                     from_peer: from.clone(),
-                                    to_client: 0, // TODO: get id from event?
+                                    to_client: to_client,
                                     from_client: 0, // TODO: get id from event?
                                     content: content.clone(),
                                 };
