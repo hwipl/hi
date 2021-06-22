@@ -55,7 +55,7 @@ impl NetworkBehaviourEventProcess<RequestResponseEvent<HiRequest, HiResponse>> f
                         }
 
                         // handle chat message
-                        HiRequest::FileMessage(to_client, content) => {
+                        HiRequest::FileMessage(to_client, _from_client, content) => {
                             debug!("received file message: {:?}", content);
                             let swarm_event =
                                 swarm::Event::FileMessage(peer.to_base58(), to_client, content);

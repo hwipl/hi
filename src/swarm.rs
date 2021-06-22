@@ -106,12 +106,12 @@ impl HiSwarm {
                         }
 
                         // handle send file message request
-                        Event::SendFileMessage(to_peer, to_client, _from_client, content) => {
+                        Event::SendFileMessage(to_peer, to_client, from_client, content) => {
                             let peer_id = match PeerId::from_str(&to_peer) {
                                 Ok(peer_id) => peer_id,
                                 Err(_) => continue,
                             };
-                            let file_msg = HiRequest::FileMessage(to_client, content);
+                            let file_msg = HiRequest::FileMessage(to_client, from_client, content);
                             swarm.behaviour_mut().request.send_request(&peer_id, file_msg);
                         }
 
