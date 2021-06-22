@@ -459,7 +459,7 @@ impl FileClient {
             FileMessage::List => Some(FileMessage::ListReply(self.shares.clone())),
             FileMessage::ListReply(list) => {
                 for (file, size) in list {
-                    println!("{}: {} ({} bytes)", from_peer, file, size);
+                    println!("{}/{}: {} ({} bytes)", from_peer, from_client, file, size);
                 }
                 None
             }
@@ -525,8 +525,8 @@ impl FileClient {
         }
 
         // create file message and destination according to user command
-        let (file_message, to_peer) = match cmd[0] {
-            "ls" => (FileMessage::List, String::from("all")),
+        let (file_message, to_peer, to_client) = match cmd[0] {
+            "ls" => (FileMessage::List, String::from("all"), u16::MAX),
             "share" => {
                 self.share_files(&cmd[1..]).await;
                 return None;
@@ -538,13 +538,16 @@ impl FileClient {
 
                 // create new download file transfer
                 let id = self.new_id();
-                let peer = String::from(cmd[1]);
+                let (peer, client) = {
+                    let (p, c) = cmd[1].split_once("/")?;
+                    (String::from(p), c.parse().ok()?)
+                };
                 let file = String::from(cmd[2]);
                 let file_transfer = FileTransfer::new(id, peer.clone(), String::new(), file);
                 self.transfers.insert(id, file_transfer);
                 let next = self.transfers.get_mut(&id).unwrap().next().await?;
 
-                (next, peer)
+                (next, peer, client)
             }
             "show" => {
                 println!("Shared files:");
@@ -591,7 +594,7 @@ impl FileClient {
             Message::FileMessage {
                 to_peer,
                 from_peer: String::new(),
-                to_client: 0,
+                to_client,
                 from_client: self.id,
                 content,
             }
