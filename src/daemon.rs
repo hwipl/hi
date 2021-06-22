@@ -356,10 +356,14 @@ async fn run_server(config: config::Config, server: unix_socket::UnixServer) {
 
     // handle incoming connections
     task::spawn(async move {
-        let mut id = 0;
+        let mut id = 1;
         while let Some(client) = server.next().await {
             task::spawn(handle_client(server_sender.clone(), id, client));
-            id = id.wrapping_add(1);
+            id += 1;
+            // skip ids MAX and 0
+            if id == u16::MAX {
+                id = 1;
+            }
         }
     });
 
