@@ -101,6 +101,9 @@ pub enum Message {
 }
 
 impl Message {
+    /// Client ID for all clients on a peer
+    pub const ALL_CLIENTS: u16 = u16::MAX;
+
     pub fn from_bytes(bytes: &[u8]) -> Option<Self> {
         match minicbor::decode(bytes) {
             Ok(msg) => Some(msg),

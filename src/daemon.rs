@@ -163,7 +163,7 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
 
                     // handle file messages
                     swarm::Event::FileMessage(from_peer, from_client, to_client, content) => {
-                        if to_client == u16::MAX {
+                        if to_client == Message::ALL_CLIENTS {
                             for client in clients.values_mut() {
                                 if client.file_support {
                                     // send message to client
@@ -389,8 +389,8 @@ async fn run_server(config: config::Config, server: unix_socket::UnixServer) {
         while let Some(client) = server.next().await {
             task::spawn(handle_client(server_sender.clone(), id, client));
             id += 1;
-            // skip ids MAX and 0
-            if id == u16::MAX {
+            // skip ids for ALL_CLIENTS and 0
+            if id == Message::ALL_CLIENTS {
                 id = 1;
             }
         }

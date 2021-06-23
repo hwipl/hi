@@ -526,7 +526,7 @@ impl FileClient {
 
         // create file message and destination according to user command
         let (file_message, to_peer, to_client) = match cmd[0] {
-            "ls" => (FileMessage::List, String::from("all"), u16::MAX),
+            "ls" => (FileMessage::List, String::from("all"), Message::ALL_CLIENTS),
             "share" => {
                 self.share_files(&cmd[1..]).await;
                 return None;
