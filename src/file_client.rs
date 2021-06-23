@@ -660,7 +660,7 @@ impl FileClient {
 }
 
 /// run daemon client in file mode
-pub fn run_file_client(config: config::Config) {
+pub fn run(config: config::Config) {
     task::block_on(async {
         match unix_socket::UnixClient::connect(&config).await {
             Ok(client) => FileClient::new(config, client).await.run().await,
