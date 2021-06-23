@@ -163,38 +163,43 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
 
                     // handle file messages
                     swarm::Event::FileMessage(from_peer, from_client, to_client, content) => {
-                        if to_client == Message::ALL_CLIENTS {
-                            for client in clients.values_mut() {
-                                if client.file_support {
-                                    // send message to client
-                                    let msg =  Message::FileMessage {
-                                        to_peer: String::new(),
-                                        from_peer: from_peer.clone(),
-                                        to_client,
-                                        from_client,
-                                        content: content.clone(),
-                                    };
-                                    if let Err(e) = client.sender.send(msg).await {
-                                        error!("handle client error: {}", e);
-                                        return;
-                                    }
-                                }
-                            }
-                            continue;
-                        }
-                        if clients.contains_key(&to_client) {
-                            let client = clients.get_mut(&to_client).unwrap();
+                        // helper for sending message to a client
+                        async fn send(
+                            client: &mut ClientInfo,
+                            from_peer: String,
+                            to_client: u16,
+                            from_client: u16,
+                            content: Vec<u8>,
+                        ) {
                             let msg =  Message::FileMessage {
                                 to_peer: String::new(),
-                                from_peer: from_peer.clone(),
+                                from_peer,
                                 to_client,
                                 from_client,
-                                content: content.clone(),
+                                content,
                             };
                             if let Err(e) = client.sender.send(msg).await {
                                 error!("handle client error: {}", e);
                                 return;
                             }
+                        }
+
+                        // handle message to all clients
+                        if to_client == Message::ALL_CLIENTS {
+                            for client in clients.values_mut() {
+                                if client.file_support {
+                                    send(client, from_peer.clone(), to_client, from_client,
+                                        content.clone()).await;
+                                }
+                            }
+                            continue;
+                        }
+
+                        // handle message to specific client
+                        if clients.contains_key(&to_client) {
+                            let client = clients.get_mut(&to_client).unwrap();
+                            send(client, from_peer.clone(), to_client, from_client,
+                                content.clone()).await;
                         }
                     }
 
