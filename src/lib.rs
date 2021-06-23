@@ -16,18 +16,10 @@ mod unix_socket;
 pub fn run() {
     env_logger::init();
     let config = config::get();
-    match config.daemon {
-        true => daemon::run(config),
-        false => {
-            if let Some(config::Command::Chat(..)) = config.command {
-                chat_client::run_chat_client(config);
-                return;
-            }
-            if let Some(config::Command::Files) = config.command {
-                file_client::run_file_client(config);
-                return;
-            }
-            daemon_client::run(config);
-        }
+    match config.command {
+        Some(config::Command::Daemon) => daemon::run(config),
+        Some(config::Command::Chat(..)) => chat_client::run_chat_client(config),
+        Some(config::Command::Files) => file_client::run_file_client(config),
+        None => daemon_client::run(config),
     }
 }

@@ -44,6 +44,8 @@ pub struct ChatOpts {
 
 #[derive(Clap)]
 pub enum Command {
+    /// Run daemon
+    Daemon,
     /// Run in chat mode
     Chat(ChatOpts),
     /// Run in file mode
@@ -54,10 +56,6 @@ pub enum Command {
 #[clap(version)]
 #[clap(setting = AppSettings::ColoredHelp)]
 pub struct Config {
-    /// Run in daemon mode.
-    #[clap(short, long)]
-    pub daemon: bool,
-
     /// Set directory
     #[clap(long)]
     pub dir: Option<PathBuf>,
