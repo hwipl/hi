@@ -18,6 +18,12 @@ pub fn run() {
     let config = config::get();
     match config.daemon {
         true => daemon::run(config),
-        false => daemon_client::run(config),
+        false => {
+            if let Some(config::Command::Files) = config.command {
+                file_client::run_file_client(config);
+                return;
+            }
+            daemon_client::run(config);
+        }
     }
 }

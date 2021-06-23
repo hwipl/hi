@@ -1,7 +1,6 @@
 use crate::chat_client;
 use crate::config;
 use crate::daemon_message::Message;
-use crate::file_client;
 use crate::unix_socket;
 use async_std::task;
 
@@ -83,12 +82,6 @@ async fn run_client(config: config::Config, mut client: unix_socket::UnixClient)
     // handle chat mode
     if let Some(config::Command::Chat(..)) = config.command {
         chat_client::run_chat_client(client, config).await;
-        return;
-    }
-
-    // handle file mode
-    if let Some(config::Command::Files) = config.command {
-        file_client::run_file_client(client, config).await;
         return;
     }
 }

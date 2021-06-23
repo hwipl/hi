@@ -1,7 +1,7 @@
 use crate::config;
 use crate::daemon_message::Message;
 use crate::unix_socket;
-use async_std::{fs, io, path, prelude::*};
+use async_std::{fs, io, path, prelude::*, task};
 use futures::future::FutureExt;
 use futures::select;
 use minicbor::{Decode, Encode};
@@ -660,6 +660,12 @@ impl FileClient {
 }
 
 /// run daemon client in file mode
-pub async fn run_file_client(client: unix_socket::UnixClient, config: config::Config) {
-    FileClient::new(config, client).await.run().await
+pub fn run_file_client(config: config::Config) {
+    task::block_on(async {
+        match unix_socket::UnixClient::connect(&config).await {
+            Ok(client) => FileClient::new(config, client).await.run().await,
+            Err(e) => error!("unix socket client error: {}", e),
+        }
+        debug!("file client stopped");
+    });
 }
