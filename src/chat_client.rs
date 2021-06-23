@@ -83,7 +83,7 @@ impl ChatClient {
 }
 
 /// run daemon client in chat mode
-pub fn run_chat_client(config: config::Config) {
+pub fn run(config: config::Config) {
     task::block_on(async {
         match unix_socket::UnixClient::connect(&config).await {
             Ok(client) => ChatClient::new(config, client).await.run().await,

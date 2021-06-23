@@ -18,7 +18,7 @@ pub fn run() {
     let config = config::get();
     match config.command {
         Some(config::Command::Daemon) => daemon::run(config),
-        Some(config::Command::Chat(..)) => chat_client::run_chat_client(config),
+        Some(config::Command::Chat(..)) => chat_client::run(config),
         Some(config::Command::Files) => file_client::run_file_client(config),
         None => daemon_client::run(config),
     }
