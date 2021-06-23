@@ -19,6 +19,10 @@ pub fn run() {
     match config.daemon {
         true => daemon::run(config),
         false => {
+            if let Some(config::Command::Chat(..)) = config.command {
+                chat_client::run_chat_client(config);
+                return;
+            }
             if let Some(config::Command::Files) = config.command {
                 file_client::run_file_client(config);
                 return;

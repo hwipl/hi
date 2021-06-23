@@ -1,7 +1,7 @@
 use crate::config;
 use crate::daemon_message::Message;
 use crate::unix_socket;
-use async_std::{io, prelude::*};
+use async_std::{io, prelude::*, task};
 use futures::future::FutureExt;
 use futures::select;
 
@@ -83,6 +83,12 @@ impl ChatClient {
 }
 
 /// run daemon client in chat mode
-pub async fn run_chat_client(client: unix_socket::UnixClient, config: config::Config) {
-    ChatClient::new(config, client).await.run().await
+pub fn run_chat_client(config: config::Config) {
+    task::block_on(async {
+        match unix_socket::UnixClient::connect(&config).await {
+            Ok(client) => ChatClient::new(config, client).await.run().await,
+            Err(e) => error!("unix socket client error: {}", e),
+        }
+        debug!("chat client stopped");
+    });
 }

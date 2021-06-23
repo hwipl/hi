@@ -1,4 +1,3 @@
-use crate::chat_client;
 use crate::config;
 use crate::daemon_message::Message;
 use crate::unix_socket;
@@ -77,12 +76,6 @@ async fn run_client(config: config::Config, mut client: unix_socket::UnixClient)
             Ok(msg) => debug!("get reply from server: {:?}", msg),
             Err(e) => error!("error receiving get reply: {}", e),
         }
-    }
-
-    // handle chat mode
-    if let Some(config::Command::Chat(..)) = config.command {
-        chat_client::run_chat_client(client, config).await;
-        return;
     }
 }
 
