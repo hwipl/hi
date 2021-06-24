@@ -23,6 +23,6 @@ pub fn run(config: config::Config) {
             Ok(client) => GetClient::new(config, client).await.run().await,
             Err(e) => error!("unix socket client error: {}", e),
         }
-        debug!("chat client stopped");
+        debug!("get client stopped");
     });
 }
