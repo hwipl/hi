@@ -3,6 +3,7 @@ extern crate log;
 
 mod behaviour;
 mod chat_client;
+mod clients;
 mod config;
 mod daemon;
 mod daemon_client;
@@ -18,7 +19,7 @@ pub fn run() {
     let config = config::get();
     match config.command {
         Some(config::Command::Daemon) => daemon::run(config),
-        Some(config::Command::Get) => (),
+        Some(config::Command::Get) => clients::get::run(config),
         Some(config::Command::Chat(..)) => chat_client::run(config),
         Some(config::Command::Files) => file_client::run(config),
         None => daemon_client::run(config),
