@@ -46,6 +46,8 @@ pub struct ChatOpts {
 pub enum Command {
     /// Run daemon
     Daemon,
+    /// Get information from running daemon
+    Get,
     /// Run in chat mode
     Chat(ChatOpts),
     /// Run in file mode
