@@ -1,7 +1,7 @@
 use crate::daemon::behaviour::HiBehaviour;
 use crate::daemon::gossip::HiAnnounce;
+use crate::daemon::request::{HiCodec, HiRequest, HiRequestProtocol};
 use crate::daemon_message::PeerInfo;
-use crate::request::{HiCodec, HiRequest, HiRequestProtocol};
 use async_std::task;
 use futures::{channel::mpsc, executor::block_on, prelude::*, select, sink::SinkExt};
 use libp2p::gossipsub::{Gossipsub, GossipsubConfig, IdentTopic, MessageAuthenticity};
