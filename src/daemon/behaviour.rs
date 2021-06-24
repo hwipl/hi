@@ -1,5 +1,5 @@
+use crate::daemon::gossip::HiAnnounce;
 use crate::daemon_message::PeerInfo;
-use crate::gossip::HiAnnounce;
 use crate::request::{HiCodec, HiRequest, HiResponse};
 use crate::swarm;
 use async_std::task;

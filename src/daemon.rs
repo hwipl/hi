@@ -1,4 +1,5 @@
 pub mod behaviour;
+pub mod gossip;
 
 use crate::config;
 use crate::daemon_message::{Message, PeerInfo};
