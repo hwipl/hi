@@ -1,3 +1,5 @@
+pub mod behaviour;
+
 use crate::config;
 use crate::daemon_message::{Message, PeerInfo};
 use crate::swarm;

@@ -1,4 +1,4 @@
-use crate::behaviour::HiBehaviour;
+use crate::daemon::behaviour::HiBehaviour;
 use crate::daemon_message::PeerInfo;
 use crate::gossip::HiAnnounce;
 use crate::request::{HiCodec, HiRequest, HiRequestProtocol};

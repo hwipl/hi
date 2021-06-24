@@ -1,7 +1,6 @@
 #[macro_use]
 extern crate log;
 
-mod behaviour;
 mod client;
 mod config;
 mod daemon;
