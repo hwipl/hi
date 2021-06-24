@@ -6,7 +6,6 @@ mod config;
 mod daemon;
 mod daemon_client;
 mod daemon_message;
-mod swarm;
 mod unix_socket;
 
 pub fn run() {

@@ -1,10 +1,10 @@
-pub mod behaviour;
-pub mod gossip;
-pub mod request;
+mod behaviour;
+mod gossip;
+mod request;
+mod swarm;
 
 use crate::config;
 use crate::daemon_message::{Message, PeerInfo};
-use crate::swarm;
 use crate::unix_socket;
 use async_std::prelude::*;
 use async_std::task;
