@@ -48,6 +48,8 @@ pub enum Command {
     Daemon,
     /// Get information from running daemon
     Get,
+    /// Set configuration options on running daemon
+    Set,
     /// Run in chat mode
     Chat(ChatOpts),
     /// Run in file mode
