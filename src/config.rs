@@ -90,10 +90,6 @@ pub struct Config {
     #[clap(long)]
     pub dir: Option<PathBuf>,
 
-    /// Get configuration options
-    #[clap(long, name = "option")]
-    pub get: Vec<ConfigOption>,
-
     /// Run command
     #[clap(subcommand)]
     pub command: Option<Command>,
