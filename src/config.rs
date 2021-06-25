@@ -90,10 +90,6 @@ pub struct Config {
     #[clap(long)]
     pub dir: Option<PathBuf>,
 
-    /// Connect to peer addresses.
-    #[clap(short, long, name = "address")]
-    pub connect: Vec<String>,
-
     /// Set configuration options
     #[clap(long, name = "option:value")]
     pub set: Vec<ConfigOption>,
