@@ -1,19 +1,56 @@
 use crate::config;
+use crate::daemon_message::Message;
 use crate::unix_socket;
 use async_std::task;
 
 /// get client
 struct GetClient {
-    _config: config::Config,
-    _client: unix_socket::UnixClient,
+    config: config::Config,
+    client: unix_socket::UnixClient,
 }
 
 impl GetClient {
-    async fn new(_config: config::Config, _client: unix_socket::UnixClient) -> Self {
-        GetClient { _config, _client }
+    /// create new get client
+    async fn new(config: config::Config, client: unix_socket::UnixClient) -> Self {
+        GetClient { config, client }
     }
 
-    async fn run(&self) {}
+    /// run get client
+    async fn run(&mut self) {
+        // get options to get from config
+        let options = match self.config.command {
+            Some(config::Command::Get(ref get_opts)) => &get_opts.info,
+            _ => return,
+        };
+
+        // handle get configuration options
+        for option in options.iter() {
+            let msg = match option.as_str() {
+                "name" => Message::GetName {
+                    name: String::from(""),
+                },
+                "peers" => Message::GetPeers { peers: Vec::new() },
+                _ => {
+                    error!("error getting unknown configuration option: {}", option);
+                    continue;
+                }
+            };
+
+            // send message
+            if let Err(e) = self.client.send_message(msg).await {
+                error!("error sending get message: {}", e);
+            }
+
+            // receive reply
+            match self.client.receive_message().await {
+                Ok(msg) => {
+                    debug!("get reply from server: {:?}", msg);
+                    println!("{:?}", msg);
+                }
+                Err(e) => error!("error receiving get reply: {}", e),
+            }
+        }
+    }
 }
 
 /// run get client
