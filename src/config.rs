@@ -36,6 +36,14 @@ impl FromStr for ConfigOption {
 #[derive(Clap)]
 #[clap(version)]
 #[clap(setting = AppSettings::ColoredHelp)]
+pub struct GetOpts {
+    /// Information to get from the daemon
+    pub info: Vec<String>,
+}
+
+#[derive(Clap)]
+#[clap(version)]
+#[clap(setting = AppSettings::ColoredHelp)]
 pub struct SetOpts {
     /// Option:value pairs to set on the daemon
     #[clap(name = "option:value")]
@@ -56,7 +64,7 @@ pub enum Command {
     /// Run daemon
     Daemon,
     /// Get information from running daemon
-    Get,
+    Get(GetOpts),
     /// Set configuration options on running daemon
     Set(SetOpts),
     /// Run in chat mode
