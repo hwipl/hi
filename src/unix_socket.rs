@@ -90,17 +90,4 @@ impl UnixClient {
             )),
         }
     }
-
-    /// Unix client and server test
-    pub async fn test(&mut self) -> io::Result<()> {
-        // send ok message
-        self.send_message(Message::Ok).await?;
-        debug!("Sent message to server: {:?}", Message::Ok);
-
-        // receive ok message
-        let reply = self.receive_message().await?;
-        debug!("Read reply from server: {:?}", reply);
-
-        Ok(())
-    }
 }
