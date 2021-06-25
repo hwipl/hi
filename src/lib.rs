@@ -4,7 +4,6 @@ extern crate log;
 mod client;
 mod config;
 mod daemon;
-mod daemon_client;
 mod daemon_message;
 mod unix_socket;
 
@@ -17,6 +16,6 @@ pub fn run() {
         Some(config::Command::Set(..)) => client::set::run(config),
         Some(config::Command::Chat(..)) => client::chat::run(config),
         Some(config::Command::Files) => client::file::run(config),
-        None => daemon_client::run(config),
+        None => (),
     }
 }
