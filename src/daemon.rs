@@ -428,13 +428,13 @@ async fn run_server(config: config::Config, server: unix_socket::UnixServer) {
                     .send(swarm::Event::SetName(option.value.clone()))
                     .await;
             }
+            "connect" => {
+                swarm
+                    .send(swarm::Event::ConnectAddress(option.value.clone()))
+                    .await;
+            }
             _ => (),
         }
-    }
-
-    // handle connect addresses in config
-    for addr in config.connect {
-        swarm.send(swarm::Event::ConnectAddress(addr)).await;
     }
 
     // handle server events
