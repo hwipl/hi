@@ -30,6 +30,11 @@ impl SetClient {
                 "name" => Message::SetName {
                     name: option.value.to_string(),
                 },
+
+                "connect" => Message::ConnectAddress {
+                    address: option.value.to_string(),
+                },
+
                 _ => {
                     error!(
                         "error setting unknown configuration option: {}",
