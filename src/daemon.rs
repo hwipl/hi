@@ -414,10 +414,21 @@ async fn run_server(config: config::Config, server: unix_socket::UnixServer) {
         }
     };
 
-    // handle set options in config
-    for option in config.set {
-        if option.name == "name" {
-            swarm.send(swarm::Event::SetName(option.value)).await;
+    // get options to set from config
+    let options = match config.command {
+        Some(config::Command::Daemon(ref daemon_opts)) => &daemon_opts.set,
+        _ => return,
+    };
+
+    // handle set options
+    for option in options.iter() {
+        match option.name.as_str() {
+            "name" => {
+                swarm
+                    .send(swarm::Event::SetName(option.value.clone()))
+                    .await;
+            }
+            _ => (),
         }
     }
 
