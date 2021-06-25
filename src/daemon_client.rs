@@ -5,34 +5,6 @@ use async_std::task;
 
 /// run daemon client with config
 async fn run_client(config: config::Config, mut client: unix_socket::UnixClient) {
-    // handle set configuration options in config
-    for option in config.set.iter() {
-        // create message
-        let msg = match option.name.as_str() {
-            "name" => Message::SetName {
-                name: option.value.to_string(),
-            },
-            _ => {
-                error!(
-                    "error setting unknown configuration option: {}",
-                    option.name
-                );
-                continue;
-            }
-        };
-
-        // send message
-        if let Err(e) = client.send_message(msg).await {
-            error!("error sending set message: {}", e);
-        }
-
-        // receive reply
-        match client.receive_message().await {
-            Ok(msg) => debug!("set reply from server: {:?}", msg),
-            Err(e) => error!("error receiving set reply: {}", e),
-        }
-    }
-
     // handle get configuration options in config
     for option in config.get.iter() {
         let msg = match option.name.as_str() {
