@@ -60,6 +60,7 @@ impl GetClient {
                                 );
                             }
                         }
+                        Message::Error { message } => println!("Error: {}", message),
                         _ => println!("{:?}", msg),
                     }
                 }
