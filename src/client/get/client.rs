@@ -45,7 +45,10 @@ impl GetClient {
             match self.client.receive_message().await {
                 Ok(msg) => {
                     debug!("get reply from server: {:?}", msg);
-                    println!("{:?}", msg);
+                    match msg {
+                        Message::GetName { name } => println!("Name: {}", name),
+                        _ => println!("{:?}", msg),
+                    }
                 }
                 Err(e) => error!("error receiving get reply: {}", e),
             }
