@@ -47,6 +47,19 @@ impl GetClient {
                     debug!("get reply from server: {:?}", msg);
                     match msg {
                         Message::GetName { name } => println!("Name: {}", name),
+                        Message::GetPeers { peers } => {
+                            println!("Peers:");
+                            for peer in peers {
+                                println!(
+                                    "  peer_id: {}, name: {:?}, chat_support: {}, file_support: {}, last_update: {}",
+                                    peer.peer_id,
+                                    peer.name,
+                                    peer.chat_support,
+                                    peer.file_support,
+                                    peer.last_update
+                                );
+                            }
+                        }
                         _ => println!("{:?}", msg),
                     }
                 }
