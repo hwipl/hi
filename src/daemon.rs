@@ -482,7 +482,7 @@ async fn run_server(config: config::Config, server: unix_socket::UnixServer) {
     }
 
     // handle server events
-    task::block_on(run_server_loop(server_receiver, swarm));
+    run_server_loop(server_receiver, swarm).await;
 }
 
 /// entry point for running the daemon server
