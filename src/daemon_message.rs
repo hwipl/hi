@@ -14,6 +14,13 @@ pub struct PeerInfo {
     pub last_update: u64,
 }
 
+#[derive(Clone, Debug, Encode, Decode)]
+pub enum GetInfo {
+    /// Error message
+    #[n(0)]
+    Error(#[n(0)] String),
+}
+
 #[derive(Debug, Encode, Decode)]
 pub enum Message {
     /// Ok message
@@ -97,6 +104,17 @@ pub enum Message {
     RegisterOk {
         #[n(0)]
         client_id: u16,
+    },
+
+    /// Get information from the daemon
+    #[n(10)]
+    Get {
+        #[n(0)]
+        client_id: u16,
+        #[n(1)]
+        request_id: u32,
+        #[n(2)]
+        info: GetInfo,
     },
 }
 
