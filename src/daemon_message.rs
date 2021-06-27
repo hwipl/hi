@@ -31,6 +31,10 @@ pub enum GetSet {
     /// Known peers
     #[n(3)]
     Peers(#[n(0)] Vec<PeerInfo>),
+
+    /// Connect to peer address
+    #[n(4)]
+    Connect(#[n(0)] String),
 }
 
 #[derive(Debug, Encode, Decode)]

@@ -399,6 +399,11 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                                         swarm.send(event).await;
                                         GetSet::Ok
                                     }
+                                    GetSet::Connect(address) => {
+                                        let event = swarm::Event::ConnectAddress(address);
+                                        swarm.send(event).await;
+                                        GetSet::Ok
+                                    }
                                     _ => {
                                         GetSet::Error(String::from("Unknown set request"))
                                     }
