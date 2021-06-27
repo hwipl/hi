@@ -16,16 +16,20 @@ pub struct PeerInfo {
 
 #[derive(Clone, Debug, Encode, Decode)]
 pub enum GetSet {
-    /// Error message
+    /// Ok message
     #[n(0)]
+    Ok,
+
+    /// Error message
+    #[n(1)]
     Error(#[n(0)] String),
 
     /// Name
-    #[n(1)]
+    #[n(2)]
     Name(#[n(0)] String),
 
     /// Known peers
-    #[n(2)]
+    #[n(3)]
     Peers(#[n(0)] Vec<PeerInfo>),
 }
 
