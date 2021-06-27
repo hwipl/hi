@@ -15,7 +15,7 @@ pub struct PeerInfo {
 }
 
 #[derive(Clone, Debug, Encode, Decode)]
-pub enum GetInfo {
+pub enum GetSet {
     /// Error message
     #[n(0)]
     Error(#[n(0)] String),
@@ -122,7 +122,7 @@ pub enum Message {
         #[n(1)]
         request_id: u32,
         #[n(2)]
-        info: GetInfo,
+        content: GetSet,
     },
 }
 

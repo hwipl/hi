@@ -4,7 +4,7 @@ mod request;
 mod swarm;
 
 use crate::config;
-use crate::daemon_message::{GetInfo, Message, PeerInfo};
+use crate::daemon_message::{GetSet, Message, PeerInfo};
 use crate::unix_socket;
 use async_std::prelude::*;
 use async_std::task;
@@ -372,22 +372,22 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                             }
 
                             // handle get message
-                            Message::Get { client_id, request_id, info } => {
-                                let info = match info {
-                                    GetInfo::Name(..) => {
-                                        GetInfo::Error(String::from("Not yet implemented"))
+                            Message::Get { client_id, request_id, content } => {
+                                let content = match content {
+                                    GetSet::Name(..) => {
+                                        GetSet::Error(String::from("Not yet implemented"))
                                     }
-                                    GetInfo::Peers(..) => {
-                                        GetInfo::Peers(peers.values().cloned().collect())
+                                    GetSet::Peers(..) => {
+                                        GetSet::Peers(peers.values().cloned().collect())
                                     }
                                     _ => {
-                                        GetInfo::Error(String::from("Unknown get request"))
+                                        GetSet::Error(String::from("Unknown get request"))
                                     }
                                 };
                                 Message::Get {
                                     client_id,
                                     request_id,
-                                    info,
+                                    content,
                                 }
                             }
 
