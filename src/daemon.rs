@@ -373,17 +373,21 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
 
                             // handle get message
                             Message::Get { client_id, request_id, info } => {
-                                match info {
+                                let info = match info {
                                     GetInfo::Name(..) => {
-                                        let info =
-                                            GetInfo::Error(String::from("Not yet implemented"));
-                                        Message::Get {
-                                            client_id,
-                                            request_id,
-                                            info,
-                                        }
+                                        GetInfo::Error(String::from("Not yet implemented"))
                                     }
-                                    _ => continue,
+                                    GetInfo::Peers(..) => {
+                                        GetInfo::Peers(peers.values().cloned().collect())
+                                    }
+                                    _ => {
+                                        GetInfo::Error(String::from("Unknown get request"))
+                                    }
+                                };
+                                Message::Get {
+                                    client_id,
+                                    request_id,
+                                    info,
                                 }
                             }
 

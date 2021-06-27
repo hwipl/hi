@@ -23,6 +23,10 @@ pub enum GetInfo {
     /// Name
     #[n(1)]
     Name(#[n(0)] String),
+
+    /// Known peers
+    #[n(2)]
+    Peers(#[n(0)] Vec<PeerInfo>),
 }
 
 #[derive(Debug, Encode, Decode)]
