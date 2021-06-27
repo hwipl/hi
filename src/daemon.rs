@@ -394,6 +394,11 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                             // handle set message
                             Message::Set { client_id, request_id, content } => {
                                 let content = match content {
+                                    GetSet::Name(name) => {
+                                        let event = swarm::Event::SetName(name);
+                                        swarm.send(event).await;
+                                        GetSet::Ok
+                                    }
                                     _ => {
                                         GetSet::Error(String::from("Unknown set request"))
                                     }
