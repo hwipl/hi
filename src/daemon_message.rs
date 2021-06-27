@@ -19,6 +19,10 @@ pub enum GetInfo {
     /// Error message
     #[n(0)]
     Error(#[n(0)] String),
+
+    /// Name
+    #[n(1)]
+    Name(#[n(0)] String),
 }
 
 #[derive(Debug, Encode, Decode)]

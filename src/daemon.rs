@@ -4,7 +4,7 @@ mod request;
 mod swarm;
 
 use crate::config;
-use crate::daemon_message::{Message, PeerInfo};
+use crate::daemon_message::{GetInfo, Message, PeerInfo};
 use crate::unix_socket;
 use async_std::prelude::*;
 use async_std::task;
@@ -371,9 +371,24 @@ async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm)
                                 Message::RegisterOk{ client_id: id }
                             }
 
+                            // handle get message
+                            Message::Get { client_id, request_id, info } => {
+                                match info {
+                                    GetInfo::Name(..) => {
+                                        let info =
+                                            GetInfo::Error(String::from("Not yet implemented"));
+                                        Message::Get {
+                                            client_id,
+                                            request_id,
+                                            info,
+                                        }
+                                    }
+                                    _ => continue,
+                                }
+                            }
+
                             // handle other messages
                             Message::RegisterOk { .. } => continue,
-                            Message::Get { .. } => continue,
                         };
 
                         // send reply to client
