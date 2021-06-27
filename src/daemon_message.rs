@@ -124,6 +124,17 @@ pub enum Message {
         #[n(2)]
         content: GetSet,
     },
+
+    /// Set configuration options on the daemon
+    #[n(11)]
+    Set {
+        #[n(0)]
+        client_id: u16,
+        #[n(1)]
+        request_id: u32,
+        #[n(2)]
+        content: GetSet,
+    },
 }
 
 impl Message {
