@@ -156,6 +156,104 @@ impl Daemon {
         }
     }
 
+    /// handle swarm event
+    async fn handle_swarm_event(&mut self, event: swarm::Event) {
+        match event {
+            // handle peer announcement
+            swarm::Event::AnnouncePeer(peer_info) => {
+                // add or update peer entry
+                match self.peers.entry(peer_info.peer_id.clone()) {
+                    Entry::Occupied(mut entry) => {
+                        entry.insert(peer_info);
+                    }
+                    Entry::Vacant(entry) => {
+                        entry.insert(peer_info);
+                    }
+                }
+            }
+
+            // handle chat messages
+            swarm::Event::ChatMessage(from, msg) => {
+                for client in self.clients.values_mut() {
+                    if client.chat_support {
+                        // send msg to client
+                        let from_name = match self.peers.get(&from) {
+                            Some(peer) => peer.name.clone(),
+                            None => String::new(),
+                        };
+                        let msg = Message::ChatMessage {
+                            to: String::new(),
+                            from: from.clone(),
+                            from_name,
+                            message: msg.clone(),
+                        };
+                        if let Err(e) = client.sender.send(msg).await {
+                            error!("handle client error: {}", e);
+                            return;
+                        }
+                    }
+                }
+            }
+
+            // handle file messages
+            swarm::Event::FileMessage(from_peer, from_client, to_client, content) => {
+                // helper for sending message to a client
+                async fn send(
+                    client: &mut ClientInfo,
+                    from_peer: String,
+                    to_client: u16,
+                    from_client: u16,
+                    content: Vec<u8>,
+                ) {
+                    let msg = Message::FileMessage {
+                        to_peer: String::new(),
+                        from_peer,
+                        to_client,
+                        from_client,
+                        content,
+                    };
+                    if let Err(e) = client.sender.send(msg).await {
+                        error!("handle client error: {}", e);
+                        return;
+                    }
+                }
+
+                // handle message to all clients
+                if to_client == Message::ALL_CLIENTS {
+                    for client in self.clients.values_mut() {
+                        if client.file_support {
+                            send(
+                                client,
+                                from_peer.clone(),
+                                to_client,
+                                from_client,
+                                content.clone(),
+                            )
+                            .await;
+                        }
+                    }
+                    return;
+                }
+
+                // handle message to specific client
+                if self.clients.contains_key(&to_client) {
+                    let client = self.clients.get_mut(&to_client).unwrap();
+                    send(
+                        client,
+                        from_peer.clone(),
+                        to_client,
+                        from_client,
+                        content.clone(),
+                    )
+                    .await;
+                }
+            }
+
+            // handle other events
+            _ => (),
+        }
+    }
+
     /// run the server's main loop
     async fn run_server_loop(&mut self) {
         // start timer
@@ -186,89 +284,7 @@ impl Daemon {
                         Some(event) => event,
                         None => break,
                     };
-
-                    match event {
-                        // handle peer announcement
-                        swarm::Event::AnnouncePeer(peer_info) => {
-                            // add or update peer entry
-                            match self.peers.entry(peer_info.peer_id.clone()) {
-                                Entry::Occupied(mut entry) => {
-                                    entry.insert(peer_info);
-                                }
-                                Entry::Vacant(entry) => {
-                                    entry.insert(peer_info);
-                                }
-                            }
-                        }
-
-                        // handle chat messages
-                        swarm::Event::ChatMessage(from, msg) => {
-                            for client in self.clients.values_mut() {
-                                if client.chat_support {
-                                    // send msg to client
-                                    let from_name = match self.peers.get(&from) {
-                                        Some(peer) => peer.name.clone(),
-                                        None => String::new(),
-                                    };
-                                    let msg =  Message::ChatMessage {
-                                        to: String::new(),
-                                        from: from.clone(),
-                                        from_name,
-                                        message: msg.clone(),
-                                    };
-                                    if let Err(e) = client.sender.send(msg).await {
-                                        error!("handle client error: {}", e);
-                                        return;
-                                    }
-                                }
-                            }
-                        }
-
-                        // handle file messages
-                        swarm::Event::FileMessage(from_peer, from_client, to_client, content) => {
-                            // helper for sending message to a client
-                            async fn send(
-                                client: &mut ClientInfo,
-                                from_peer: String,
-                                to_client: u16,
-                                from_client: u16,
-                                content: Vec<u8>,
-                            ) {
-                                let msg =  Message::FileMessage {
-                                    to_peer: String::new(),
-                                    from_peer,
-                                    to_client,
-                                    from_client,
-                                    content,
-                                };
-                                if let Err(e) = client.sender.send(msg).await {
-                                    error!("handle client error: {}", e);
-                                    return;
-                                }
-                            }
-
-                            // handle message to all clients
-                            if to_client == Message::ALL_CLIENTS {
-                                for client in self.clients.values_mut() {
-                                    if client.file_support {
-                                        send(client, from_peer.clone(), to_client, from_client,
-                                            content.clone()).await;
-                                    }
-                                }
-                                continue;
-                            }
-
-                            // handle message to specific client
-                            if self.clients.contains_key(&to_client) {
-                                let client = self.clients.get_mut(&to_client).unwrap();
-                                send(client, from_peer.clone(), to_client, from_client,
-                                    content.clone()).await;
-                            }
-                        }
-
-                        // handle other events
-                        _ => (),
-                    }
+                    self.handle_swarm_event(event).await;
                 }
 
                 // handle events coming from clients
