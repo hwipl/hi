@@ -36,18 +36,25 @@ struct ClientInfo {
 /// Daemon
 struct Daemon {
     config: config::Config,
-    from_clients: Option<Receiver<Event>>,
+    server: unix_socket::UnixServer,
+    from_client_rx: Receiver<Event>,
+    from_client_tx: Sender<Event>,
     swarm: Option<swarm::HiSwarm>,
+    client_id: u16,
     clients: HashMap<u16, ClientInfo>,
     peers: HashMap<String, PeerInfo>,
 }
 
 impl Daemon {
-    pub async fn new(config: config::Config) -> Self {
+    pub async fn new(config: config::Config, server: unix_socket::UnixServer) -> Self {
+        let (from_client_tx, from_client_rx) = mpsc::unbounded();
         Daemon {
             config,
-            from_clients: None,
+            server,
+            from_client_rx,
+            from_client_tx,
             swarm: None,
+            client_id: 1,
             clients: HashMap::new(),
             peers: HashMap::new(),
         }
@@ -112,12 +119,6 @@ impl Daemon {
 
     /// run the server's main loop
     async fn run_server_loop(&mut self) {
-        // make sure from_clients is set
-        let from_clients = match self.from_clients.as_mut() {
-            Some(from_clients) => from_clients,
-            None => panic!("from_clients should have a value"),
-        };
-
         // make sure swarm is set
         let swarm = match self.swarm.as_mut() {
             Some(swarm) => swarm,
@@ -129,6 +130,23 @@ impl Daemon {
 
         loop {
             select! {
+                // handle incoming connections
+                event = self.server.next().fuse() => {
+                    let client = match event {
+                        Some(client) => client,
+                        None => break,
+                    };
+                    task::spawn(Self::handle_client(
+                            self.from_client_tx.clone(),
+                            self.client_id,
+                            client));
+                    self.client_id += 1;
+                    // skip ids for ALL_CLIENTS and 0
+                    if self.client_id == Message::ALL_CLIENTS {
+                        self.client_id = 1;
+                    }
+                }
+
                 // handle timer event
                 event = timer => {
                     debug!("daemon timer event: {:?}", event);
@@ -243,7 +261,7 @@ impl Daemon {
                 }
 
                 // handle events coming from clients
-                event = from_clients.next().fuse() => {
+                event = self.from_client_rx.next().fuse() => {
                     let event = match event {
                         Some(event) => event,
                         None => break,
@@ -462,24 +480,7 @@ impl Daemon {
     }
 
     /// run server
-    async fn run(&mut self, server: unix_socket::UnixServer) {
-        // create channels and data structure for clients
-        let (server_sender, server_receiver) = mpsc::unbounded();
-        self.from_clients = Some(server_receiver);
-
-        // handle incoming connections
-        task::spawn(async move {
-            let mut id = 1;
-            while let Some(client) = server.next().await {
-                task::spawn(Self::handle_client(server_sender.clone(), id, client));
-                id += 1;
-                // skip ids for ALL_CLIENTS and 0
-                if id == Message::ALL_CLIENTS {
-                    id = 1;
-                }
-            }
-        });
-
+    async fn run(&mut self) {
         // create and run swarm
         let mut swarm = match swarm::HiSwarm::run().await {
             Ok(swarm) => swarm,
@@ -523,7 +524,7 @@ pub fn run(config: config::Config) {
     // run unix socket server
     task::block_on(async {
         match unix_socket::UnixServer::listen(&config).await {
-            Ok(server) => Daemon::new(config).await.run(server).await,
+            Ok(server) => Daemon::new(config, server).await.run().await,
             Err(e) => error!("unix socket server error: {}", e),
         };
         debug!("unix socket server stopped");
