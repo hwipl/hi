@@ -37,6 +37,7 @@ struct ClientInfo {
 struct Daemon {
     config: config::Config,
     clients: HashMap<u16, ClientInfo>,
+    peers: HashMap<String, PeerInfo>,
 }
 
 impl Daemon {
@@ -44,6 +45,7 @@ impl Daemon {
         Daemon {
             config,
             clients: HashMap::new(),
+            peers: HashMap::new(),
         }
     }
 
@@ -106,9 +108,6 @@ impl Daemon {
 
     /// run the server's main loop
     async fn run_server_loop(&mut self, mut server: Receiver<Event>, mut swarm: swarm::HiSwarm) {
-        // information about known peers
-        let mut peers: HashMap<String, PeerInfo> = HashMap::new();
-
         // start timer
         let mut timer = Delay::new(Duration::from_secs(5)).fuse();
 
@@ -125,13 +124,13 @@ impl Daemon {
                         .expect("timestamp error")
                         .as_secs();
                     let mut remove_peers = Vec::new();
-                    for peer in peers.values() {
+                    for peer in self.peers.values() {
                         if current_secs - peer.last_update > 30 {
                             remove_peers.push(peer.peer_id.clone());
                         }
                     }
                     for peer in remove_peers {
-                        peers.remove(&peer);
+                        self.peers.remove(&peer);
                     }
                 }
 
@@ -147,7 +146,7 @@ impl Daemon {
                         // handle peer announcement
                         swarm::Event::AnnouncePeer(peer_info) => {
                             // add or update peer entry
-                            match peers.entry(peer_info.peer_id.clone()) {
+                            match self.peers.entry(peer_info.peer_id.clone()) {
                                 Entry::Occupied(mut entry) => {
                                     entry.insert(peer_info);
                                 }
@@ -162,7 +161,7 @@ impl Daemon {
                             for client in self.clients.values_mut() {
                                 if client.chat_support {
                                     // send msg to client
-                                    let from_name = match peers.get(&from) {
+                                    let from_name = match self.peers.get(&from) {
                                         Some(peer) => peer.name.clone(),
                                         None => String::new(),
                                     };
@@ -317,7 +316,7 @@ impl Daemon {
 
                                 // handle get peers request
                                 Message::GetPeers { .. } => {
-                                    let peer_infos = peers.values().cloned().collect();
+                                    let peer_infos = self.peers.values().cloned().collect();
                                     Message::GetPeers { peers: peer_infos }
                                 }
 
@@ -326,7 +325,7 @@ impl Daemon {
                                     debug!("received chat message for {}: {}", to, message);
                                     if to == "all" {
                                         // send message to all known peers with chat support
-                                        for peer in peers.values() {
+                                        for peer in self.peers.values() {
                                             if peer.chat_support {
                                                 let event = swarm::Event::SendChatMessage(
                                                     peer.peer_id.clone(),
@@ -353,7 +352,7 @@ impl Daemon {
                                     debug!("received file message for {}", to_peer);
                                     if to_peer == "all" {
                                         // send message to all known peers with file support
-                                        for peer in peers.values() {
+                                        for peer in self.peers.values() {
                                             if peer.file_support {
                                                 let event = swarm::Event::SendFileMessage(
                                                     peer.peer_id.clone(),
@@ -393,7 +392,7 @@ impl Daemon {
                                             GetSet::Error(String::from("Not yet implemented"))
                                         }
                                         GetSet::Peers(..) => {
-                                            GetSet::Peers(peers.values().cloned().collect())
+                                            GetSet::Peers(self.peers.values().cloned().collect())
                                         }
                                         _ => {
                                             GetSet::Error(String::from("Unknown get request"))
