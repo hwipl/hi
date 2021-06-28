@@ -1,5 +1,5 @@
 use crate::config;
-use crate::daemon_message::Message;
+use crate::daemon_message::{GetSet, Message};
 use crate::unix_socket;
 use async_std::task;
 use std::error::Error;
@@ -9,6 +9,7 @@ struct GetClient {
     config: config::Config,
     client: unix_socket::UnixClient,
     client_id: u16,
+    request_id: u32,
 }
 
 impl GetClient {
@@ -18,6 +19,7 @@ impl GetClient {
             config,
             client,
             client_id: 0,
+            request_id: 0,
         }
     }
 
@@ -35,6 +37,18 @@ impl GetClient {
             }
             _ => Err("unexpected message from daemon".into()),
         }
+    }
+
+    /// send get request
+    async fn send_request(&mut self, content: GetSet) -> Result<(), Box<dyn Error>> {
+        let msg = Message::Get {
+            client_id: self.client_id,
+            request_id: self.request_id,
+            content,
+        };
+        self.client.send_message(msg).await?;
+        self.request_id = self.request_id.wrapping_add(1);
+        Ok(())
     }
 
     /// run get client
