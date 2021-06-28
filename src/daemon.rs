@@ -37,6 +37,7 @@ struct ClientInfo {
 struct Daemon {
     config: config::Config,
     from_clients: Option<Receiver<Event>>,
+    swarm: Option<swarm::HiSwarm>,
     clients: HashMap<u16, ClientInfo>,
     peers: HashMap<String, PeerInfo>,
 }
@@ -46,6 +47,7 @@ impl Daemon {
         Daemon {
             config,
             from_clients: None,
+            swarm: None,
             clients: HashMap::new(),
             peers: HashMap::new(),
         }
@@ -109,11 +111,17 @@ impl Daemon {
     }
 
     /// run the server's main loop
-    async fn run_server_loop(&mut self, mut swarm: swarm::HiSwarm) {
+    async fn run_server_loop(&mut self) {
         // make sure from_clients is set
         let from_clients = match self.from_clients.as_mut() {
             Some(from_clients) => from_clients,
             None => panic!("from_clients should have a value"),
+        };
+
+        // make sure swarm is set
+        let swarm = match self.swarm.as_mut() {
+            Some(swarm) => swarm,
+            None => panic!("swarm should have a value"),
         };
 
         // start timer
@@ -505,7 +513,8 @@ impl Daemon {
         }
 
         // handle server events
-        self.run_server_loop(swarm).await;
+        self.swarm = Some(swarm);
+        self.run_server_loop().await;
     }
 }
 
