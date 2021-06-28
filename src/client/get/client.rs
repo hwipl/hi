@@ -58,25 +58,21 @@ impl GetClient {
 
         // get options to get from config
         let options = match self.config.command {
-            Some(config::Command::Get(ref get_opts)) => &get_opts.info,
+            Some(config::Command::Get(ref get_opts)) => get_opts.info.clone(),
             _ => return Err("invalid config".into()),
         };
 
         // handle get configuration options
         for option in options.iter() {
-            let msg = match option.as_str() {
-                "name" => Message::GetName {
-                    name: String::from(""),
-                },
-                "peers" => Message::GetPeers { peers: Vec::new() },
+            let content = match option.as_str() {
+                "name" => GetSet::Name(String::new()),
+                "peers" => GetSet::Peers(Vec::new()),
                 _ => {
                     error!("error getting unknown configuration option: {}", option);
                     continue;
                 }
             };
-
-            // send message
-            self.client.send_message(msg).await?;
+            self.send_request(content).await?;
 
             // receive reply
             match self.client.receive_message().await? {
