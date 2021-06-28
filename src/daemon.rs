@@ -36,6 +36,7 @@ struct ClientInfo {
 /// Daemon
 struct Daemon {
     config: config::Config,
+    from_clients: Option<Receiver<Event>>,
     clients: HashMap<u16, ClientInfo>,
     peers: HashMap<String, PeerInfo>,
 }
@@ -44,6 +45,7 @@ impl Daemon {
     pub async fn new(config: config::Config) -> Self {
         Daemon {
             config,
+            from_clients: None,
             clients: HashMap::new(),
             peers: HashMap::new(),
         }
@@ -107,7 +109,13 @@ impl Daemon {
     }
 
     /// run the server's main loop
-    async fn run_server_loop(&mut self, mut server: Receiver<Event>, mut swarm: swarm::HiSwarm) {
+    async fn run_server_loop(&mut self, mut swarm: swarm::HiSwarm) {
+        // make sure from_clients is set
+        let from_clients = match self.from_clients.as_mut() {
+            Some(from_clients) => from_clients,
+            None => panic!("from_clients should have a value"),
+        };
+
         // start timer
         let mut timer = Delay::new(Duration::from_secs(5)).fuse();
 
@@ -227,7 +235,7 @@ impl Daemon {
                 }
 
                 // handle events coming from clients
-                event = server.next().fuse() => {
+                event = from_clients.next().fuse() => {
                     let event = match event {
                         Some(event) => event,
                         None => break,
@@ -449,6 +457,7 @@ impl Daemon {
     async fn run(&mut self, server: unix_socket::UnixServer) {
         // create channels and data structure for clients
         let (server_sender, server_receiver) = mpsc::unbounded();
+        self.from_clients = Some(server_receiver);
 
         // handle incoming connections
         task::spawn(async move {
@@ -496,7 +505,7 @@ impl Daemon {
         }
 
         // handle server events
-        self.run_server_loop(server_receiver, swarm).await;
+        self.run_server_loop(swarm).await;
     }
 }
 
