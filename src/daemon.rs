@@ -101,7 +101,7 @@ impl Daemon {
     }
 
     /// run the server's main loop
-    async fn run_server_loop(mut server: Receiver<Event>, mut swarm: swarm::HiSwarm) {
+    async fn run_server_loop(&self, mut server: Receiver<Event>, mut swarm: swarm::HiSwarm) {
         // clients and their channels
         let mut clients: HashMap<u16, ClientInfo> = HashMap::new();
 
@@ -496,7 +496,7 @@ impl Daemon {
         }
 
         // handle server events
-        Self::run_server_loop(server_receiver, swarm).await;
+        self.run_server_loop(server_receiver, swarm).await;
     }
 }
 
