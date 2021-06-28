@@ -51,6 +51,28 @@ impl GetClient {
         Ok(())
     }
 
+    /// handle get reply
+    async fn handle_reply(&mut self) -> Result<(), Box<dyn Error>> {
+        match self.client.receive_message().await? {
+            Message::GetName { name } => println!("Name: {}", name),
+            Message::GetPeers { peers } => {
+                println!("Peers:");
+                for peer in peers {
+                    println!("  peer_id: {}, name: {:?}, chat_support: {}, file_support: {}, last_update: {}",
+                            peer.peer_id,
+                            peer.name,
+                            peer.chat_support,
+                            peer.file_support,
+                            peer.last_update
+                            );
+                }
+            }
+            Message::Error { message } => println!("Error: {}", message),
+            msg => println!("{:?}", msg),
+        }
+        Ok(())
+    }
+
     /// run get client
     async fn run(&mut self) -> Result<(), Box<dyn Error>> {
         // register client
@@ -73,25 +95,7 @@ impl GetClient {
                 }
             };
             self.send_request(content).await?;
-
-            // receive reply
-            match self.client.receive_message().await? {
-                Message::GetName { name } => println!("Name: {}", name),
-                Message::GetPeers { peers } => {
-                    println!("Peers:");
-                    for peer in peers {
-                        println!("  peer_id: {}, name: {:?}, chat_support: {}, file_support: {}, last_update: {}",
-                            peer.peer_id,
-                            peer.name,
-                            peer.chat_support,
-                            peer.file_support,
-                            peer.last_update
-                            );
-                    }
-                }
-                Message::Error { message } => println!("Error: {}", message),
-                msg => println!("{:?}", msg),
-            }
+            self.handle_reply().await?;
         }
         Ok(())
     }
