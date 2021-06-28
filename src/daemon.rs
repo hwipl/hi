@@ -121,6 +121,23 @@ impl Daemon {
         }
     }
 
+    /// handle new client connection
+    async fn handle_connection(&mut self, client: unix_socket::UnixClient) {
+        // create new client handler
+        task::spawn(Self::handle_client(
+            self.from_client_tx.clone(),
+            self.client_id,
+            client,
+        ));
+
+        // update next client id
+        self.client_id += 1;
+        // skip ids for ALL_CLIENTS and 0
+        if self.client_id == Message::ALL_CLIENTS {
+            self.client_id = 1;
+        }
+    }
+
     /// run the server's main loop
     async fn run_server_loop(&mut self) {
         // start timer
@@ -134,15 +151,7 @@ impl Daemon {
                         Some(client) => client,
                         None => break,
                     };
-                    task::spawn(Self::handle_client(
-                            self.from_client_tx.clone(),
-                            self.client_id,
-                            client));
-                    self.client_id += 1;
-                    // skip ids for ALL_CLIENTS and 0
-                    if self.client_id == Message::ALL_CLIENTS {
-                        self.client_id = 1;
-                    }
+                    self.handle_connection(client).await;
                 }
 
                 // handle timer event
