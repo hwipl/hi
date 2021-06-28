@@ -36,11 +36,15 @@ struct ClientInfo {
 /// Daemon
 struct Daemon {
     config: config::Config,
+    clients: HashMap<u16, ClientInfo>,
 }
 
 impl Daemon {
     pub async fn new(config: config::Config) -> Self {
-        Daemon { config }
+        Daemon {
+            config,
+            clients: HashMap::new(),
+        }
     }
 
     /// handle client connection identified by its `id`
@@ -101,10 +105,7 @@ impl Daemon {
     }
 
     /// run the server's main loop
-    async fn run_server_loop(&self, mut server: Receiver<Event>, mut swarm: swarm::HiSwarm) {
-        // clients and their channels
-        let mut clients: HashMap<u16, ClientInfo> = HashMap::new();
-
+    async fn run_server_loop(&mut self, mut server: Receiver<Event>, mut swarm: swarm::HiSwarm) {
         // information about known peers
         let mut peers: HashMap<String, PeerInfo> = HashMap::new();
 
@@ -158,7 +159,7 @@ impl Daemon {
 
                         // handle chat messages
                         swarm::Event::ChatMessage(from, msg) => {
-                            for client in clients.values_mut() {
+                            for client in self.clients.values_mut() {
                                 if client.chat_support {
                                     // send msg to client
                                     let from_name = match peers.get(&from) {
@@ -204,7 +205,7 @@ impl Daemon {
 
                             // handle message to all clients
                             if to_client == Message::ALL_CLIENTS {
-                                for client in clients.values_mut() {
+                                for client in self.clients.values_mut() {
                                     if client.file_support {
                                         send(client, from_peer.clone(), to_client, from_client,
                                             content.clone()).await;
@@ -214,8 +215,8 @@ impl Daemon {
                             }
 
                             // handle message to specific client
-                            if clients.contains_key(&to_client) {
-                                let client = clients.get_mut(&to_client).unwrap();
+                            if self.clients.contains_key(&to_client) {
+                                let client = self.clients.get_mut(&to_client).unwrap();
                                 send(client, from_peer.clone(), to_client, from_client,
                                     content.clone()).await;
                             }
@@ -236,7 +237,7 @@ impl Daemon {
                         // handle add client
                         Event::AddClient(id, sender) => {
                             debug!("received add client event with id {}", id);
-                            match clients.entry(id) {
+                            match self.clients.entry(id) {
                                 Entry::Occupied(..) => (),
                                 Entry::Vacant(entry) => {
                                     let client_info = ClientInfo {
@@ -252,13 +253,13 @@ impl Daemon {
                         // handle remove client
                         Event::RemoveClient(id) => {
                             debug!("received remove client event with id {}", id);
-                            clients.remove(&id);
+                            self.clients.remove(&id);
 
                             // check if there are still clients with chat support
                             // and with file support
                             let mut chat_support = false;
                             let mut file_support = false;
-                            for c in clients.values() {
+                            for c in self.clients.values() {
                                 chat_support |= c.chat_support;
                                 file_support |= c.file_support;
                             }
@@ -275,7 +276,7 @@ impl Daemon {
                             debug!("received message from client: {:?}", msg);
 
                             // get client channel
-                            let client = match clients.get_mut(&id) {
+                            let client = match self.clients.get_mut(&id) {
                                 Some(client) => client,
                                 None => {
                                     error!("unknown client");
