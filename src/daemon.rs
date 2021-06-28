@@ -138,6 +138,24 @@ impl Daemon {
         }
     }
 
+    /// handle timer event
+    async fn handle_timer(&mut self) {
+        // remove old entries from peers hash map
+        let current_secs = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("timestamp error")
+            .as_secs();
+        let mut remove_peers = Vec::new();
+        for peer in self.peers.values() {
+            if current_secs - peer.last_update > 30 {
+                remove_peers.push(peer.peer_id.clone());
+            }
+        }
+        for peer in remove_peers {
+            self.peers.remove(&peer);
+        }
+    }
+
     /// run the server's main loop
     async fn run_server_loop(&mut self) {
         // start timer
@@ -158,21 +176,7 @@ impl Daemon {
                 event = timer => {
                     debug!("daemon timer event: {:?}", event);
                     timer = Delay::new(Duration::from_secs(5)).fuse();
-
-                    // remove old entries from peers hash map
-                    let current_secs = SystemTime::now()
-                        .duration_since(UNIX_EPOCH)
-                        .expect("timestamp error")
-                        .as_secs();
-                    let mut remove_peers = Vec::new();
-                    for peer in self.peers.values() {
-                        if current_secs - peer.last_update > 30 {
-                            remove_peers.push(peer.peer_id.clone());
-                        }
-                    }
-                    for peer in remove_peers {
-                        self.peers.remove(&peer);
-                    }
+                    self.handle_timer().await;
                 }
 
                 // handle events coming from the swarm
