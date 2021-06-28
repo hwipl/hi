@@ -254,6 +254,222 @@ impl Daemon {
         }
     }
 
+    /// handle client event
+    async fn handle_client_event(&mut self, event: Event) {
+        match event {
+            // handle add client
+            Event::AddClient(id, sender) => {
+                debug!("received add client event with id {}", id);
+                match self.clients.entry(id) {
+                    Entry::Occupied(..) => (),
+                    Entry::Vacant(entry) => {
+                        let client_info = ClientInfo {
+                            sender,
+                            chat_support: false,
+                            file_support: false,
+                        };
+                        entry.insert(client_info);
+                    }
+                }
+            }
+
+            // handle remove client
+            Event::RemoveClient(id) => {
+                debug!("received remove client event with id {}", id);
+                self.clients.remove(&id);
+
+                // check if there are still clients with chat support
+                // and with file support
+                let mut chat_support = false;
+                let mut file_support = false;
+                for c in self.clients.values() {
+                    chat_support |= c.chat_support;
+                    file_support |= c.file_support;
+                }
+
+                let event = swarm::Event::SetChat(chat_support);
+                self.swarm.send(event).await;
+                let event = swarm::Event::SetFiles(file_support);
+                self.swarm.send(event).await;
+            }
+
+            // handle client message
+            Event::ClientMessage(id, msg) => {
+                debug!("received message from client: {:?}", msg);
+
+                // get client channel
+                let client = match self.clients.get_mut(&id) {
+                    Some(client) => client,
+                    None => {
+                        error!("unknown client");
+                        return;
+                    }
+                };
+
+                // parse message and generate reply message
+                let reply = match msg {
+                    // handle OK message
+                    Message::Ok => Message::Ok,
+
+                    // handle error message
+                    Message::Error { message } => {
+                        debug!("received error message from client: {:?}", message);
+                        return;
+                    }
+
+                    // handle connect address request
+                    Message::ConnectAddress { address } => {
+                        let event = swarm::Event::ConnectAddress(address);
+                        self.swarm.send(event).await;
+                        Message::Ok
+                    }
+
+                    // handle get name request
+                    Message::GetName { .. } => {
+                        let message = String::from("Not yet implemented");
+                        Message::Error { message }
+                    }
+
+                    // handle set name request
+                    Message::SetName { name } => {
+                        let event = swarm::Event::SetName(name);
+                        self.swarm.send(event).await;
+                        Message::Ok
+                    }
+
+                    // handle get peers request
+                    Message::GetPeers { .. } => {
+                        let peer_infos = self.peers.values().cloned().collect();
+                        Message::GetPeers { peers: peer_infos }
+                    }
+
+                    // handle chat message
+                    Message::ChatMessage { to, message, .. } => {
+                        debug!("received chat message for {}: {}", to, message);
+                        if to == "all" {
+                            // send message to all known peers with chat support
+                            for peer in self.peers.values() {
+                                if peer.chat_support {
+                                    let event = swarm::Event::SendChatMessage(
+                                        peer.peer_id.clone(),
+                                        message.clone(),
+                                    );
+                                    self.swarm.send(event).await;
+                                }
+                            }
+                        } else {
+                            // send message to peer specified in `to`
+                            let event = swarm::Event::SendChatMessage(to, message);
+                            self.swarm.send(event).await;
+                        }
+                        Message::Ok
+                    }
+
+                    // handle file message
+                    Message::FileMessage {
+                        to_peer,
+                        to_client,
+                        from_client,
+                        content,
+                        ..
+                    } => {
+                        debug!("received file message for {}", to_peer);
+                        if to_peer == "all" {
+                            // send message to all known peers with file support
+                            for peer in self.peers.values() {
+                                if peer.file_support {
+                                    let event = swarm::Event::SendFileMessage(
+                                        peer.peer_id.clone(),
+                                        to_client,
+                                        from_client,
+                                        content.clone(),
+                                    );
+                                    self.swarm.send(event).await;
+                                }
+                            }
+                        } else {
+                            // send message to peer specified in `to`
+                            let event = swarm::Event::SendFileMessage(
+                                to_peer,
+                                to_client,
+                                from_client,
+                                content,
+                            );
+                            self.swarm.send(event).await;
+                        }
+                        Message::Ok
+                    }
+
+                    // handle register message
+                    Message::Register { chat, files } => {
+                        client.chat_support = chat;
+                        let event = swarm::Event::SetChat(chat);
+                        self.swarm.send(event).await;
+                        client.file_support = files;
+                        let event = swarm::Event::SetFiles(files);
+                        self.swarm.send(event).await;
+                        Message::RegisterOk { client_id: id }
+                    }
+
+                    // handle get message
+                    Message::Get {
+                        client_id,
+                        request_id,
+                        content,
+                    } => {
+                        let content = match content {
+                            GetSet::Name(..) => GetSet::Error(String::from("Not yet implemented")),
+                            GetSet::Peers(..) => {
+                                GetSet::Peers(self.peers.values().cloned().collect())
+                            }
+                            _ => GetSet::Error(String::from("Unknown get request")),
+                        };
+                        Message::Get {
+                            client_id,
+                            request_id,
+                            content,
+                        }
+                    }
+
+                    // handle set message
+                    Message::Set {
+                        client_id,
+                        request_id,
+                        content,
+                    } => {
+                        let content = match content {
+                            GetSet::Name(name) => {
+                                let event = swarm::Event::SetName(name);
+                                self.swarm.send(event).await;
+                                GetSet::Ok
+                            }
+                            GetSet::Connect(address) => {
+                                let event = swarm::Event::ConnectAddress(address);
+                                self.swarm.send(event).await;
+                                GetSet::Ok
+                            }
+                            _ => GetSet::Error(String::from("Unknown set request")),
+                        };
+                        Message::Set {
+                            client_id,
+                            request_id,
+                            content,
+                        }
+                    }
+
+                    // handle other messages
+                    Message::RegisterOk { .. } => return,
+                };
+
+                // send reply to client
+                if let Err(e) = client.sender.send(reply).await {
+                    error!("handle client error: {}", e);
+                    return;
+                }
+            }
+        }
+    }
+
     /// run the server's main loop
     async fn run_server_loop(&mut self) {
         // start timer
@@ -293,214 +509,7 @@ impl Daemon {
                         Some(event) => event,
                         None => break,
                     };
-                    match event {
-                        // handle add client
-                        Event::AddClient(id, sender) => {
-                            debug!("received add client event with id {}", id);
-                            match self.clients.entry(id) {
-                                Entry::Occupied(..) => (),
-                                Entry::Vacant(entry) => {
-                                    let client_info = ClientInfo {
-                                        sender,
-                                        chat_support: false,
-                                        file_support: false,
-                                    };
-                                    entry.insert(client_info);
-                                }
-                            }
-                        }
-
-                        // handle remove client
-                        Event::RemoveClient(id) => {
-                            debug!("received remove client event with id {}", id);
-                            self.clients.remove(&id);
-
-                            // check if there are still clients with chat support
-                            // and with file support
-                            let mut chat_support = false;
-                            let mut file_support = false;
-                            for c in self.clients.values() {
-                                chat_support |= c.chat_support;
-                                file_support |= c.file_support;
-                            }
-
-                            let event = swarm::Event::SetChat(chat_support);
-                            self.swarm.send(event).await;
-                            let event = swarm::Event::SetFiles(file_support);
-                            self.swarm.send(event).await;
-
-                        }
-
-                        // handle client message
-                        Event::ClientMessage(id, msg) => {
-                            debug!("received message from client: {:?}", msg);
-
-                            // get client channel
-                            let client = match self.clients.get_mut(&id) {
-                                Some(client) => client,
-                                None => {
-                                    error!("unknown client");
-                                    continue;
-                                }
-                            };
-
-                            // parse message and generate reply message
-                            let reply = match msg {
-                                // handle OK message
-                                Message::Ok => Message::Ok,
-
-                                // handle error message
-                                Message::Error { message } => {
-                                    debug!("received error message from client: {:?}", message);
-                                    continue;
-                                }
-
-                                // handle connect address request
-                                Message::ConnectAddress { address } => {
-                                    let event = swarm::Event::ConnectAddress(address);
-                                    self.swarm.send(event).await;
-                                    Message::Ok
-                                }
-
-                                // handle get name request
-                                Message::GetName { .. } => {
-                                    let message = String::from("Not yet implemented");
-                                    Message::Error { message }
-                                }
-
-                                // handle set name request
-                                Message::SetName { name } => {
-                                    let event = swarm::Event::SetName(name);
-                                    self.swarm.send(event).await;
-                                    Message::Ok
-                                }
-
-                                // handle get peers request
-                                Message::GetPeers { .. } => {
-                                    let peer_infos = self.peers.values().cloned().collect();
-                                    Message::GetPeers { peers: peer_infos }
-                                }
-
-                                // handle chat message
-                                Message::ChatMessage { to, message, .. } => {
-                                    debug!("received chat message for {}: {}", to, message);
-                                    if to == "all" {
-                                        // send message to all known peers with chat support
-                                        for peer in self.peers.values() {
-                                            if peer.chat_support {
-                                                let event = swarm::Event::SendChatMessage(
-                                                    peer.peer_id.clone(),
-                                                    message.clone());
-                                                    self.swarm.send(event).await;
-                                            }
-                                        }
-                                    } else {
-                                        // send message to peer specified in `to`
-                                        let event = swarm::Event::SendChatMessage(to, message);
-                                        self.swarm.send(event).await;
-                                    }
-                                    Message::Ok
-                                }
-
-                                // handle file message
-                                Message::FileMessage {
-                                    to_peer,
-                                    to_client,
-                                    from_client,
-                                    content,
-                                    ..
-                                } => {
-                                    debug!("received file message for {}", to_peer);
-                                    if to_peer == "all" {
-                                        // send message to all known peers with file support
-                                        for peer in self.peers.values() {
-                                            if peer.file_support {
-                                                let event = swarm::Event::SendFileMessage(
-                                                    peer.peer_id.clone(),
-                                                    to_client,
-                                                    from_client,
-                                                    content.clone());
-                                                self.swarm.send(event).await;
-                                            }
-                                        }
-                                    } else {
-                                        // send message to peer specified in `to`
-                                        let event = swarm::Event::SendFileMessage(
-                                            to_peer,
-                                            to_client,
-                                            from_client,
-                                            content);
-                                        self.swarm.send(event).await;
-                                    }
-                                    Message::Ok
-                                }
-
-                                // handle register message
-                                Message::Register { chat, files } => {
-                                    client.chat_support = chat;
-                                    let event = swarm::Event::SetChat(chat);
-                                    self.swarm.send(event).await;
-                                    client.file_support = files;
-                                    let event = swarm::Event::SetFiles(files);
-                                    self.swarm.send(event).await;
-                                    Message::RegisterOk{ client_id: id }
-                                }
-
-                                // handle get message
-                                Message::Get { client_id, request_id, content } => {
-                                    let content = match content {
-                                        GetSet::Name(..) => {
-                                            GetSet::Error(String::from("Not yet implemented"))
-                                        }
-                                        GetSet::Peers(..) => {
-                                            GetSet::Peers(self.peers.values().cloned().collect())
-                                        }
-                                        _ => {
-                                            GetSet::Error(String::from("Unknown get request"))
-                                        }
-                                    };
-                                    Message::Get {
-                                        client_id,
-                                        request_id,
-                                        content,
-                                    }
-                                }
-
-                                // handle set message
-                                Message::Set { client_id, request_id, content } => {
-                                    let content = match content {
-                                        GetSet::Name(name) => {
-                                            let event = swarm::Event::SetName(name);
-                                            self.swarm.send(event).await;
-                                            GetSet::Ok
-                                        }
-                                        GetSet::Connect(address) => {
-                                            let event = swarm::Event::ConnectAddress(address);
-                                            self.swarm.send(event).await;
-                                            GetSet::Ok
-                                        }
-                                        _ => {
-                                            GetSet::Error(String::from("Unknown set request"))
-                                        }
-                                    };
-                                    Message::Set {
-                                        client_id,
-                                        request_id,
-                                        content,
-                                    }
-                                }
-
-                                // handle other messages
-                                Message::RegisterOk { .. } => continue,
-                            };
-
-                            // send reply to client
-                            if let Err(e) = client.sender.send(reply).await {
-                                error!("handle client error: {}", e);
-                                return;
-                            }
-                        }
-                    }
+                    self.handle_client_event(event).await;
                 }
             }
         }
