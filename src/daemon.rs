@@ -39,21 +39,25 @@ struct Daemon {
     server: unix_socket::UnixServer,
     from_client_rx: Receiver<Event>,
     from_client_tx: Sender<Event>,
-    swarm: Option<swarm::HiSwarm>,
+    swarm: swarm::HiSwarm,
     client_id: u16,
     clients: HashMap<u16, ClientInfo>,
     peers: HashMap<String, PeerInfo>,
 }
 
 impl Daemon {
-    pub async fn new(config: config::Config, server: unix_socket::UnixServer) -> Self {
+    pub async fn new(
+        config: config::Config,
+        server: unix_socket::UnixServer,
+        swarm: swarm::HiSwarm,
+    ) -> Self {
         let (from_client_tx, from_client_rx) = mpsc::unbounded();
         Daemon {
             config,
             server,
             from_client_rx,
             from_client_tx,
-            swarm: None,
+            swarm,
             client_id: 1,
             clients: HashMap::new(),
             peers: HashMap::new(),
@@ -119,12 +123,6 @@ impl Daemon {
 
     /// run the server's main loop
     async fn run_server_loop(&mut self) {
-        // make sure swarm is set
-        let swarm = match self.swarm.as_mut() {
-            Some(swarm) => swarm,
-            None => panic!("swarm should have a value"),
-        };
-
         // start timer
         let mut timer = Delay::new(Duration::from_secs(5)).fuse();
 
@@ -169,7 +167,7 @@ impl Daemon {
                 }
 
                 // handle events coming from the swarm
-                event = swarm.receive().fuse() => {
+                event = self.swarm.receive().fuse() => {
                     debug!("received event from swarm: {:?}", event);
                     let event = match event {
                         Some(event) => event,
@@ -298,9 +296,9 @@ impl Daemon {
                             }
 
                             let event = swarm::Event::SetChat(chat_support);
-                            swarm.send(event).await;
+                            self.swarm.send(event).await;
                             let event = swarm::Event::SetFiles(file_support);
-                            swarm.send(event).await;
+                            self.swarm.send(event).await;
 
                         }
 
@@ -331,7 +329,7 @@ impl Daemon {
                                 // handle connect address request
                                 Message::ConnectAddress { address } => {
                                     let event = swarm::Event::ConnectAddress(address);
-                                    swarm.send(event).await;
+                                    self.swarm.send(event).await;
                                     Message::Ok
                                 }
 
@@ -344,7 +342,7 @@ impl Daemon {
                                 // handle set name request
                                 Message::SetName { name } => {
                                     let event = swarm::Event::SetName(name);
-                                    swarm.send(event).await;
+                                    self.swarm.send(event).await;
                                     Message::Ok
                                 }
 
@@ -364,13 +362,13 @@ impl Daemon {
                                                 let event = swarm::Event::SendChatMessage(
                                                     peer.peer_id.clone(),
                                                     message.clone());
-                                                    swarm.send(event).await;
+                                                    self.swarm.send(event).await;
                                             }
                                         }
                                     } else {
                                         // send message to peer specified in `to`
                                         let event = swarm::Event::SendChatMessage(to, message);
-                                        swarm.send(event).await;
+                                        self.swarm.send(event).await;
                                     }
                                     Message::Ok
                                 }
@@ -393,7 +391,7 @@ impl Daemon {
                                                     to_client,
                                                     from_client,
                                                     content.clone());
-                                                swarm.send(event).await;
+                                                self.swarm.send(event).await;
                                             }
                                         }
                                     } else {
@@ -403,7 +401,7 @@ impl Daemon {
                                             to_client,
                                             from_client,
                                             content);
-                                        swarm.send(event).await;
+                                        self.swarm.send(event).await;
                                     }
                                     Message::Ok
                                 }
@@ -412,10 +410,10 @@ impl Daemon {
                                 Message::Register { chat, files } => {
                                     client.chat_support = chat;
                                     let event = swarm::Event::SetChat(chat);
-                                    swarm.send(event).await;
+                                    self.swarm.send(event).await;
                                     client.file_support = files;
                                     let event = swarm::Event::SetFiles(files);
-                                    swarm.send(event).await;
+                                    self.swarm.send(event).await;
                                     Message::RegisterOk{ client_id: id }
                                 }
 
@@ -444,12 +442,12 @@ impl Daemon {
                                     let content = match content {
                                         GetSet::Name(name) => {
                                             let event = swarm::Event::SetName(name);
-                                            swarm.send(event).await;
+                                            self.swarm.send(event).await;
                                             GetSet::Ok
                                         }
                                         GetSet::Connect(address) => {
                                             let event = swarm::Event::ConnectAddress(address);
-                                            swarm.send(event).await;
+                                            self.swarm.send(event).await;
                                             GetSet::Ok
                                         }
                                         _ => {
@@ -481,15 +479,6 @@ impl Daemon {
 
     /// run server
     async fn run(&mut self) {
-        // create and run swarm
-        let mut swarm = match swarm::HiSwarm::run().await {
-            Ok(swarm) => swarm,
-            Err(e) => {
-                error!("error creating swarm: {}", e);
-                return;
-            }
-        };
-
         // get options to set from config
         let options = match self.config.command {
             Some(config::Command::Daemon(ref daemon_opts)) => &daemon_opts.set,
@@ -500,12 +489,12 @@ impl Daemon {
         for option in options.iter() {
             match option.name.as_str() {
                 "name" => {
-                    swarm
+                    self.swarm
                         .send(swarm::Event::SetName(option.value.clone()))
                         .await;
                 }
                 "connect" => {
-                    swarm
+                    self.swarm
                         .send(swarm::Event::ConnectAddress(option.value.clone()))
                         .await;
                 }
@@ -514,19 +503,33 @@ impl Daemon {
         }
 
         // handle server events
-        self.swarm = Some(swarm);
         self.run_server_loop().await;
     }
 }
 
 /// entry point for running the daemon server
 pub fn run(config: config::Config) {
-    // run unix socket server
     task::block_on(async {
-        match unix_socket::UnixServer::listen(&config).await {
-            Ok(server) => Daemon::new(config, server).await.run().await,
-            Err(e) => error!("unix socket server error: {}", e),
+        // create and run swarm
+        let swarm = match swarm::HiSwarm::run().await {
+            Ok(swarm) => swarm,
+            Err(e) => {
+                error!("error creating swarm: {}", e);
+                return;
+            }
         };
-        debug!("unix socket server stopped");
+
+        // create unix server
+        let server = match unix_socket::UnixServer::listen(&config).await {
+            Ok(server) => server,
+            Err(e) => {
+                error!("unix socket server error: {}", e);
+                return;
+            }
+        };
+
+        // start daemon
+        Daemon::new(config, server, swarm).await.run().await;
+        debug!("daemon stopped");
     });
 }
