@@ -317,13 +317,6 @@ impl Daemon {
                         return;
                     }
 
-                    // handle connect address request
-                    Message::ConnectAddress { address } => {
-                        let event = swarm::Event::ConnectAddress(address);
-                        self.swarm.send(event).await;
-                        Message::Ok
-                    }
-
                     // handle get name request
                     Message::GetName { .. } => {
                         let message = String::from("Not yet implemented");

@@ -50,36 +50,29 @@ pub enum Message {
         message: String,
     },
 
-    /// Connect to peer address
-    #[n(2)]
-    ConnectAddress {
-        #[n(0)]
-        address: String,
-    },
-
     /// Get name of this peer; request contains empty name, reply contains name
-    #[n(3)]
+    #[n(2)]
     GetName {
         #[n(0)]
         name: String,
     },
 
     /// Set name of this peer
-    #[n(4)]
+    #[n(3)]
     SetName {
         #[n(0)]
         name: String,
     },
 
     /// Get known peers
-    #[n(5)]
+    #[n(4)]
     GetPeers {
         #[n(0)]
         peers: Vec<PeerInfo>,
     },
 
     /// Chat message
-    #[n(6)]
+    #[n(5)]
     ChatMessage {
         #[n(0)]
         to: String,
@@ -92,7 +85,7 @@ pub enum Message {
     },
 
     /// File message
-    #[n(7)]
+    #[n(6)]
     FileMessage {
         #[n(0)]
         to_peer: String,
@@ -107,7 +100,7 @@ pub enum Message {
     },
 
     /// Register this client on the daemon
-    #[n(8)]
+    #[n(7)]
     Register {
         #[n(0)]
         chat: bool,
@@ -116,14 +109,14 @@ pub enum Message {
     },
 
     /// Message indicating successful registration of the client
-    #[n(9)]
+    #[n(8)]
     RegisterOk {
         #[n(0)]
         client_id: u16,
     },
 
     /// Get information from the daemon
-    #[n(10)]
+    #[n(9)]
     Get {
         #[n(0)]
         client_id: u16,
@@ -134,7 +127,7 @@ pub enum Message {
     },
 
     /// Set configuration options on the daemon
-    #[n(11)]
+    #[n(10)]
     Set {
         #[n(0)]
         client_id: u16,
