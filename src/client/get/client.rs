@@ -73,6 +73,7 @@ impl GetClient {
                     );
                 }
             }
+            GetSet::Error(e) => eprintln!("Error: {}", e),
             _ => println!("{:?}", content),
         }
     }
