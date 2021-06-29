@@ -317,12 +317,6 @@ impl Daemon {
                         return;
                     }
 
-                    // handle get name request
-                    Message::GetName { .. } => {
-                        let message = String::from("Not yet implemented");
-                        Message::Error { message }
-                    }
-
                     // handle set name request
                     Message::SetName { name } => {
                         let event = swarm::Event::SetName(name);
