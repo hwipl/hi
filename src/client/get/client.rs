@@ -76,6 +76,7 @@ impl GetClient {
             _ => println!("{:?}", content),
         }
     }
+
     /// handle get reply
     async fn handle_reply(&mut self) -> Result<(), Box<dyn Error>> {
         match self.client.receive_message().await? {
