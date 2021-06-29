@@ -1,5 +1,5 @@
 use crate::config;
-use crate::daemon_message::Message;
+use crate::daemon_message::{GetSet, Message};
 use crate::unix_socket;
 use async_std::task;
 use std::error::Error;
@@ -9,6 +9,7 @@ struct SetClient {
     config: config::Config,
     client: unix_socket::UnixClient,
     client_id: u16,
+    request_id: u32,
 }
 
 impl SetClient {
@@ -18,6 +19,7 @@ impl SetClient {
             config,
             client,
             client_id: 0,
+            request_id: 0,
         }
     }
 
@@ -37,6 +39,18 @@ impl SetClient {
         }
     }
 
+    /// send set request
+    async fn send_request(&mut self, content: GetSet) -> Result<(), Box<dyn Error>> {
+        let msg = Message::Get {
+            client_id: self.client_id,
+            request_id: self.request_id,
+            content,
+        };
+        self.client.send_message(msg).await?;
+        self.request_id = self.request_id.wrapping_add(1);
+        Ok(())
+    }
+
     /// run set client
     async fn run(&mut self) -> Result<(), Box<dyn Error>> {
         // register client
@@ -44,22 +58,16 @@ impl SetClient {
 
         // get options to set from config
         let options = match self.config.command {
-            Some(config::Command::Set(ref set_opts)) => &set_opts.opts,
+            Some(config::Command::Set(ref set_opts)) => set_opts.opts.clone(),
             _ => return Err("invalid config".into()),
         };
 
         // handle set configuration options
         for option in options.iter() {
             // create message
-            let msg = match option.name.as_str() {
-                "name" => Message::SetName {
-                    name: option.value.to_string(),
-                },
-
-                "connect" => Message::ConnectAddress {
-                    address: option.value.to_string(),
-                },
-
+            let content = match option.name.as_str() {
+                "name" => GetSet::Name(option.value.to_string()),
+                "connect" => GetSet::Connect(option.value.to_string()),
                 _ => {
                     error!(
                         "error setting unknown configuration option: {}",
@@ -70,7 +78,7 @@ impl SetClient {
             };
 
             // send message
-            self.client.send_message(msg).await?;
+            self.send_request(content).await?;
 
             // receive reply
             let msg = self.client.receive_message().await?;

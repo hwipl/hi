@@ -5,6 +5,7 @@ use std::str::FromStr;
 
 /// Configuration option for setting and getting:
 /// setting requires name and value, getting only requires name
+#[derive(Clone)]
 pub struct ConfigOption {
     pub name: String,
     pub value: String,
