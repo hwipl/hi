@@ -2,25 +2,50 @@ use crate::config;
 use crate::daemon_message::Message;
 use crate::unix_socket;
 use async_std::task;
+use std::error::Error;
 
 /// set client
 struct SetClient {
     config: config::Config,
     client: unix_socket::UnixClient,
+    client_id: u16,
 }
 
 impl SetClient {
     /// create new set client
     async fn new(config: config::Config, client: unix_socket::UnixClient) -> Self {
-        SetClient { config, client }
+        SetClient {
+            config,
+            client,
+            client_id: 0,
+        }
+    }
+
+    /// register this client
+    async fn register_client(&mut self) -> Result<(), Box<dyn Error>> {
+        let msg = Message::Register {
+            chat: false,
+            files: false,
+        };
+        self.client.send_message(msg).await?;
+        match self.client.receive_message().await? {
+            Message::RegisterOk { client_id } => {
+                self.client_id = client_id;
+                Ok(())
+            }
+            _ => Err("unexpected message from daemon".into()),
+        }
     }
 
     /// run set client
-    async fn run(&mut self) {
+    async fn run(&mut self) -> Result<(), Box<dyn Error>> {
+        // register client
+        self.register_client().await?;
+
         // get options to set from config
         let options = match self.config.command {
             Some(config::Command::Set(ref set_opts)) => &set_opts.opts,
-            _ => return,
+            _ => return Err("invalid config".into()),
         };
 
         // handle set configuration options
@@ -45,16 +70,13 @@ impl SetClient {
             };
 
             // send message
-            if let Err(e) = self.client.send_message(msg).await {
-                error!("error sending set message: {}", e);
-            }
+            self.client.send_message(msg).await?;
 
             // receive reply
-            match self.client.receive_message().await {
-                Ok(msg) => debug!("set reply from server: {:?}", msg),
-                Err(e) => error!("error receiving set reply: {}", e),
-            }
+            let msg = self.client.receive_message().await?;
+            debug!("set reply from server: {:?}", msg);
         }
+        Ok(())
     }
 }
 
@@ -62,7 +84,11 @@ impl SetClient {
 pub fn run(config: config::Config) {
     task::block_on(async {
         match unix_socket::UnixClient::connect(&config).await {
-            Ok(client) => SetClient::new(config, client).await.run().await,
+            Ok(client) => {
+                if let Err(e) = SetClient::new(config, client).await.run().await {
+                    error!("{}", e);
+                }
+            }
             Err(e) => error!("unix socket client error: {}", e),
         }
         debug!("set client stopped");
