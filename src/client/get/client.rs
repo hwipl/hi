@@ -3,6 +3,7 @@ use crate::daemon_message::{GetSet, Message};
 use crate::unix_socket;
 use async_std::task;
 use std::error::Error;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 /// get client
 struct GetClient {
@@ -53,6 +54,10 @@ impl GetClient {
 
     /// handle content of a get reply
     async fn handle_reply_content(&self, content: GetSet) {
+        let current_secs = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("timestamp error")
+            .as_secs();
         match content {
             GetSet::Name(name) => println!("Name: {}", name),
             GetSet::Peers(peers) => {
@@ -64,12 +69,12 @@ impl GetClient {
                         name: {:?}, \
                         chat_support: {}, \
                         file_support: {}, \
-                        last_update: {}",
+                        last_update: {}s",
                         peer.peer_id,
                         peer.name,
                         peer.chat_support,
                         peer.file_support,
-                        peer.last_update,
+                        current_secs - peer.last_update,
                     );
                 }
             }
