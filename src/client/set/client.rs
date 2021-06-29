@@ -41,7 +41,7 @@ impl SetClient {
 
     /// send set request
     async fn send_request(&mut self, content: GetSet) -> Result<(), Box<dyn Error>> {
-        let msg = Message::Get {
+        let msg = Message::Set {
             client_id: self.client_id,
             request_id: self.request_id,
             content,
