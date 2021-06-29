@@ -51,11 +51,11 @@ impl GetClient {
         Ok(())
     }
 
-    /// handle get reply
-    async fn handle_reply(&mut self) -> Result<(), Box<dyn Error>> {
-        match self.client.receive_message().await? {
-            Message::GetName { name } => println!("Name: {}", name),
-            Message::GetPeers { peers } => {
+    /// handle content of a get reply
+    async fn handle_reply_content(&self, content: GetSet) {
+        match content {
+            GetSet::Name(name) => println!("Name: {}", name),
+            GetSet::Peers(peers) => {
                 println!("Peers:");
                 for peer in peers {
                     println!("  peer_id: {}, name: {:?}, chat_support: {}, file_support: {}, last_update: {}",
@@ -67,7 +67,13 @@ impl GetClient {
                             );
                 }
             }
-            Message::Error { message } => println!("Error: {}", message),
+            _ => println!("{:?}", content),
+        }
+    }
+    /// handle get reply
+    async fn handle_reply(&mut self) -> Result<(), Box<dyn Error>> {
+        match self.client.receive_message().await? {
+            Message::Get { content, .. } => self.handle_reply_content(content).await,
             msg => println!("{:?}", msg),
         }
         Ok(())
