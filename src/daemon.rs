@@ -317,12 +317,6 @@ impl Daemon {
                         return;
                     }
 
-                    // handle get peers request
-                    Message::GetPeers { .. } => {
-                        let peer_infos = self.peers.values().cloned().collect();
-                        Message::GetPeers { peers: peer_infos }
-                    }
-
                     // handle chat message
                     Message::ChatMessage { to, message, .. } => {
                         debug!("received chat message for {}: {}", to, message);
