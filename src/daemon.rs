@@ -317,13 +317,6 @@ impl Daemon {
                         return;
                     }
 
-                    // handle set name request
-                    Message::SetName { name } => {
-                        let event = swarm::Event::SetName(name);
-                        self.swarm.send(event).await;
-                        Message::Ok
-                    }
-
                     // handle get peers request
                     Message::GetPeers { .. } => {
                         let peer_infos = self.peers.values().cloned().collect();
