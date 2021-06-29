@@ -58,13 +58,19 @@ impl GetClient {
             GetSet::Peers(peers) => {
                 println!("Peers:");
                 for peer in peers {
-                    println!("  peer_id: {}, name: {:?}, chat_support: {}, file_support: {}, last_update: {}",
-                            peer.peer_id,
-                            peer.name,
-                            peer.chat_support,
-                            peer.file_support,
-                            peer.last_update
-                            );
+                    println!(
+                        "  \
+                        peer_id: {}, \
+                        name: {:?}, \
+                        chat_support: {}, \
+                        file_support: {}, \
+                        last_update: {}",
+                        peer.peer_id,
+                        peer.name,
+                        peer.chat_support,
+                        peer.file_support,
+                        peer.last_update,
+                    );
                 }
             }
             _ => println!("{:?}", content),
