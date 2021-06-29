@@ -51,6 +51,15 @@ impl SetClient {
         Ok(())
     }
 
+    /// handle set reply
+    async fn handle_reply(&mut self) -> Result<(), Box<dyn Error>> {
+        match self.client.receive_message().await? {
+            Message::Set { content, .. } => debug!("set reply from server: {:?}", content),
+            msg => println!("{:?}", msg),
+        }
+        Ok(())
+    }
+
     /// run set client
     async fn run(&mut self) -> Result<(), Box<dyn Error>> {
         // register client
@@ -64,7 +73,6 @@ impl SetClient {
 
         // handle set configuration options
         for option in options.iter() {
-            // create message
             let content = match option.name.as_str() {
                 "name" => GetSet::Name(option.value.to_string()),
                 "connect" => GetSet::Connect(option.value.to_string()),
@@ -76,13 +84,8 @@ impl SetClient {
                     continue;
                 }
             };
-
-            // send message
             self.send_request(content).await?;
-
-            // receive reply
-            let msg = self.client.receive_message().await?;
-            debug!("set reply from server: {:?}", msg);
+            self.handle_reply().await?;
         }
         Ok(())
     }
