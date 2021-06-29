@@ -51,10 +51,19 @@ impl SetClient {
         Ok(())
     }
 
+    /// handle content of a set reply
+    async fn handle_reply_content(&self, content: GetSet) {
+        match content {
+            GetSet::Ok => debug!("set reply from server: {:?}", content),
+            GetSet::Error(e) => eprintln!("Error: {}", e),
+            _ => println!("{:?}", content),
+        }
+    }
+
     /// handle set reply
     async fn handle_reply(&mut self) -> Result<(), Box<dyn Error>> {
         match self.client.receive_message().await? {
-            Message::Set { content, .. } => debug!("set reply from server: {:?}", content),
+            Message::Set { content, .. } => self.handle_reply_content(content).await,
             msg => println!("{:?}", msg),
         }
         Ok(())
