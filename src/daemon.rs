@@ -399,6 +399,33 @@ impl Daemon {
         }
     }
 
+    /// handle "set" client message event
+    async fn handle_client_set(
+        &mut self,
+        client_id: u16,
+        request_id: u32,
+        content: GetSet,
+    ) -> Message {
+        let content = match content {
+            GetSet::Name(name) => {
+                let event = swarm::Event::SetName(name);
+                self.swarm.send(event).await;
+                GetSet::Ok
+            }
+            GetSet::Connect(address) => {
+                let event = swarm::Event::ConnectAddress(address);
+                self.swarm.send(event).await;
+                GetSet::Ok
+            }
+            _ => GetSet::Error(String::from("Unknown set request")),
+        };
+        Message::Set {
+            client_id,
+            request_id,
+            content,
+        }
+    }
+
     /// handle client event
     async fn handle_client_event(&mut self, event: Event) {
         match event {
@@ -463,26 +490,7 @@ impl Daemon {
                         client_id,
                         request_id,
                         content,
-                    } => {
-                        let content = match content {
-                            GetSet::Name(name) => {
-                                let event = swarm::Event::SetName(name);
-                                self.swarm.send(event).await;
-                                GetSet::Ok
-                            }
-                            GetSet::Connect(address) => {
-                                let event = swarm::Event::ConnectAddress(address);
-                                self.swarm.send(event).await;
-                                GetSet::Ok
-                            }
-                            _ => GetSet::Error(String::from("Unknown set request")),
-                        };
-                        Message::Set {
-                            client_id,
-                            request_id,
-                            content,
-                        }
-                    }
+                    } => self.handle_client_set(client_id, request_id, content).await,
 
                     // handle other messages
                     Message::RegisterOk { .. } => return,
