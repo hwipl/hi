@@ -310,6 +310,26 @@ impl Daemon {
         self.swarm.send(event).await;
     }
 
+    /// handle "chat message" client message event
+    async fn handle_client_chat_message(&mut self, to: String, message: String) -> Message {
+        debug!("received chat message for {}: {}", to, message);
+        if to == "all" {
+            // send message to all known peers with chat support
+            for peer in self.peers.values() {
+                if peer.chat_support {
+                    let event =
+                        swarm::Event::SendChatMessage(peer.peer_id.clone(), message.clone());
+                    self.swarm.send(event).await;
+                }
+            }
+        } else {
+            // send message to peer specified in `to`
+            let event = swarm::Event::SendChatMessage(to, message);
+            self.swarm.send(event).await;
+        }
+        Message::Ok
+    }
+
     /// handle "register" client message event
     async fn handle_client_register(&mut self, id: u16, chat: bool, files: bool) -> Message {
         let client = match self.clients.get_mut(&id) {
@@ -362,24 +382,7 @@ impl Daemon {
 
                     // handle chat message
                     Message::ChatMessage { to, message, .. } => {
-                        debug!("received chat message for {}: {}", to, message);
-                        if to == "all" {
-                            // send message to all known peers with chat support
-                            for peer in self.peers.values() {
-                                if peer.chat_support {
-                                    let event = swarm::Event::SendChatMessage(
-                                        peer.peer_id.clone(),
-                                        message.clone(),
-                                    );
-                                    self.swarm.send(event).await;
-                                }
-                            }
-                        } else {
-                            // send message to peer specified in `to`
-                            let event = swarm::Event::SendChatMessage(to, message);
-                            self.swarm.send(event).await;
-                        }
-                        Message::Ok
+                        self.handle_client_chat_message(to, message).await
                     }
 
                     // handle file message
