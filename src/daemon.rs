@@ -330,6 +330,36 @@ impl Daemon {
         Message::Ok
     }
 
+    /// handle "file message" client message event
+    async fn handle_client_file_message(
+        &mut self,
+        to_peer: String,
+        to_client: u16,
+        from_client: u16,
+        content: Vec<u8>,
+    ) -> Message {
+        debug!("received file message for {}", to_peer);
+        if to_peer == "all" {
+            // send message to all known peers with file support
+            for peer in self.peers.values() {
+                if peer.file_support {
+                    let event = swarm::Event::SendFileMessage(
+                        peer.peer_id.clone(),
+                        to_client,
+                        from_client,
+                        content.clone(),
+                    );
+                    self.swarm.send(event).await;
+                }
+            }
+        } else {
+            // send message to peer specified in `to`
+            let event = swarm::Event::SendFileMessage(to_peer, to_client, from_client, content);
+            self.swarm.send(event).await;
+        }
+        Message::Ok
+    }
+
     /// handle "register" client message event
     async fn handle_client_register(&mut self, id: u16, chat: bool, files: bool) -> Message {
         let client = match self.clients.get_mut(&id) {
@@ -393,31 +423,8 @@ impl Daemon {
                         content,
                         ..
                     } => {
-                        debug!("received file message for {}", to_peer);
-                        if to_peer == "all" {
-                            // send message to all known peers with file support
-                            for peer in self.peers.values() {
-                                if peer.file_support {
-                                    let event = swarm::Event::SendFileMessage(
-                                        peer.peer_id.clone(),
-                                        to_client,
-                                        from_client,
-                                        content.clone(),
-                                    );
-                                    self.swarm.send(event).await;
-                                }
-                            }
-                        } else {
-                            // send message to peer specified in `to`
-                            let event = swarm::Event::SendFileMessage(
-                                to_peer,
-                                to_client,
-                                from_client,
-                                content,
-                            );
-                            self.swarm.send(event).await;
-                        }
-                        Message::Ok
+                        self.handle_client_file_message(to_peer, to_client, from_client, content)
+                            .await
                     }
 
                     // handle register message
