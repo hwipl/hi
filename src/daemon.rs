@@ -274,24 +274,27 @@ impl Daemon {
         }
     }
 
+    /// handle "add client" client event
+    async fn handle_client_add(&mut self, id: u16, sender: Sender<Message>) {
+        debug!("received add client event with id {}", id);
+        match self.clients.entry(id) {
+            Entry::Occupied(..) => (),
+            Entry::Vacant(entry) => {
+                let client_info = ClientInfo {
+                    sender,
+                    chat_support: false,
+                    file_support: false,
+                };
+                entry.insert(client_info);
+            }
+        }
+    }
+
     /// handle client event
     async fn handle_client_event(&mut self, event: Event) {
         match event {
             // handle add client
-            Event::AddClient(id, sender) => {
-                debug!("received add client event with id {}", id);
-                match self.clients.entry(id) {
-                    Entry::Occupied(..) => (),
-                    Entry::Vacant(entry) => {
-                        let client_info = ClientInfo {
-                            sender,
-                            chat_support: false,
-                            file_support: false,
-                        };
-                        entry.insert(client_info);
-                    }
-                }
-            }
+            Event::AddClient(id, sender) => self.handle_client_add(id, sender).await,
 
             // handle remove client
             Event::RemoveClient(id) => {
