@@ -290,6 +290,26 @@ impl Daemon {
         }
     }
 
+    /// handle "remove client" client event
+    async fn handle_client_remove(&mut self, id: u16) {
+        debug!("received remove client event with id {}", id);
+        self.clients.remove(&id);
+
+        // check if there are still clients with chat support
+        // and with file support
+        let mut chat_support = false;
+        let mut file_support = false;
+        for c in self.clients.values() {
+            chat_support |= c.chat_support;
+            file_support |= c.file_support;
+        }
+
+        let event = swarm::Event::SetChat(chat_support);
+        self.swarm.send(event).await;
+        let event = swarm::Event::SetFiles(file_support);
+        self.swarm.send(event).await;
+    }
+
     /// handle client event
     async fn handle_client_event(&mut self, event: Event) {
         match event {
@@ -297,24 +317,7 @@ impl Daemon {
             Event::AddClient(id, sender) => self.handle_client_add(id, sender).await,
 
             // handle remove client
-            Event::RemoveClient(id) => {
-                debug!("received remove client event with id {}", id);
-                self.clients.remove(&id);
-
-                // check if there are still clients with chat support
-                // and with file support
-                let mut chat_support = false;
-                let mut file_support = false;
-                for c in self.clients.values() {
-                    chat_support |= c.chat_support;
-                    file_support |= c.file_support;
-                }
-
-                let event = swarm::Event::SetChat(chat_support);
-                self.swarm.send(event).await;
-                let event = swarm::Event::SetFiles(file_support);
-                self.swarm.send(event).await;
-            }
+            Event::RemoveClient(id) => self.handle_client_remove(id).await,
 
             // handle client message
             Event::ClientMessage(id, msg) => {
