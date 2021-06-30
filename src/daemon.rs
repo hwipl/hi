@@ -310,6 +310,26 @@ impl Daemon {
         self.swarm.send(event).await;
     }
 
+    /// handle "register" client message event
+    async fn handle_client_register(&mut self, id: u16, chat: bool, files: bool) -> Message {
+        let client = match self.clients.get_mut(&id) {
+            Some(client) => client,
+            None => {
+                error!("unknown client");
+                return Message::Error {
+                    message: "unknown client".into(),
+                };
+            }
+        };
+        client.chat_support = chat;
+        let event = swarm::Event::SetChat(chat);
+        self.swarm.send(event).await;
+        client.file_support = files;
+        let event = swarm::Event::SetFiles(files);
+        self.swarm.send(event).await;
+        Message::RegisterOk { client_id: id }
+    }
+
     /// handle client event
     async fn handle_client_event(&mut self, event: Event) {
         match event {
@@ -323,14 +343,11 @@ impl Daemon {
             Event::ClientMessage(id, msg) => {
                 debug!("received message from client: {:?}", msg);
 
-                // get client channel
-                let client = match self.clients.get_mut(&id) {
-                    Some(client) => client,
-                    None => {
-                        error!("unknown client");
-                        return;
-                    }
-                };
+                // check if client is valid
+                if !self.clients.contains_key(&id) {
+                    error!("unknown client");
+                    return;
+                }
 
                 // parse message and generate reply message
                 let reply = match msg {
@@ -402,13 +419,7 @@ impl Daemon {
 
                     // handle register message
                     Message::Register { chat, files } => {
-                        client.chat_support = chat;
-                        let event = swarm::Event::SetChat(chat);
-                        self.swarm.send(event).await;
-                        client.file_support = files;
-                        let event = swarm::Event::SetFiles(files);
-                        self.swarm.send(event).await;
-                        Message::RegisterOk { client_id: id }
+                        self.handle_client_register(id, chat, files).await
                     }
 
                     // handle get message
@@ -462,9 +473,11 @@ impl Daemon {
                 };
 
                 // send reply to client
-                if let Err(e) = client.sender.send(reply).await {
-                    error!("handle client error: {}", e);
-                    return;
+                if let Some(client) = self.clients.get_mut(&id) {
+                    if let Err(e) = client.sender.send(reply).await {
+                        error!("handle client error: {}", e);
+                        return;
+                    }
                 }
             }
         }
