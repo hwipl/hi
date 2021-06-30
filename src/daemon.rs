@@ -156,20 +156,25 @@ impl Daemon {
         }
     }
 
+    /// handle "announce peer" swarm event
+    async fn handle_swarm_announce_peer(&mut self, peer_info: PeerInfo) {
+        // add or update peer entry
+        match self.peers.entry(peer_info.peer_id.clone()) {
+            Entry::Occupied(mut entry) => {
+                entry.insert(peer_info);
+            }
+            Entry::Vacant(entry) => {
+                entry.insert(peer_info);
+            }
+        }
+    }
+
     /// handle swarm event
     async fn handle_swarm_event(&mut self, event: swarm::Event) {
         match event {
             // handle peer announcement
             swarm::Event::AnnouncePeer(peer_info) => {
-                // add or update peer entry
-                match self.peers.entry(peer_info.peer_id.clone()) {
-                    Entry::Occupied(mut entry) => {
-                        entry.insert(peer_info);
-                    }
-                    Entry::Vacant(entry) => {
-                        entry.insert(peer_info);
-                    }
-                }
+                self.handle_swarm_announce_peer(peer_info).await;
             }
 
             // handle chat messages
