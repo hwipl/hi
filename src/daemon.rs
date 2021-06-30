@@ -380,6 +380,25 @@ impl Daemon {
         Message::RegisterOk { client_id: id }
     }
 
+    /// handle "get" client message event
+    async fn handle_client_get(
+        &mut self,
+        client_id: u16,
+        request_id: u32,
+        content: GetSet,
+    ) -> Message {
+        let content = match content {
+            GetSet::Name(..) => GetSet::Error(String::from("Not yet implemented")),
+            GetSet::Peers(..) => GetSet::Peers(self.peers.values().cloned().collect()),
+            _ => GetSet::Error(String::from("Unknown get request")),
+        };
+        Message::Get {
+            client_id,
+            request_id,
+            content,
+        }
+    }
+
     /// handle client event
     async fn handle_client_event(&mut self, event: Event) {
         match event {
@@ -437,20 +456,7 @@ impl Daemon {
                         client_id,
                         request_id,
                         content,
-                    } => {
-                        let content = match content {
-                            GetSet::Name(..) => GetSet::Error(String::from("Not yet implemented")),
-                            GetSet::Peers(..) => {
-                                GetSet::Peers(self.peers.values().cloned().collect())
-                            }
-                            _ => GetSet::Error(String::from("Unknown get request")),
-                        };
-                        Message::Get {
-                            client_id,
-                            request_id,
-                            content,
-                        }
-                    }
+                    } => self.handle_client_get(client_id, request_id, content).await,
 
                     // handle set message
                     Message::Set {
