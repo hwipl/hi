@@ -169,6 +169,29 @@ impl Daemon {
         }
     }
 
+    /// handle "chat message" swarm event
+    async fn handle_swarm_chat_message(&mut self, from: String, msg: String) {
+        for client in self.clients.values_mut() {
+            if client.chat_support {
+                // send msg to client
+                let from_name = match self.peers.get(&from) {
+                    Some(peer) => peer.name.clone(),
+                    None => String::new(),
+                };
+                let msg = Message::ChatMessage {
+                    to: String::new(),
+                    from: from.clone(),
+                    from_name,
+                    message: msg.clone(),
+                };
+                if let Err(e) = client.sender.send(msg).await {
+                    error!("handle client error: {}", e);
+                    return;
+                }
+            }
+        }
+    }
+
     /// handle swarm event
     async fn handle_swarm_event(&mut self, event: swarm::Event) {
         match event {
@@ -178,27 +201,7 @@ impl Daemon {
             }
 
             // handle chat messages
-            swarm::Event::ChatMessage(from, msg) => {
-                for client in self.clients.values_mut() {
-                    if client.chat_support {
-                        // send msg to client
-                        let from_name = match self.peers.get(&from) {
-                            Some(peer) => peer.name.clone(),
-                            None => String::new(),
-                        };
-                        let msg = Message::ChatMessage {
-                            to: String::new(),
-                            from: from.clone(),
-                            from_name,
-                            message: msg.clone(),
-                        };
-                        if let Err(e) = client.sender.send(msg).await {
-                            error!("handle client error: {}", e);
-                            return;
-                        }
-                    }
-                }
-            }
+            swarm::Event::ChatMessage(from, msg) => self.handle_swarm_chat_message(from, msg).await,
 
             // handle file messages
             swarm::Event::FileMessage(from_peer, from_client, to_client, content) => {
