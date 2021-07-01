@@ -43,6 +43,7 @@ struct Daemon {
     client_id: u16,
     clients: HashMap<u16, ClientInfo>,
     peers: HashMap<String, PeerInfo>,
+    name: String,
 }
 
 impl Daemon {
@@ -61,6 +62,7 @@ impl Daemon {
             client_id: 1,
             clients: HashMap::new(),
             peers: HashMap::new(),
+            name: String::new(),
         }
     }
 
@@ -388,7 +390,7 @@ impl Daemon {
         content: GetSet,
     ) -> Message {
         let content = match content {
-            GetSet::Name(..) => GetSet::Error(String::from("Not yet implemented")),
+            GetSet::Name(..) => GetSet::Name(self.name.clone()),
             GetSet::Peers(..) => GetSet::Peers(self.peers.values().cloned().collect()),
             _ => GetSet::Error(String::from("Unknown get request")),
         };
@@ -408,6 +410,7 @@ impl Daemon {
     ) -> Message {
         let content = match content {
             GetSet::Name(name) => {
+                self.name = name.clone();
                 let event = swarm::Event::SetName(name);
                 self.swarm.send(event).await;
                 GetSet::Ok
