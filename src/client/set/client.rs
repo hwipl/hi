@@ -1,5 +1,5 @@
 use crate::config;
-use crate::daemon_message::{GetSet, Message};
+use crate::message::{GetSet, Message};
 use crate::unix_socket;
 use async_std::task;
 use std::error::Error;

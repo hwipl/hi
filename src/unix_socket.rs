@@ -1,5 +1,5 @@
 use crate::config::Config;
-use crate::daemon_message::Message;
+use crate::message::Message;
 use async_std::fs;
 use async_std::io;
 use async_std::os::unix::net::{UnixListener, UnixStream};

@@ -4,7 +4,7 @@ extern crate log;
 mod client;
 mod config;
 mod daemon;
-mod daemon_message;
+mod message;
 mod unix_socket;
 
 pub fn run() {

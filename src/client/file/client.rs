@@ -1,5 +1,5 @@
 use crate::config;
-use crate::daemon_message::Message;
+use crate::message::Message;
 use crate::unix_socket;
 use async_std::{fs, io, path, prelude::*, task};
 use futures::future::FutureExt;

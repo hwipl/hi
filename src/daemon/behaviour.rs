@@ -1,7 +1,7 @@
 use crate::daemon::gossip::HiAnnounce;
 use crate::daemon::request::{HiCodec, HiRequest, HiResponse};
 use crate::daemon::swarm;
-use crate::daemon_message::PeerInfo;
+use crate::message::PeerInfo;
 use async_std::task;
 use futures::channel::mpsc;
 use futures::sink::SinkExt;

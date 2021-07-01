@@ -4,7 +4,7 @@ mod request;
 mod swarm;
 
 use crate::config;
-use crate::daemon_message::{GetSet, Message, PeerInfo};
+use crate::message::{GetSet, Message, PeerInfo};
 use crate::unix_socket;
 use async_std::prelude::*;
 use async_std::task;
