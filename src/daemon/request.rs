@@ -110,6 +110,8 @@ pub enum HiRequest {
     ChatMessage(#[n(0)] String),
     #[n(2)]
     FileMessage(#[n(0)] u16, #[n(1)] u16, #[n(2)] Vec<u8>),
+    #[n(3)]
+    Message(#[n(0)] u16, #[n(1)] u16, #[n(2)] u16, #[n(3)] Vec<u8>),
 }
 
 /// Response message
