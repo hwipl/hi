@@ -33,6 +33,8 @@ pub enum Event {
     SetFiles(bool),
     /// Send file message: destination peer, destination client, source client, content
     SendFileMessage(String, u16, u16, Vec<u8>),
+    /// Send message: destination peer, destination client, source client, service, content
+    SendMessage(String, u16, u16, u16, Vec<u8>),
 
     /// Peer announcement event
     AnnouncePeer(PeerInfo),
@@ -113,6 +115,16 @@ impl HiSwarm {
                             };
                             let file_msg = HiRequest::FileMessage(to_client, from_client, content);
                             swarm.behaviour_mut().request.send_request(&peer_id, file_msg);
+                        }
+
+                        // handle send file message request
+                        Event::SendMessage(to_peer, to_client, from_client, service, content) => {
+                            let peer_id = match PeerId::from_str(&to_peer) {
+                                Ok(peer_id) => peer_id,
+                                Err(_) => continue,
+                            };
+                            let msg = HiRequest::Message(to_client, from_client, service, content);
+                            swarm.behaviour_mut().request.send_request(&peer_id, msg);
                         }
 
                         // events (coming from behaviour) not handled here,
