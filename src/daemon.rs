@@ -254,6 +254,53 @@ impl Daemon {
         }
     }
 
+    /// handle "message" swarm event
+    async fn handle_swarm_message(
+        &mut self,
+        from_peer: String,
+        from_client: u16,
+        to_client: u16,
+        service: u16,
+        content: Vec<u8>,
+    ) {
+        // helper for sending message to a client
+        async fn send(
+            client: &mut ClientInfo,
+            from_peer: String,
+            to_client: u16,
+            from_client: u16,
+            service: u16,
+            content: Vec<u8>,
+        ) {
+            let msg = Message::Message {
+                to_peer: String::new(),
+                from_peer,
+                to_client,
+                from_client,
+                service,
+                content,
+            };
+            if let Err(e) = client.sender.send(msg).await {
+                error!("handle client error: {}", e);
+                return;
+            }
+        }
+
+        // handle message to specific client
+        if self.clients.contains_key(&to_client) {
+            let client = self.clients.get_mut(&to_client).unwrap();
+            send(
+                client,
+                from_peer.clone(),
+                to_client,
+                from_client,
+                service,
+                content.clone(),
+            )
+            .await;
+        }
+    }
+
     /// handle swarm event
     async fn handle_swarm_event(&mut self, event: swarm::Event) {
         match event {
@@ -268,6 +315,12 @@ impl Daemon {
             // handle file messages
             swarm::Event::FileMessage(from_peer, from_client, to_client, content) => {
                 self.handle_swarm_file_message(from_peer, from_client, to_client, content)
+                    .await;
+            }
+
+            // handle messages
+            swarm::Event::Message(from_peer, from_client, to_client, service, content) => {
+                self.handle_swarm_message(from_peer, from_client, to_client, service, content)
                     .await;
             }
 
