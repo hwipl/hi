@@ -429,6 +429,21 @@ impl Daemon {
         }
     }
 
+    /// handle "message" client message event
+    async fn handle_client_message(
+        &mut self,
+        to_peer: String,
+        to_client: u16,
+        from_client: u16,
+        service: u16,
+        content: Vec<u8>,
+    ) -> Message {
+        debug!("received message for {}", to_peer);
+        let event = swarm::Event::SendMessage(to_peer, to_client, from_client, service, content);
+        self.swarm.send(event).await;
+        Message::Ok
+    }
+
     /// handle client event
     async fn handle_client_event(&mut self, event: Event) {
         match event {
@@ -496,7 +511,23 @@ impl Daemon {
                     } => self.handle_client_set(client_id, request_id, content).await,
 
                     // handle message
-                    Message::Message { .. } => return,
+                    Message::Message {
+                        to_peer,
+                        to_client,
+                        from_client,
+                        service,
+                        content,
+                        ..
+                    } => {
+                        self.handle_client_message(
+                            to_peer,
+                            to_client,
+                            from_client,
+                            service,
+                            content,
+                        )
+                        .await
+                    }
 
                     // handle other messages
                     Message::RegisterOk { .. } => return,
