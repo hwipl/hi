@@ -115,6 +115,24 @@ pub enum Message {
         #[n(2)]
         content: GetSet,
     },
+
+    /// Message
+    #[n(8)]
+    Message {
+        #[n(0)]
+        to_peer: String,
+        #[n(1)]
+        from_peer: String,
+        #[n(2)]
+        to_client: u16,
+        #[n(3)]
+        from_client: u16,
+        #[n(4)]
+        service: u16,
+        #[n(5)]
+        #[cbor(with = "minicbor::bytes")]
+        content: Vec<u8>,
+    },
 }
 
 impl Message {

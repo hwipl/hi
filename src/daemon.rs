@@ -495,6 +495,9 @@ impl Daemon {
                         content,
                     } => self.handle_client_set(client_id, request_id, content).await,
 
+                    // handle message
+                    Message::Message { .. } => return,
+
                     // handle other messages
                     Message::RegisterOk { .. } => return,
                 };
