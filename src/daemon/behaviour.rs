@@ -72,6 +72,25 @@ impl NetworkBehaviourEventProcess<RequestResponseEvent<HiRequest, HiResponse>> f
                             HiResponse::Ok
                         }
 
+                        // handle message
+                        HiRequest::Message(to_client, from_client, service, content) => {
+                            debug!("received message: {:?}", content);
+                            let swarm_event = swarm::Event::Message(
+                                peer.to_base58(),
+                                from_client,
+                                to_client,
+                                service,
+                                content,
+                            );
+                            let mut to_swarm = self.to_swarm.clone();
+                            task::spawn(async move {
+                                if let Err(e) = to_swarm.send(swarm_event).await {
+                                    error!("error sending event to swarm: {}", e);
+                                }
+                            });
+                            HiResponse::Ok
+                        }
+
                         // handle other requests
                         _ => HiResponse::Error(String::from("unknown request")),
                     };

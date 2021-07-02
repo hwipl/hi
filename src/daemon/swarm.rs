@@ -42,6 +42,8 @@ pub enum Event {
     ChatMessage(String, String),
     /// file message: sender, sender client, destination client, message
     FileMessage(String, u16, u16, Vec<u8>),
+    /// Message: sender, sender client, destination client, service, message
+    Message(String, u16, u16, u16, Vec<u8>),
 }
 
 /// Hi swarm
@@ -132,6 +134,7 @@ impl HiSwarm {
                         | Event::AnnouncePeer(..)
                         | Event::ChatMessage(..)
                         | Event::FileMessage(..)
+                        | Event::Message(..)
                         => {
                             if let Err(e) = sender.send(event).await {
                                 error!("Error sending swarm event: {}", e);
