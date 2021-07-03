@@ -1,4 +1,5 @@
 use minicbor::{Decode, Encode};
+use std::collections::HashSet;
 
 #[derive(Clone, Debug, Encode, Decode)]
 pub struct PeerInfo {
@@ -7,10 +8,12 @@ pub struct PeerInfo {
     #[n(1)]
     pub name: String,
     #[n(2)]
-    pub chat_support: bool,
+    pub services: HashSet<u16>,
     #[n(3)]
-    pub file_support: bool,
+    pub chat_support: bool,
     #[n(4)]
+    pub file_support: bool,
+    #[n(5)]
     pub last_update: u64,
 }
 

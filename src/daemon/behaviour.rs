@@ -10,6 +10,7 @@ use libp2p::mdns::{Mdns, MdnsEvent};
 use libp2p::request_response::{RequestResponse, RequestResponseEvent, RequestResponseMessage};
 use libp2p::swarm::NetworkBehaviourEventProcess;
 use libp2p::NetworkBehaviour;
+use std::collections::HashSet;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 /// Custom network behaviour with mdns, gossipsub, request-response
@@ -130,6 +131,7 @@ impl NetworkBehaviourEventProcess<GossipsubEvent> for HiBehaviour {
                         let swarm_event = swarm::Event::AnnouncePeer(PeerInfo {
                             peer_id: peer.to_string(),
                             name: msg.name,
+                            services: HashSet::new(),
                             chat_support: msg.chat,
                             file_support: msg.files,
                             last_update: SystemTime::now()
