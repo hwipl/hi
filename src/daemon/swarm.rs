@@ -61,6 +61,7 @@ impl HiSwarm {
     ) {
         let mut timer = Delay::new(Duration::from_secs(5)).fuse();
         let mut node_name = String::from("");
+        let services = 0;
         let mut chat_support = false;
         let mut file_support = false;
 
@@ -190,6 +191,7 @@ impl HiSwarm {
                     // announce presence
                     let mut announce = HiAnnounce::new();
                     announce.name = node_name.to_string();
+                    announce.services = services;
                     announce.chat = chat_support;
                     announce.files = file_support;
                     if let Some(announce) = announce.encode() {
