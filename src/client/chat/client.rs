@@ -4,6 +4,7 @@ use crate::unix_socket;
 use async_std::{io, prelude::*, task};
 use futures::future::FutureExt;
 use futures::select;
+use std::collections::HashSet;
 
 /// chat client
 struct ChatClient {
@@ -26,6 +27,7 @@ impl ChatClient {
 
         // register this client and enable chat mode
         let msg = Message::Register {
+            services: HashSet::new(),
             chat: true,
             files: false,
         };

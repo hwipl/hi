@@ -2,6 +2,7 @@ use crate::config;
 use crate::message::{GetSet, Message};
 use crate::unix_socket;
 use async_std::task;
+use std::collections::HashSet;
 use std::error::Error;
 
 /// set client
@@ -26,6 +27,7 @@ impl SetClient {
     /// register this client
     async fn register_client(&mut self) -> Result<(), Box<dyn Error>> {
         let msg = Message::Register {
+            services: HashSet::new(),
             chat: false,
             files: false,
         };

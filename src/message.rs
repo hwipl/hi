@@ -85,8 +85,10 @@ pub enum Message {
     #[n(4)]
     Register {
         #[n(0)]
-        chat: bool,
+        services: HashSet<u16>,
         #[n(1)]
+        chat: bool,
+        #[n(2)]
         files: bool,
     },
 

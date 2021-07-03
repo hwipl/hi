@@ -440,7 +440,13 @@ impl Daemon {
     }
 
     /// handle "register" client message event
-    async fn handle_client_register(&mut self, id: u16, chat: bool, files: bool) -> Message {
+    async fn handle_client_register(
+        &mut self,
+        id: u16,
+        services: HashSet<u16>,
+        chat: bool,
+        files: bool,
+    ) -> Message {
         let client = match self.clients.get_mut(&id) {
             Some(client) => client,
             None => {
@@ -450,6 +456,7 @@ impl Daemon {
                 };
             }
         };
+        client.services = services;
         client.chat_support = chat;
         let event = swarm::Event::SetChat(chat);
         self.swarm.send(event).await;
@@ -587,9 +594,11 @@ impl Daemon {
                     }
 
                     // handle register message
-                    Message::Register { chat, files } => {
-                        self.handle_client_register(id, chat, files).await
-                    }
+                    Message::Register {
+                        services,
+                        chat,
+                        files,
+                    } => self.handle_client_register(id, services, chat, files).await,
 
                     // handle get message
                     Message::Get {

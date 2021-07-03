@@ -5,7 +5,7 @@ use async_std::{fs, io, path, prelude::*, task};
 use futures::future::FutureExt;
 use futures::select;
 use minicbor::{Decode, Encode};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use wasm_timer::Delay;
 
@@ -373,6 +373,7 @@ impl FileClient {
     pub async fn run(&mut self) {
         // register this client and enable file mode
         let msg = Message::Register {
+            services: HashSet::new(),
             chat: false,
             files: true,
         };
