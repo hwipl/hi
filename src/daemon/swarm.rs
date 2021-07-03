@@ -1,7 +1,6 @@
 use crate::daemon::behaviour::HiBehaviour;
 use crate::daemon::gossip::HiAnnounce;
 use crate::daemon::request::{HiCodec, HiRequest, HiRequestProtocol};
-use crate::message::PeerInfo;
 use async_std::task;
 use futures::{channel::mpsc, executor::block_on, prelude::*, select, sink::SinkExt};
 use libp2p::gossipsub::{Gossipsub, GossipsubConfig, IdentTopic, MessageAuthenticity};
@@ -38,8 +37,8 @@ pub enum Event {
     /// Send message: destination peer, destination client, source client, service, content
     SendMessage(String, u16, u16, u16, Vec<u8>),
 
-    /// Peer announcement event
-    AnnouncePeer(PeerInfo),
+    /// Peer announcement event: id, name, services, chat, file
+    AnnouncePeer(String, String, u32, bool, bool),
     /// Chat message: sender, message
     ChatMessage(String, String),
     /// file message: sender, sender client, destination client, message

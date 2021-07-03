@@ -1,7 +1,6 @@
 use crate::daemon::gossip::HiAnnounce;
 use crate::daemon::request::{HiCodec, HiRequest, HiResponse};
 use crate::daemon::swarm;
-use crate::message::PeerInfo;
 use async_std::task;
 use futures::channel::mpsc;
 use futures::sink::SinkExt;
@@ -10,8 +9,6 @@ use libp2p::mdns::{Mdns, MdnsEvent};
 use libp2p::request_response::{RequestResponse, RequestResponseEvent, RequestResponseMessage};
 use libp2p::swarm::NetworkBehaviourEventProcess;
 use libp2p::NetworkBehaviour;
-use std::collections::HashSet;
-use std::time::{SystemTime, UNIX_EPOCH};
 
 /// Custom network behaviour with mdns, gossipsub, request-response
 #[derive(NetworkBehaviour)]
@@ -128,17 +125,13 @@ impl NetworkBehaviourEventProcess<GossipsubEvent> for HiBehaviour {
                         message.source, message.topic, msg
                     );
                     if let Some(peer) = message.source {
-                        let swarm_event = swarm::Event::AnnouncePeer(PeerInfo {
-                            peer_id: peer.to_string(),
-                            name: msg.name,
-                            services: HashSet::new(),
-                            chat_support: msg.chat,
-                            file_support: msg.files,
-                            last_update: SystemTime::now()
-                                .duration_since(UNIX_EPOCH)
-                                .expect("timestamp error")
-                                .as_secs(),
-                        });
+                        let swarm_event = swarm::Event::AnnouncePeer(
+                            peer.to_string(),
+                            msg.name,
+                            msg.service_id,
+                            msg.chat,
+                            msg.files,
+                        );
                         let mut to_swarm = self.to_swarm.clone();
                         task::spawn(async move {
                             if let Err(e) = to_swarm.send(swarm_event).await {

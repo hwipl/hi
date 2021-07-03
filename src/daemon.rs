@@ -166,8 +166,27 @@ impl Daemon {
     }
 
     /// handle "announce peer" swarm event
-    async fn handle_swarm_announce_peer(&mut self, peer_info: PeerInfo) {
+    async fn handle_swarm_announce_peer(
+        &mut self,
+        peer_id: String,
+        name: String,
+        _service_id: u32,
+        chat_support: bool,
+        file_support: bool,
+    ) {
         // add or update peer entry
+        // TODO: check/update services
+        let peer_info = PeerInfo {
+            peer_id,
+            name,
+            services: HashSet::new(),
+            chat_support,
+            file_support,
+            last_update: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .expect("timestamp error")
+                .as_secs(),
+        };
         match self.peers.entry(peer_info.peer_id.clone()) {
             Entry::Occupied(mut entry) => {
                 entry.insert(peer_info);
@@ -333,8 +352,15 @@ impl Daemon {
     async fn handle_swarm_event(&mut self, event: swarm::Event) {
         match event {
             // handle peer announcement
-            swarm::Event::AnnouncePeer(peer_info) => {
-                self.handle_swarm_announce_peer(peer_info).await;
+            swarm::Event::AnnouncePeer(peer_id, name, service_id, chat_support, file_support) => {
+                self.handle_swarm_announce_peer(
+                    peer_id,
+                    name,
+                    service_id,
+                    chat_support,
+                    file_support,
+                )
+                .await;
             }
 
             // handle chat messages
