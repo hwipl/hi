@@ -8,12 +8,14 @@ pub struct PeerInfo {
     #[n(1)]
     pub name: String,
     #[n(2)]
-    pub services: HashSet<u16>,
+    pub service_id: u32,
     #[n(3)]
-    pub chat_support: bool,
+    pub services: HashSet<u16>,
     #[n(4)]
-    pub file_support: bool,
+    pub chat_support: bool,
     #[n(5)]
+    pub file_support: bool,
+    #[n(6)]
     pub last_update: u64,
 }
 
