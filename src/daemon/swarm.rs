@@ -25,6 +25,8 @@ pub enum Event {
     ConnectAddress(String),
     /// Set node's name: name
     SetName(String),
+    /// Set id of the services supported by this node
+    SetServices(u32),
     /// Set chat support to enabled (true) or disabled (false)
     SetChat(bool),
     /// Send chat message: destination, message
@@ -61,7 +63,7 @@ impl HiSwarm {
     ) {
         let mut timer = Delay::new(Duration::from_secs(5)).fuse();
         let mut node_name = String::from("");
-        let services = 0;
+        let mut services = 0;
         let mut chat_support = false;
         let mut file_support = false;
 
@@ -88,6 +90,11 @@ impl HiSwarm {
                         // handle set name request
                         Event::SetName(name) => {
                             node_name = name.clone();
+                        }
+
+                        // handle set services request
+                        Event::SetServices(id) => {
+                            services = id;
                         }
 
                         // handle set chat support request

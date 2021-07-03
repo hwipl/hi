@@ -68,6 +68,11 @@ impl Daemon {
         }
     }
 
+    /// get an id for the services supported by this node
+    fn get_services_id(&self) -> u32 {
+        rand::random()
+    }
+
     /// handle client connection identified by its `id`
     async fn handle_client(
         mut server: Sender<Event>,
@@ -383,6 +388,8 @@ impl Daemon {
             file_support |= c.file_support;
         }
 
+        let event = swarm::Event::SetServices(self.get_services_id());
+        self.swarm.send(event).await;
         let event = swarm::Event::SetChat(chat_support);
         self.swarm.send(event).await;
         let event = swarm::Event::SetFiles(file_support);
@@ -447,8 +454,13 @@ impl Daemon {
         chat: bool,
         files: bool,
     ) -> Message {
-        let client = match self.clients.get_mut(&id) {
-            Some(client) => client,
+        // update client info
+        match self.clients.get_mut(&id) {
+            Some(client) => {
+                client.services = services;
+                client.chat_support = chat;
+                client.file_support = files;
+            }
             None => {
                 error!("unknown client");
                 return Message::Error {
@@ -456,11 +468,12 @@ impl Daemon {
                 };
             }
         };
-        client.services = services;
-        client.chat_support = chat;
+
+        // send events to swarm
+        let event = swarm::Event::SetServices(self.get_services_id());
+        self.swarm.send(event).await;
         let event = swarm::Event::SetChat(chat);
         self.swarm.send(event).await;
-        client.file_support = files;
         let event = swarm::Event::SetFiles(files);
         self.swarm.send(event).await;
         Message::RegisterOk { client_id: id }
