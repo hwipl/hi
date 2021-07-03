@@ -13,6 +13,7 @@ use futures::future::FutureExt;
 use futures::select;
 use futures::sink::SinkExt;
 use std::collections::hash_map::{Entry, HashMap};
+use std::collections::HashSet;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use wasm_timer::Delay;
 
@@ -29,6 +30,7 @@ enum Event {
 /// Client information
 struct ClientInfo {
     sender: Sender<Message>,
+    services: HashSet<u16>,
     chat_support: bool,
     file_support: bool,
 }
@@ -286,9 +288,30 @@ impl Daemon {
             }
         }
 
+        // handle message to all clients
+        if to_client == Message::ALL_CLIENTS {
+            for client in self.clients.values_mut() {
+                if client.services.contains(&service) {
+                    send(
+                        client,
+                        from_peer.clone(),
+                        to_client,
+                        from_client,
+                        service,
+                        content.clone(),
+                    )
+                    .await;
+                }
+            }
+            return;
+        }
+
         // handle message to specific client
         if self.clients.contains_key(&to_client) {
             let client = self.clients.get_mut(&to_client).unwrap();
+            if !client.services.contains(&service) {
+                return;
+            }
             send(
                 client,
                 from_peer.clone(),
@@ -337,6 +360,7 @@ impl Daemon {
             Entry::Vacant(entry) => {
                 let client_info = ClientInfo {
                     sender,
+                    services: HashSet::new(),
                     chat_support: false,
                     file_support: false,
                 };
