@@ -492,8 +492,26 @@ impl Daemon {
         content: Vec<u8>,
     ) -> Message {
         debug!("received message for {}", to_peer);
-        let event = swarm::Event::SendMessage(to_peer, to_client, from_client, service, content);
-        self.swarm.send(event).await;
+        if to_peer == "all" {
+            // send message to all known peers that support this service
+            for peer in self.peers.values() {
+                if peer.services.contains(&service) {
+                    let event = swarm::Event::SendMessage(
+                        peer.peer_id.clone(),
+                        to_client,
+                        from_client,
+                        service,
+                        content.clone(),
+                    );
+                    self.swarm.send(event).await;
+                }
+            }
+        } else {
+            // send message to specific peer
+            let event =
+                swarm::Event::SendMessage(to_peer, to_client, from_client, service, content);
+            self.swarm.send(event).await;
+        }
         Message::Ok
     }
 
