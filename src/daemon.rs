@@ -69,7 +69,7 @@ impl Daemon {
     }
 
     /// get an id for the services supported by this node
-    fn get_services_id(&self) -> u32 {
+    fn get_service_id(&self) -> u32 {
         rand::random()
     }
 
@@ -388,7 +388,7 @@ impl Daemon {
             file_support |= c.file_support;
         }
 
-        let event = swarm::Event::SetServices(self.get_services_id());
+        let event = swarm::Event::SetServiceId(self.get_service_id());
         self.swarm.send(event).await;
         let event = swarm::Event::SetChat(chat_support);
         self.swarm.send(event).await;
@@ -470,7 +470,7 @@ impl Daemon {
         };
 
         // send events to swarm
-        let event = swarm::Event::SetServices(self.get_services_id());
+        let event = swarm::Event::SetServiceId(self.get_service_id());
         self.swarm.send(event).await;
         let event = swarm::Event::SetChat(chat);
         self.swarm.send(event).await;
