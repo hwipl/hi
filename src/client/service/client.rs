@@ -1,6 +1,7 @@
 use crate::config;
 use crate::unix_socket;
 use async_std::task;
+use std::error::Error;
 
 /// service client
 struct ServiceClient {
@@ -17,8 +18,10 @@ impl ServiceClient {
         }
     }
 
-    pub async fn run(&mut self) {
-        while let Ok(msg) = self.client.receive_message().await {
+    /// run service client
+    pub async fn run(&mut self) -> Result<(), Box<dyn Error>> {
+        loop {
+            let msg = self.client.receive_message().await?;
             debug!("received message {:?}", msg);
         }
     }
@@ -28,7 +31,11 @@ impl ServiceClient {
 pub fn run(config: config::Config) {
     task::spawn(async {
         match unix_socket::UnixClient::connect(&config).await {
-            Ok(client) => ServiceClient::new(config, client).await.run().await,
+            Ok(client) => {
+                if let Err(e) = ServiceClient::new(config, client).await.run().await {
+                    error!("{}", e);
+                }
+            }
             Err(e) => error!("unix socket client error: {}", e),
         }
         debug!("service client stopped");
