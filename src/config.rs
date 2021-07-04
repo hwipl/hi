@@ -34,7 +34,7 @@ impl FromStr for ConfigOption {
     }
 }
 
-#[derive(Clap)]
+#[derive(Clone, Clap)]
 #[clap(version)]
 #[clap(setting = AppSettings::ColoredHelp)]
 pub struct DaemonOpts {
@@ -43,7 +43,7 @@ pub struct DaemonOpts {
     pub set: Vec<ConfigOption>,
 }
 
-#[derive(Clap)]
+#[derive(Clone, Clap)]
 #[clap(version)]
 #[clap(setting = AppSettings::ColoredHelp)]
 pub struct GetOpts {
@@ -51,7 +51,7 @@ pub struct GetOpts {
     pub info: Vec<String>,
 }
 
-#[derive(Clap)]
+#[derive(Clone, Clap)]
 #[clap(version)]
 #[clap(setting = AppSettings::ColoredHelp)]
 pub struct SetOpts {
@@ -60,7 +60,7 @@ pub struct SetOpts {
     pub opts: Vec<ConfigOption>,
 }
 
-#[derive(Clap)]
+#[derive(Clone, Clap)]
 #[clap(version)]
 #[clap(setting = AppSettings::ColoredHelp)]
 pub struct ChatOpts {
@@ -69,7 +69,7 @@ pub struct ChatOpts {
     pub peer: String,
 }
 
-#[derive(Clap)]
+#[derive(Clone, Clap)]
 pub enum Command {
     /// Run daemon
     Daemon(DaemonOpts),
@@ -83,7 +83,7 @@ pub enum Command {
     Files,
 }
 
-#[derive(Clap)]
+#[derive(Clone, Clap)]
 #[clap(version)]
 #[clap(setting = AppSettings::ColoredHelp)]
 pub struct Config {
