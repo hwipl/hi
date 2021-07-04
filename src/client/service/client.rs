@@ -1,4 +1,5 @@
 use crate::config;
+use crate::message::{Message, Service};
 use crate::unix_socket;
 use async_std::task;
 use std::error::Error;
@@ -7,6 +8,7 @@ use std::error::Error;
 struct ServiceClient {
     _config: config::Config,
     client: unix_socket::UnixClient,
+    client_id: u16,
 }
 
 impl ServiceClient {
@@ -15,11 +17,30 @@ impl ServiceClient {
         ServiceClient {
             _config: config,
             client,
+            client_id: 0,
+        }
+    }
+
+    /// register this client
+    async fn register_client(&mut self) -> Result<(), Box<dyn Error>> {
+        let msg = Message::Register {
+            services: vec![Service::Service as u16].into_iter().collect(),
+            chat: false,
+            files: false,
+        };
+        self.client.send_message(msg).await?;
+        match self.client.receive_message().await? {
+            Message::RegisterOk { client_id } => {
+                self.client_id = client_id;
+                Ok(())
+            }
+            _ => Err("unexpected message from daemon".into()),
         }
     }
 
     /// run service client
     pub async fn run(&mut self) -> Result<(), Box<dyn Error>> {
+        self.register_client().await?;
         loop {
             let msg = self.client.receive_message().await?;
             debug!("received message {:?}", msg);
