@@ -1,6 +1,11 @@
 use minicbor::{Decode, Encode};
 use std::collections::HashSet;
 
+/// Service
+pub enum Service {
+    Service = 1,
+}
+
 #[derive(Clone, Debug, Encode, Decode)]
 pub struct PeerInfo {
     #[n(0)]
