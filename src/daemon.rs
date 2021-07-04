@@ -784,6 +784,9 @@ pub fn run(config: config::Config) {
             }
         };
 
+        // start service client
+        crate::client::service::run(config.clone());
+
         // start daemon
         Daemon::new(config, server, swarm).await.run().await;
         debug!("daemon stopped");
