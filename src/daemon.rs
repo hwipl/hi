@@ -675,6 +675,7 @@ impl Daemon {
 
                     // handle other messages
                     Message::RegisterOk { .. } => return,
+                    Message::Event { .. } => return,
                 };
 
                 // send reply to client

@@ -47,6 +47,9 @@ pub enum GetSet {
     Connect(#[n(0)] String),
 }
 
+#[derive(Clone, Debug, Encode, Decode)]
+pub enum Event {}
+
 #[derive(Debug, Encode, Decode)]
 pub enum Message {
     /// Ok message
@@ -144,6 +147,17 @@ pub enum Message {
         #[n(5)]
         #[cbor(with = "minicbor::bytes")]
         content: Vec<u8>,
+    },
+
+    /// Event
+    #[n(9)]
+    Event {
+        #[n(0)]
+        to_client: u16,
+        #[n(1)]
+        from_client: u16,
+        #[n(2)]
+        event: Event,
     },
 }
 
