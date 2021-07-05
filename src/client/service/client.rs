@@ -1,5 +1,5 @@
 use crate::config;
-use crate::message::{Message, Service};
+use crate::message::{Event, Message, Service};
 use crate::unix_socket;
 use async_std::task;
 use std::error::Error;
@@ -38,12 +38,24 @@ impl ServiceClient {
         }
     }
 
+    /// handle "event" message
+    async fn handle_event(&self, event: Event) -> Result<(), Box<dyn Error>> {
+        match event {
+            Event::PeerUpdate(_peer_info) => (),
+        }
+        Ok(())
+    }
+
     /// run service client
     pub async fn run(&mut self) -> Result<(), Box<dyn Error>> {
         self.register_client().await?;
         loop {
             let msg = self.client.receive_message().await?;
             debug!("received message {:?}", msg);
+            match msg {
+                Message::Event { event, .. } => self.handle_event(event).await?,
+                _ => (),
+            }
         }
     }
 }
