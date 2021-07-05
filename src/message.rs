@@ -48,7 +48,10 @@ pub enum GetSet {
 }
 
 #[derive(Clone, Debug, Encode, Decode)]
-pub enum Event {}
+pub enum Event {
+    #[n(0)]
+    PeerUpdate(#[n(0)] PeerInfo),
+}
 
 #[derive(Debug, Encode, Decode)]
 pub enum Message {

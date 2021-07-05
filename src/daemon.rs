@@ -4,7 +4,7 @@ mod request;
 mod swarm;
 
 use crate::config;
-use crate::message::{GetSet, Message, PeerInfo};
+use crate::message::{self, GetSet, Message, PeerInfo, Service};
 use crate::unix_socket;
 use async_std::prelude::*;
 use async_std::task;
@@ -190,10 +190,24 @@ impl Daemon {
         };
         match self.peers.entry(peer_info.peer_id.clone()) {
             Entry::Occupied(mut entry) => {
-                entry.insert(peer_info);
+                entry.insert(peer_info.clone());
             }
             Entry::Vacant(entry) => {
-                entry.insert(peer_info);
+                entry.insert(peer_info.clone());
+            }
+        }
+
+        // forward peer info to service clients
+        for (id, client) in self.clients.iter_mut() {
+            if client.services.contains(&(Service::Service as u16)) {
+                let msg = Message::Event {
+                    to_client: *id,
+                    from_client: 0,
+                    event: message::Event::PeerUpdate(peer_info.clone()),
+                };
+                if let Err(e) = client.sender.send(msg).await {
+                    error!("handle client error: {}", e);
+                }
             }
         }
     }
