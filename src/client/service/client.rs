@@ -115,6 +115,21 @@ impl ServiceClient {
         Ok(())
     }
 
+    /// handle "message" message
+    async fn handle_message(
+        &self,
+        _from_peer: String,
+        _from_client: u16,
+        content: Vec<u8>,
+    ) -> Result<(), Box<dyn Error>> {
+        if let Ok(msg) = minicbor::decode::<ServiceMessage>(&content) {
+            match msg {
+                _ => (),
+            }
+        }
+        Ok(())
+    }
+
     /// run service client
     pub async fn run(&mut self) -> Result<(), Box<dyn Error>> {
         self.register_client().await?;
@@ -123,6 +138,12 @@ impl ServiceClient {
             debug!("received message {:?}", msg);
             match msg {
                 Message::Event { event, .. } => self.handle_event(event).await?,
+                Message::Message {
+                    from_peer,
+                    from_client,
+                    content,
+                    ..
+                } => self.handle_message(from_peer, from_client, content).await?,
                 _ => (),
             }
         }
