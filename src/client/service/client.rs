@@ -41,10 +41,30 @@ impl ServiceClient {
         }
     }
 
+    /// handle PeerUpdate "event" message
+    async fn handle_event_peer_update(
+        &mut self,
+        peer_info: PeerInfo,
+    ) -> Result<(), Box<dyn Error>> {
+        match self.peers.get_mut(&peer_info.peer_id) {
+            None => {
+                self.peers.insert(peer_info.peer_id.clone(), peer_info);
+            }
+            Some(p) => {
+                // check if we need to update services
+                if p.service_id != peer_info.service_id {}
+
+                // update peer entry
+                *p = peer_info;
+            }
+        }
+        Ok(())
+    }
+
     /// handle "event" message
-    async fn handle_event(&self, event: Event) -> Result<(), Box<dyn Error>> {
+    async fn handle_event(&mut self, event: Event) -> Result<(), Box<dyn Error>> {
         match event {
-            Event::PeerUpdate(_peer_info) => (),
+            Event::PeerUpdate(peer_info) => self.handle_event_peer_update(peer_info).await?,
         }
         Ok(())
     }
