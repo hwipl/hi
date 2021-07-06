@@ -2,8 +2,21 @@ use crate::config;
 use crate::message::{Event, Message, PeerInfo, Service};
 use crate::unix_socket;
 use async_std::task;
-use std::collections::HashMap;
+use minicbor::{Decode, Encode};
+use std::collections::{HashMap, HashSet};
 use std::error::Error;
+
+/// service message
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode)]
+enum ServiceMessage {
+    /// request all services supported by other peer
+    #[n(0)]
+    ServiceRequest,
+
+    /// send all services supported by this node to requesting peer
+    #[n(1)]
+    ServiceReply(#[n(0)] HashSet<u16>),
+}
 
 /// service client
 struct ServiceClient {
