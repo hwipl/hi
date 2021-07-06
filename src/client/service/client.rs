@@ -122,15 +122,30 @@ impl ServiceClient {
         Ok(())
     }
 
+    /// handle ServiceRequest message
+    async fn handle_message_service_request(
+        &mut self,
+        from_peer: String,
+        from_client: u16,
+    ) -> Result<(), Box<dyn Error>> {
+        let reply = ServiceMessage::ServiceReply(self.service_id, self.services.clone());
+        self.send_message(from_peer, from_client, reply).await?;
+        Ok(())
+    }
+
     /// handle "message" message
     async fn handle_message(
-        &self,
-        _from_peer: String,
-        _from_client: u16,
+        &mut self,
+        from_peer: String,
+        from_client: u16,
         content: Vec<u8>,
     ) -> Result<(), Box<dyn Error>> {
         if let Ok(msg) = minicbor::decode::<ServiceMessage>(&content) {
             match msg {
+                ServiceMessage::ServiceRequest => {
+                    self.handle_message_service_request(from_peer, from_client)
+                        .await?
+                }
                 _ => (),
             }
         }
