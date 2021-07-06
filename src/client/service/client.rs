@@ -25,6 +25,7 @@ struct ServiceClient {
     client_id: u16,
     peers: HashMap<String, PeerInfo>,
     service_id: u32,
+    services: HashMap<u16, HashSet<u16>>,
 }
 
 impl ServiceClient {
@@ -36,6 +37,7 @@ impl ServiceClient {
             client_id: 0,
             service_id: 0,
             peers: HashMap::new(),
+            services: HashMap::new(),
         }
     }
 
