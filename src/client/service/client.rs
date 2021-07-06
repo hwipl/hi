@@ -79,17 +79,30 @@ impl ServiceClient {
         &mut self,
         peer_info: PeerInfo,
     ) -> Result<(), Box<dyn Error>> {
-        match self.peers.get_mut(&peer_info.peer_id) {
+        // check/update peer entry
+        let peer_id = peer_info.peer_id.clone();
+        let mut request_update = false;
+        match self.peers.get_mut(&peer_id) {
             None => {
-                self.peers.insert(peer_info.peer_id.clone(), peer_info);
+                // add new peer entry
+                self.peers.insert(peer_id.clone(), peer_info);
+                request_update = true;
             }
             Some(p) => {
                 // check if we need to update services
-                if p.service_id != peer_info.service_id {}
+                if p.service_id != peer_info.service_id {
+                    request_update = true;
+                }
 
-                // update peer entry
+                // update existing peer entry
                 *p = peer_info;
             }
+        }
+
+        // request service update from peer
+        if request_update {
+            let request = ServiceMessage::ServiceRequest;
+            self.send_message(peer_id, request).await?;
         }
         Ok(())
     }
