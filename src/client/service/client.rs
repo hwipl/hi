@@ -13,9 +13,10 @@ enum ServiceMessage {
     #[n(0)]
     ServiceRequest,
 
-    /// send all services supported by this node to requesting peer
+    /// send all services supported by this node to requesting peer:
+    /// service_id of services, map of clients and their services
     #[n(1)]
-    ServiceReply(#[n(0)] HashSet<u16>),
+    ServiceReply(#[n(0)] u32, #[n(1)] HashMap<u16, HashSet<u16>>),
 }
 
 /// service client
