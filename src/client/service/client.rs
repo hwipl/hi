@@ -58,6 +58,7 @@ impl ServiceClient {
     async fn send_message(
         &mut self,
         peer_id: String,
+        client_id: u16,
         message: ServiceMessage,
     ) -> Result<(), Box<dyn Error>> {
         let mut content = Vec::new();
@@ -65,7 +66,7 @@ impl ServiceClient {
         let msg = Message::Message {
             to_peer: peer_id,
             from_peer: String::new(),
-            to_client: Message::ALL_CLIENTS,
+            to_client: client_id,
             from_client: self.client_id,
             service: Service::Service as u16,
             content,
@@ -102,7 +103,8 @@ impl ServiceClient {
         // request service update from peer
         if request_update {
             let request = ServiceMessage::ServiceRequest;
-            self.send_message(peer_id, request).await?;
+            self.send_message(peer_id, Message::ALL_CLIENTS, request)
+                .await?;
         }
         Ok(())
     }
