@@ -54,6 +54,26 @@ impl ServiceClient {
         }
     }
 
+    /// send service message to other peer
+    async fn send_message(
+        &mut self,
+        peer_id: String,
+        message: ServiceMessage,
+    ) -> Result<(), Box<dyn Error>> {
+        let mut content = Vec::new();
+        minicbor::encode(message, &mut content)?;
+        let msg = Message::Message {
+            to_peer: peer_id,
+            from_peer: String::new(),
+            to_client: Message::ALL_CLIENTS,
+            from_client: self.client_id,
+            service: Service::Service as u16,
+            content,
+        };
+        self.client.send_message(msg).await?;
+        Ok(())
+    }
+
     /// handle PeerUpdate "event" message
     async fn handle_event_peer_update(
         &mut self,
