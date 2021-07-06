@@ -1,7 +1,8 @@
 use crate::config;
-use crate::message::{Event, Message, Service};
+use crate::message::{Event, Message, PeerInfo, Service};
 use crate::unix_socket;
 use async_std::task;
+use std::collections::HashMap;
 use std::error::Error;
 
 /// service client
@@ -9,6 +10,7 @@ struct ServiceClient {
     _config: config::Config,
     client: unix_socket::UnixClient,
     client_id: u16,
+    peers: HashMap<String, PeerInfo>,
 }
 
 impl ServiceClient {
@@ -18,6 +20,7 @@ impl ServiceClient {
             _config: config,
             client,
             client_id: 0,
+            peers: HashMap::new(),
         }
     }
 
