@@ -24,6 +24,7 @@ struct ServiceClient {
     client: unix_socket::UnixClient,
     client_id: u16,
     peers: HashMap<String, PeerInfo>,
+    service_id: u32,
 }
 
 impl ServiceClient {
@@ -33,6 +34,7 @@ impl ServiceClient {
             _config: config,
             client,
             client_id: 0,
+            service_id: 0,
             peers: HashMap::new(),
         }
     }
