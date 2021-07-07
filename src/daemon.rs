@@ -165,7 +165,7 @@ impl Daemon {
         &mut self,
         peer_id: String,
         name: String,
-        service_id: u32,
+        services_tag: u32,
         chat_support: bool,
         file_support: bool,
     ) {
@@ -174,7 +174,7 @@ impl Daemon {
         let peer_info = PeerInfo {
             peer_id,
             name,
-            service_id,
+            services_tag,
             services: HashSet::new(),
             chat_support,
             file_support,

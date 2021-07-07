@@ -13,7 +13,7 @@ pub struct PeerInfo {
     #[n(1)]
     pub name: String,
     #[n(2)]
-    pub service_id: u32,
+    pub services_tag: u32,
     #[n(3)]
     pub services: HashSet<u16>,
     #[n(4)]

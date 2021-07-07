@@ -155,12 +155,12 @@ impl ServiceClient {
             }
             Some(p) => {
                 // check if we need to update services
-                if p.services_tag != peer_info.service_id {
+                if p.services_tag != peer_info.services_tag {
                     request_update = true;
                 }
 
                 // update existing peer entry
-                p.services_tag = peer_info.service_id;
+                p.services_tag = peer_info.services_tag;
             }
         }
 
