@@ -80,6 +80,35 @@ impl ServiceClient {
         Ok(())
     }
 
+    /// handle ClientUpdate "event" message
+    async fn handle_event_client_update(
+        &mut self,
+        mut add: bool,
+        client_id: u16,
+        services: HashSet<u16>,
+    ) -> Result<(), Box<dyn Error>> {
+        // treat empty services as remove
+        if services.is_empty() {
+            add = false;
+        }
+
+        if add {
+            // add/update entry
+            match self.services.get_mut(&client_id) {
+                None => {
+                    self.services.insert(client_id, services);
+                }
+                Some(s) => {
+                    *s = services;
+                }
+            }
+        } else {
+            // remove entry
+            self.services.remove(&client_id);
+        }
+        Ok(())
+    }
+
     /// handle PeerUpdate "event" message
     async fn handle_event_peer_update(
         &mut self,
@@ -117,7 +146,10 @@ impl ServiceClient {
     /// handle "event" message
     async fn handle_event(&mut self, event: Event) -> Result<(), Box<dyn Error>> {
         match event {
-            Event::ClientUpdate(..) => (),
+            Event::ClientUpdate(add, client_id, services) => {
+                self.handle_event_client_update(add, client_id, services)
+                    .await?
+            }
             Event::PeerUpdate(peer_info) => self.handle_event_peer_update(peer_info).await?,
         }
         Ok(())
