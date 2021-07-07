@@ -180,6 +180,21 @@ impl ServiceClient {
         Ok(())
     }
 
+    /// handle ServiceReply message
+    async fn handle_message_service_reply(
+        &mut self,
+        from_peer: String,
+        _from_client: u16,
+        services_tag: u32,
+        services: HashMap<u16, HashSet<u16>>,
+    ) -> Result<(), Box<dyn Error>> {
+        if let Some(peer) = self.peers.get_mut(&from_peer) {
+            peer.services_tag = services_tag;
+            peer.services = services;
+        }
+        Ok(())
+    }
+
     /// handle "message" message
     async fn handle_message(
         &mut self,
@@ -191,9 +206,17 @@ impl ServiceClient {
             match msg {
                 ServiceMessage::ServiceRequest => {
                     self.handle_message_service_request(from_peer, from_client)
-                        .await?
+                        .await?;
                 }
-                _ => (),
+                ServiceMessage::ServiceReply(services_tag, services) => {
+                    self.handle_message_service_reply(
+                        from_peer,
+                        from_client,
+                        services_tag,
+                        services,
+                    )
+                    .await?;
+                }
             }
         }
         Ok(())
