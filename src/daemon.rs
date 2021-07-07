@@ -498,7 +498,7 @@ impl Daemon {
         // update client info
         match self.clients.get_mut(&id) {
             Some(client) => {
-                client.services = services;
+                client.services = services.clone();
                 client.chat_support = chat;
                 client.file_support = files;
             }
@@ -509,6 +509,24 @@ impl Daemon {
                 };
             }
         };
+
+        // send event to service client
+        for (client_id, client) in self.clients.iter_mut() {
+            if *client_id == id {
+                // do not send own event to registering client
+                continue;
+            }
+            if client.services.contains(&(Service::Service as u16)) {
+                let event = Message::Event {
+                    from_client: 0,
+                    to_client: *client_id,
+                    event: message::Event::ClientUpdate(true, id, services.clone()),
+                };
+                if let Err(e) = client.sender.send(event).await {
+                    error!("handle client error: {}", e);
+                }
+            }
+        }
 
         // send events to swarm
         let event = swarm::Event::SetServiceId(self.get_service_id());
