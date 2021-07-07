@@ -68,11 +68,6 @@ impl Daemon {
         }
     }
 
-    /// get an id for the services supported by this node
-    fn get_service_id(&self) -> u32 {
-        rand::random()
-    }
-
     /// handle client connection identified by its `id`
     async fn handle_client(
         mut server: Sender<Event>,
@@ -443,8 +438,6 @@ impl Daemon {
             file_support |= c.file_support;
         }
 
-        let event = swarm::Event::SetServiceId(self.get_service_id());
-        self.swarm.send(event).await;
         let event = swarm::Event::SetChat(chat_support);
         self.swarm.send(event).await;
         let event = swarm::Event::SetFiles(file_support);
@@ -543,8 +536,6 @@ impl Daemon {
         }
 
         // send events to swarm
-        let event = swarm::Event::SetServiceId(self.get_service_id());
-        self.swarm.send(event).await;
         let event = swarm::Event::SetChat(chat);
         self.swarm.send(event).await;
         let event = swarm::Event::SetFiles(files);
