@@ -1,5 +1,5 @@
 use crate::config;
-use crate::message::{Event, Message, PeerInfo, Service};
+use crate::message::{Event, GetSet, Message, PeerInfo, Service};
 use crate::unix_socket;
 use async_std::task;
 use minicbor::{Decode, Encode};
@@ -94,11 +94,18 @@ impl ServiceClient {
     }
 
     /// update services tag
-    async fn update_services_tag(&mut self) {
+    async fn update_services_tag(&mut self) -> Result<(), Box<dyn Error>> {
         self.local.services_tag = 0;
         if !self.local.services.is_empty() {
             self.local.services_tag = rand::random();
         }
+        let msg = Message::Set {
+            client_id: self.client_id,
+            request_id: rand::random(),
+            content: GetSet::ServicesTag(self.local.services_tag),
+        };
+        self.client.send_message(msg).await?;
+        Ok(())
     }
 
     /// handle ClientUpdate "event" message
@@ -128,7 +135,7 @@ impl ServiceClient {
             self.local.services.remove(&client_id);
         }
 
-        self.update_services_tag().await;
+        self.update_services_tag().await?;
         Ok(())
     }
 
