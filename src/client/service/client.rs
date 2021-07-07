@@ -19,14 +19,28 @@ enum ServiceMessage {
     ServiceReply(#[n(0)] u32, #[n(1)] HashMap<u16, HashSet<u16>>),
 }
 
+/// services of a node
+struct ServiceMap {
+    services_tag: u32,
+    services: HashMap<u16, HashSet<u16>>,
+}
+
+impl ServiceMap {
+    fn new() -> Self {
+        ServiceMap {
+            services_tag: 0,
+            services: HashMap::new(),
+        }
+    }
+}
+
 /// service client
 struct ServiceClient {
     _config: config::Config,
     client: unix_socket::UnixClient,
     client_id: u16,
-    peers: HashMap<String, PeerInfo>,
-    services_tag: u32,
-    services: HashMap<u16, HashSet<u16>>,
+    local: ServiceMap,
+    peers: HashMap<String, ServiceMap>,
 }
 
 impl ServiceClient {
@@ -37,8 +51,7 @@ impl ServiceClient {
             client,
             client_id: 0,
             peers: HashMap::new(),
-            services_tag: 0,
-            services: HashMap::new(),
+            local: ServiceMap::new(),
         }
     }
 
@@ -94,9 +107,9 @@ impl ServiceClient {
 
         if add {
             // add/update entry
-            match self.services.get_mut(&client_id) {
+            match self.local.services.get_mut(&client_id) {
                 None => {
-                    self.services.insert(client_id, services);
+                    self.local.services.insert(client_id, services);
                 }
                 Some(s) => {
                     *s = services;
@@ -104,7 +117,7 @@ impl ServiceClient {
             }
         } else {
             // remove entry
-            self.services.remove(&client_id);
+            self.local.services.remove(&client_id);
         }
         Ok(())
     }
@@ -120,17 +133,17 @@ impl ServiceClient {
         match self.peers.get_mut(&peer_id) {
             None => {
                 // add new peer entry
-                self.peers.insert(peer_id.clone(), peer_info);
+                self.peers.insert(peer_id.clone(), ServiceMap::new());
                 request_update = true;
             }
             Some(p) => {
                 // check if we need to update services
-                if p.service_id != peer_info.service_id {
+                if p.services_tag != peer_info.service_id {
                     request_update = true;
                 }
 
                 // update existing peer entry
-                *p = peer_info;
+                p.services_tag = peer_info.service_id;
             }
         }
 
@@ -161,7 +174,8 @@ impl ServiceClient {
         from_peer: String,
         from_client: u16,
     ) -> Result<(), Box<dyn Error>> {
-        let reply = ServiceMessage::ServiceReply(self.services_tag, self.services.clone());
+        let reply =
+            ServiceMessage::ServiceReply(self.local.services_tag, self.local.services.clone());
         self.send_message(from_peer, from_client, reply).await?;
         Ok(())
     }
