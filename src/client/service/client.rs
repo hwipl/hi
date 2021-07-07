@@ -93,6 +93,14 @@ impl ServiceClient {
         Ok(())
     }
 
+    /// update services tag
+    async fn update_services_tag(&mut self) {
+        self.local.services_tag = 0;
+        if !self.local.services.is_empty() {
+            self.local.services_tag = rand::random();
+        }
+    }
+
     /// handle ClientUpdate "event" message
     async fn handle_event_client_update(
         &mut self,
@@ -119,6 +127,8 @@ impl ServiceClient {
             // remove entry
             self.local.services.remove(&client_id);
         }
+
+        self.update_services_tag().await;
         Ok(())
     }
 
