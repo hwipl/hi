@@ -582,7 +582,7 @@ impl Daemon {
                 GetSet::Ok
             }
             GetSet::ServicesTag(tag) => {
-                let event = swarm::Event::SetServiceId(tag);
+                let event = swarm::Event::SetServicesTag(tag);
                 self.swarm.send(event).await;
                 GetSet::Ok
             }
