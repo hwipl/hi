@@ -420,6 +420,20 @@ impl Daemon {
         debug!("received remove client event with id {}", id);
         self.clients.remove(&id);
 
+        // send event to service client
+        for (client_id, client) in self.clients.iter_mut() {
+            if client.services.contains(&(Service::Service as u16)) {
+                let event = Message::Event {
+                    from_client: 0,
+                    to_client: *client_id,
+                    event: message::Event::ClientUpdate(false, id, HashSet::new()),
+                };
+                if let Err(e) = client.sender.send(event).await {
+                    error!("handle client error: {}", e);
+                }
+            }
+        }
+
         // check if there are still clients with chat support
         // and with file support
         let mut chat_support = false;
