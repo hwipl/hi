@@ -14,7 +14,7 @@ enum ServiceMessage {
     ServiceRequest,
 
     /// send all services supported by this node to requesting peer:
-    /// service_id of services, map of clients and their services
+    /// services_tag of this node's services, map of clients and their services
     #[n(1)]
     ServiceReply(#[n(0)] u32, #[n(1)] HashMap<u16, HashSet<u16>>),
 }
@@ -25,7 +25,7 @@ struct ServiceClient {
     client: unix_socket::UnixClient,
     client_id: u16,
     peers: HashMap<String, PeerInfo>,
-    service_id: u32,
+    services_tag: u32,
     services: HashMap<u16, HashSet<u16>>,
 }
 
@@ -36,8 +36,8 @@ impl ServiceClient {
             _config: config,
             client,
             client_id: 0,
-            service_id: 0,
             peers: HashMap::new(),
+            services_tag: 0,
             services: HashMap::new(),
         }
     }
@@ -161,7 +161,7 @@ impl ServiceClient {
         from_peer: String,
         from_client: u16,
     ) -> Result<(), Box<dyn Error>> {
-        let reply = ServiceMessage::ServiceReply(self.service_id, self.services.clone());
+        let reply = ServiceMessage::ServiceReply(self.services_tag, self.services.clone());
         self.send_message(from_peer, from_client, reply).await?;
         Ok(())
     }
