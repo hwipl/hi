@@ -45,6 +45,10 @@ pub enum GetSet {
     /// Connect to peer address
     #[n(4)]
     Connect(#[n(0)] String),
+
+    /// Services tag
+    #[n(5)]
+    ServicesTag(#[n(0)] u32),
 }
 
 #[derive(Clone, Debug, Encode, Decode)]

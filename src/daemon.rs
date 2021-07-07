@@ -590,6 +590,11 @@ impl Daemon {
                 self.swarm.send(event).await;
                 GetSet::Ok
             }
+            GetSet::ServicesTag(tag) => {
+                let event = swarm::Event::SetServiceId(tag);
+                self.swarm.send(event).await;
+                GetSet::Ok
+            }
             _ => GetSet::Error(String::from("Unknown set request")),
         };
         Message::Set {
