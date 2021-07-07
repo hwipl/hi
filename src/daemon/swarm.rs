@@ -37,7 +37,7 @@ pub enum Event {
     /// Send message: destination peer, destination client, source client, service, content
     SendMessage(String, u16, u16, u16, Vec<u8>),
 
-    /// Peer announcement event: id, name, services, chat, file
+    /// Peer announcement event: id, name, services tag, chat, file
     AnnouncePeer(String, String, u32, bool, bool),
     /// Chat message: sender, message
     ChatMessage(String, String),
@@ -197,7 +197,7 @@ impl HiSwarm {
                     // announce presence
                     let mut announce = HiAnnounce::new();
                     announce.name = node_name.to_string();
-                    announce.service_id = services_tag;
+                    announce.services_tag = services_tag;
                     announce.chat = chat_support;
                     announce.files = file_support;
                     if let Some(announce) = announce.encode() {

@@ -131,7 +131,7 @@ impl NetworkBehaviourEventProcess<GossipsubEvent> for HiBehaviour {
                         let swarm_event = swarm::Event::AnnouncePeer(
                             peer.to_string(),
                             msg.name,
-                            msg.service_id,
+                            msg.services_tag,
                             msg.chat,
                             msg.files,
                         );
