@@ -117,6 +117,7 @@ impl ServiceClient {
     /// handle "event" message
     async fn handle_event(&mut self, event: Event) -> Result<(), Box<dyn Error>> {
         match event {
+            Event::ClientUpdate(..) => (),
             Event::PeerUpdate(peer_info) => self.handle_event_peer_update(peer_info).await?,
         }
         Ok(())

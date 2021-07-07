@@ -49,7 +49,12 @@ pub enum GetSet {
 
 #[derive(Clone, Debug, Encode, Decode)]
 pub enum Event {
+    /// client update: add/remove, client id, services
     #[n(0)]
+    ClientUpdate(#[n(0)] bool, #[n(1)] u16, #[n(2)] HashSet<u16>),
+
+    /// peer update: peer info
+    #[n(1)]
     PeerUpdate(#[n(0)] PeerInfo),
 }
 
