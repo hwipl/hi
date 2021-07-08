@@ -175,7 +175,6 @@ impl Daemon {
             peer_id,
             name,
             services_tag,
-            services: HashSet::new(),
             chat_support,
             file_support,
             last_update: SystemTime::now()
