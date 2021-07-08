@@ -15,6 +15,7 @@ enum ServiceMessage {
 
     /// send all services supported by this node to requesting peer:
     /// services_tag of this node's services, map of clients and their services
+    // TODO: swap key/value type? make clearer which is client id and which is service
     #[n(1)]
     ServiceReply(#[n(0)] u32, #[n(1)] HashMap<u16, HashSet<u16>>),
 }
@@ -22,6 +23,7 @@ enum ServiceMessage {
 /// services of a node
 struct ServiceMap {
     services_tag: u32,
+    // TODO: swap key/value type? make clearer which is client id and which is service
     services: HashMap<u16, HashSet<u16>>,
 }
 
@@ -133,8 +135,15 @@ impl ServiceClient {
             // TODO: also check local services?
             let mut map = HashMap::<String, HashSet<u16>>::new();
             for (peer_id, peer) in self.peers.iter() {
-                if peer.services.contains_key(&s) {
-                    map.insert(peer_id.to_string(), peer.services.get(&s).unwrap().clone());
+                let mut peer_clients = HashSet::<u16>::new();
+                for (peer_client, peer_services) in peer.services.iter() {
+                    if peer_services.contains(&s) {
+                        peer_clients.insert(*peer_client);
+                    }
+                }
+
+                if !peer_clients.is_empty() {
+                    map.insert(peer_id.to_string(), peer_clients);
                 }
             }
 
