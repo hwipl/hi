@@ -39,6 +39,7 @@ struct ServiceClient {
     _config: config::Config,
     client: unix_socket::UnixClient,
     client_id: u16,
+    request_id: u32,
     local: ServiceMap,
     peers: HashMap<String, ServiceMap>,
 }
@@ -50,9 +51,16 @@ impl ServiceClient {
             _config: config,
             client,
             client_id: 0,
+            request_id: 0,
             peers: HashMap::new(),
             local: ServiceMap::new(),
         }
+    }
+
+    /// get next request id
+    fn get_request_id(&mut self) -> u32 {
+        self.request_id = self.request_id.wrapping_add(1);
+        self.request_id
     }
 
     /// register this client
@@ -101,7 +109,7 @@ impl ServiceClient {
         }
         let msg = Message::Set {
             client_id: self.client_id,
-            request_id: rand::random(),
+            request_id: self.get_request_id(),
             content: GetSet::ServicesTag(self.local.services_tag),
         };
         self.client.send_message(msg).await?;
