@@ -116,6 +116,43 @@ impl ServiceClient {
         Ok(())
     }
 
+    /// update services and send service updates to interested clients
+    async fn update_services(&mut self) -> Result<(), Box<dyn Error>> {
+        // get list of all services local clients are interested in
+        // TODO: turn set into a map from service to clients?
+        let mut services = HashSet::<u16>::new();
+        for local_services in self.local.services.values() {
+            for service in local_services {
+                services.insert(*service);
+            }
+        }
+
+        // for every service a local client is interested in...
+        for s in services {
+            // (1) find peers and their clients
+            // TODO: also check local services?
+            let mut map = HashMap::<String, HashSet<u16>>::new();
+            for (peer_id, peer) in self.peers.iter() {
+                if peer.services.contains_key(&s) {
+                    map.insert(peer_id.to_string(), peer.services.get(&s).unwrap().clone());
+                }
+            }
+
+            // (2) send to local clients
+            for (client_id, local_services) in self.local.services.iter() {
+                if local_services.contains(&s) {
+                    let event = Message::Event {
+                        to_client: *client_id,
+                        from_client: self.client_id,
+                        event: Event::ServiceUpdate(s, map.clone()),
+                    };
+                    self.client.send_message(event).await?;
+                }
+            }
+        }
+        Ok(())
+    }
+
     /// handle ClientUpdate "event" message
     async fn handle_event_client_update(
         &mut self,
@@ -143,6 +180,7 @@ impl ServiceClient {
             self.local.services.remove(&client_id);
         }
 
+        // TODO: send service update to local clients?
         self.update_services_tag().await?;
         Ok(())
     }
@@ -218,6 +256,7 @@ impl ServiceClient {
             peer.services_tag = services_tag;
             peer.services = services;
         }
+        self.update_services().await?;
         Ok(())
     }
 
