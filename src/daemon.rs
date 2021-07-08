@@ -610,6 +610,31 @@ impl Daemon {
         Message::Ok
     }
 
+    /// handle "event" client message event
+    async fn handle_client_event_msg(
+        &mut self,
+        to_client: u16,
+        from_client: u16,
+        event: message::Event,
+    ) {
+        // do not forward events for the daemon
+        if to_client == 0 {
+            return;
+        }
+
+        // forward event to client
+        if let Some(client) = self.clients.get_mut(&to_client) {
+            let msg = Message::Event {
+                to_client,
+                from_client,
+                event,
+            };
+            if let Err(e) = client.sender.send(msg).await {
+                error!("error forwarding event: {}", e);
+            }
+        }
+    }
+
     /// handle client event
     async fn handle_client_event(&mut self, event: Event) {
         match event {
@@ -697,9 +722,19 @@ impl Daemon {
                         .await
                     }
 
+                    // handle event
+                    Message::Event {
+                        to_client,
+                        from_client,
+                        event,
+                    } => {
+                        self.handle_client_event_msg(to_client, from_client, event)
+                            .await;
+                        return;
+                    }
+
                     // handle other messages
                     Message::RegisterOk { .. } => return,
-                    Message::Event { .. } => return,
                 };
 
                 // send reply to client
