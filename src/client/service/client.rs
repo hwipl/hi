@@ -189,6 +189,7 @@ impl ServiceClient {
                     .await?
             }
             Event::PeerUpdate(peer_info) => self.handle_event_peer_update(peer_info).await?,
+            _ => (),
         }
         Ok(())
     }

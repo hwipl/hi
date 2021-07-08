@@ -1,5 +1,5 @@
 use minicbor::{Decode, Encode};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 /// Service
 pub enum Service {
@@ -58,6 +58,10 @@ pub enum Event {
     /// peer update: peer info
     #[n(1)]
     PeerUpdate(#[n(0)] PeerInfo),
+
+    /// service update: service, map of supporting peers and their clients
+    #[n(2)]
+    ServiceUpdate(#[n(0)] u16, #[n(1)] HashMap<String, HashSet<u16>>),
 }
 
 #[derive(Debug, Encode, Decode)]
