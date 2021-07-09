@@ -37,8 +37,6 @@ pub enum Event {
 
     /// Peer announcement event: id, name, services tag, chat, file
     AnnouncePeer(String, String, u32, bool, bool),
-    /// Chat message: sender, message
-    ChatMessage(String, String),
     /// file message: sender, sender client, destination client, message
     FileMessage(String, u16, u16, Vec<u8>),
     /// Message: sender, sender client, destination client, service, message
@@ -127,7 +125,6 @@ impl HiSwarm {
                         // events (coming from behaviour) not handled here,
                         // forward to daemon
                         | Event::AnnouncePeer(..)
-                        | Event::ChatMessage(..)
                         | Event::FileMessage(..)
                         | Event::Message(..)
                         => {
