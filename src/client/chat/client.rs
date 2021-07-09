@@ -10,12 +10,34 @@ use std::error::Error;
 struct ChatClient {
     config: config::Config,
     client: unix_socket::UnixClient,
+    _client_id: u16,
 }
 
 impl ChatClient {
     /// create new chat client
     pub async fn new(config: config::Config, client: unix_socket::UnixClient) -> Self {
-        ChatClient { config, client }
+        ChatClient {
+            config,
+            client,
+            _client_id: 0,
+        }
+    }
+
+    /// register this client
+    async fn register_client(&mut self) -> Result<(), Box<dyn Error>> {
+        let msg = Message::Register {
+            services: vec![Service::Chat as u16].into_iter().collect(),
+            chat: true,
+            files: false,
+        };
+        self.client.send_message(msg).await?;
+        match self.client.receive_message().await? {
+            Message::RegisterOk { client_id } => {
+                self._client_id = client_id;
+                Ok(())
+            }
+            _ => Err("unexpected message from daemon".into()),
+        }
     }
 
     /// run client
@@ -27,20 +49,7 @@ impl ChatClient {
         };
 
         // register this client and enable chat mode
-        let msg = Message::Register {
-            services: vec![Service::Chat as u16].into_iter().collect(),
-            chat: true,
-            files: false,
-        };
-        self.client.send_message(msg).await?;
-
-        let _client_id = match self.client.receive_message().await? {
-            Message::RegisterOk { client_id } => client_id,
-            msg => {
-                error!("unexpected response during client registration: {:?}", msg);
-                return Err("unexpected response during client registration".into());
-            }
-        };
+        self.register_client().await?;
 
         // enter chat mode
         println!("Chat mode:");
