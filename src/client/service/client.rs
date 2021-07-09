@@ -190,7 +190,8 @@ impl ServiceClient {
             }
         }
 
-        // TODO: send service update to local clients?
+        // send local service updates and update services tag
+        self.update_services().await?;
         self.update_services_tag().await?;
         Ok(())
     }
