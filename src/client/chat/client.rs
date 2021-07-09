@@ -11,6 +11,7 @@ struct ChatClient {
     config: config::Config,
     client: unix_socket::UnixClient,
     _client_id: u16,
+    destination: String,
 }
 
 impl ChatClient {
@@ -20,6 +21,7 @@ impl ChatClient {
             config,
             client,
             _client_id: 0,
+            destination: String::from("all"),
         }
     }
 
@@ -56,10 +58,22 @@ impl ChatClient {
         Ok(())
     }
 
+    /// handle line entered by user
+    async fn handle_line(&mut self, line: String) -> Result<(), Box<dyn Error>> {
+        let msg = Message::ChatMessage {
+            to: self.destination.clone(),
+            from: String::new(),
+            from_name: String::new(),
+            message: line,
+        };
+        self.client.send_message(msg).await?;
+        Ok(())
+    }
+
     /// run client
     pub async fn run(&mut self) -> Result<(), Box<dyn Error>> {
         // set chat destination
-        let destination = match &self.config.command {
+        self.destination = match &self.config.command {
             Some(config::Command::Chat(opts)) => opts.peer.clone(),
             _ => String::from("all"),
         };
@@ -82,17 +96,11 @@ impl ChatClient {
 
                 // handle line read from stdin
                 line = stdin.next().fuse() => {
-                    let line = match line {
-                        Some(Ok(line)) if line != "" => line,
-                        _ => continue,
+                    if let Some(Ok(line)) = line {
+                        if line != "" {
+                            self.handle_line(line).await?;
+                        }
                     };
-                    let msg = Message::ChatMessage {
-                        to: destination.clone(),
-                        from: String::new(),
-                        from_name: String::new(),
-                        message: line,
-                    };
-                    self.client.send_message(msg).await?;
                 },
             }
         }
