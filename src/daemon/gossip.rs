@@ -10,8 +10,6 @@ pub struct HiAnnounce {
     #[n(2)]
     pub services_tag: u32,
     #[n(3)]
-    pub chat: bool,
-    #[n(4)]
     pub files: bool,
 }
 
@@ -21,7 +19,6 @@ impl HiAnnounce {
             version: 0,
             name: String::new(),
             services_tag: 0,
-            chat: false,
             files: false,
         }
     }

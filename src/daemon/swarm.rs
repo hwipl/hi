@@ -26,8 +26,6 @@ pub enum Event {
     SetName(String),
     /// Set tag of the services supported by this node
     SetServicesTag(u32),
-    /// Set chat support to enabled (true) or disabled (false)
-    SetChat(bool),
     /// Set file support to enabled (true) or disabled (false)
     SetFiles(bool),
     /// Send file message: destination peer, destination client, source client, content
@@ -35,8 +33,8 @@ pub enum Event {
     /// Send message: destination peer, destination client, source client, service, content
     SendMessage(String, u16, u16, u16, Vec<u8>),
 
-    /// Peer announcement event: id, name, services tag, chat, file
-    AnnouncePeer(String, String, u32, bool, bool),
+    /// Peer announcement event: id, name, services tag, file
+    AnnouncePeer(String, String, u32, bool),
     /// file message: sender, sender client, destination client, message
     FileMessage(String, u16, u16, Vec<u8>),
     /// Message: sender, sender client, destination client, service, message
@@ -59,7 +57,6 @@ impl HiSwarm {
         let mut timer = Delay::new(Duration::from_secs(5)).fuse();
         let mut node_name = String::from("");
         let mut services_tag = 0;
-        let mut chat_support = false;
         let mut file_support = false;
 
         loop {
@@ -90,11 +87,6 @@ impl HiSwarm {
                         // handle set services request
                         Event::SetServicesTag(tag) => {
                             services_tag = tag;
-                        }
-
-                        // handle set chat support request
-                        Event::SetChat(enabled) => {
-                            chat_support = enabled;
                         }
 
                         // handle set files message request
@@ -183,7 +175,6 @@ impl HiSwarm {
                     let mut announce = HiAnnounce::new();
                     announce.name = node_name.to_string();
                     announce.services_tag = services_tag;
-                    announce.chat = chat_support;
                     announce.files = file_support;
                     if let Some(announce) = announce.encode() {
                         match swarm.behaviour_mut().gossip.publish(topic, announce) {

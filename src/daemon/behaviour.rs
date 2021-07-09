@@ -119,7 +119,6 @@ impl NetworkBehaviourEventProcess<GossipsubEvent> for HiBehaviour {
                             peer.to_string(),
                             msg.name,
                             msg.services_tag,
-                            msg.chat,
                             msg.files,
                         );
                         let mut to_swarm = self.to_swarm.clone();

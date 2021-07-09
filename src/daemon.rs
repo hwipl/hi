@@ -166,7 +166,6 @@ impl Daemon {
         peer_id: String,
         name: String,
         services_tag: u32,
-        chat_support: bool,
         file_support: bool,
     ) {
         // add or update peer entry
@@ -175,7 +174,7 @@ impl Daemon {
             peer_id,
             name,
             services_tag,
-            chat_support,
+            chat_support: false,
             file_support,
             last_update: SystemTime::now()
                 .duration_since(UNIX_EPOCH)
@@ -338,15 +337,9 @@ impl Daemon {
     async fn handle_swarm_event(&mut self, event: swarm::Event) {
         match event {
             // handle peer announcement
-            swarm::Event::AnnouncePeer(peer_id, name, services_tag, chat_support, file_support) => {
-                self.handle_swarm_announce_peer(
-                    peer_id,
-                    name,
-                    services_tag,
-                    chat_support,
-                    file_support,
-                )
-                .await;
+            swarm::Event::AnnouncePeer(peer_id, name, services_tag, file_support) => {
+                self.handle_swarm_announce_peer(peer_id, name, services_tag, file_support)
+                    .await;
             }
 
             // handle file messages
@@ -402,17 +395,12 @@ impl Daemon {
             }
         }
 
-        // check if there are still clients with chat support
-        // and with file support
-        let mut chat_support = false;
+        // check if there are still clients with file support
         let mut file_support = false;
         for c in self.clients.values() {
-            chat_support |= c.chat_support;
             file_support |= c.file_support;
         }
 
-        let event = swarm::Event::SetChat(chat_support);
-        self.swarm.send(event).await;
         let event = swarm::Event::SetFiles(file_support);
         self.swarm.send(event).await;
     }
@@ -489,8 +477,6 @@ impl Daemon {
         }
 
         // send events to swarm
-        let event = swarm::Event::SetChat(chat);
-        self.swarm.send(event).await;
         let event = swarm::Event::SetFiles(files);
         self.swarm.send(event).await;
         Message::RegisterOk { client_id: id }
