@@ -4,6 +4,7 @@ use std::collections::{HashMap, HashSet};
 /// Service
 pub enum Service {
     Service = 1,
+    Chat = 1025,
 }
 
 #[derive(Clone, Debug, Encode, Decode)]

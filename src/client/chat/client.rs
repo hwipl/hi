@@ -1,10 +1,9 @@
 use crate::config;
-use crate::message::Message;
+use crate::message::{Message, Service};
 use crate::unix_socket;
 use async_std::{io, prelude::*, task};
 use futures::future::FutureExt;
 use futures::select;
-use std::collections::HashSet;
 
 /// chat client
 struct ChatClient {
@@ -27,7 +26,7 @@ impl ChatClient {
 
         // register this client and enable chat mode
         let msg = Message::Register {
-            services: HashSet::new(),
+            services: vec![Service::Chat as u16].into_iter().collect(),
             chat: true,
             files: false,
         };
