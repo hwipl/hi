@@ -92,6 +92,13 @@ impl ChatClient {
             } => {
                 println!("{} <{}>: {}", from, from_name, message);
             }
+            Message::Message {
+                from_peer, content, ..
+            } => {
+                if let Ok(msg) = minicbor::decode::<ChatMessage>(&content) {
+                    println!("{} <{}>: {}", from_peer, msg.from, msg.message);
+                }
+            }
             Message::Event {
                 to_client,
                 from_client,
