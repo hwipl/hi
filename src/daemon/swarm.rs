@@ -28,8 +28,6 @@ pub enum Event {
     SetServicesTag(u32),
     /// Set chat support to enabled (true) or disabled (false)
     SetChat(bool),
-    /// Send chat message: destination, message
-    SendChatMessage(String, String),
     /// Set file support to enabled (true) or disabled (false)
     SetFiles(bool),
     /// Send file message: destination peer, destination client, source client, content
@@ -99,16 +97,6 @@ impl HiSwarm {
                         // handle set chat support request
                         Event::SetChat(enabled) => {
                             chat_support = enabled;
-                        }
-
-                        // handle send chat message request
-                        Event::SendChatMessage(to, msg) => {
-                            let peer_id = match PeerId::from_str(&to) {
-                                Ok(peer_id) => peer_id,
-                                Err(_) => continue,
-                            };
-                            let chat_msg = HiRequest::ChatMessage(msg.to_string());
-                            swarm.behaviour_mut().request.send_request(&peer_id, chat_msg);
                         }
 
                         // handle set files message request
