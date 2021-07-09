@@ -174,7 +174,6 @@ impl Daemon {
             peer_id,
             name,
             services_tag,
-            chat_support: false,
             file_support,
             last_update: SystemTime::now()
                 .duration_since(UNIX_EPOCH)

@@ -69,12 +69,10 @@ impl GetClient {
                         "  \
                         peer_id: {}, \
                         name: {:?}, \
-                        chat_support: {}, \
                         file_support: {}, \
                         last_update: {}s",
                         peer.peer_id,
                         peer.name,
-                        peer.chat_support,
                         peer.file_support,
                         current_secs - peer.last_update,
                     );
