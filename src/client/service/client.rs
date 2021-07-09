@@ -6,6 +6,9 @@ use minicbor::{Decode, Encode};
 use std::collections::{HashMap, HashSet};
 use std::error::Error;
 
+type ClientId = u16;
+type ServiceId = u16;
+
 /// service message
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode)]
 enum ServiceMessage {
@@ -14,7 +17,7 @@ enum ServiceMessage {
     ServiceRequest,
 
     /// send all services supported by this node to requesting peer:
-    // TODO: swap key/value type? make clearer which is client id and which is service
+    // TODO: swap key/value type?
     #[n(1)]
     ServiceReply {
         /// services tag of this node's services
@@ -23,15 +26,18 @@ enum ServiceMessage {
 
         /// mapping of client id to a set of services supported by the client
         #[n(1)]
-        services: HashMap<u16, HashSet<u16>>,
+        services: HashMap<ClientId, HashSet<ServiceId>>,
     },
 }
 
 /// services of a node
 struct ServiceMap {
+    /// services tag of the services
     services_tag: u32,
-    // TODO: swap key/value type? make clearer which is client id and which is service
-    services: HashMap<u16, HashSet<u16>>,
+
+    /// mapping of client id to a set of services supported by the client
+    // TODO: swap key/value type?
+    services: HashMap<ClientId, HashSet<ServiceId>>,
 }
 
 impl ServiceMap {
@@ -47,7 +53,7 @@ impl ServiceMap {
 struct ServiceClient {
     _config: config::Config,
     client: unix_socket::UnixClient,
-    client_id: u16,
+    client_id: ClientId,
     request_id: u32,
     local: ServiceMap,
     peers: HashMap<String, ServiceMap>,
@@ -75,7 +81,7 @@ impl ServiceClient {
     /// register this client
     async fn register_client(&mut self) -> Result<(), Box<dyn Error>> {
         let msg = Message::Register {
-            services: vec![Service::Service as u16].into_iter().collect(),
+            services: vec![Service::Service as ServiceId].into_iter().collect(),
             chat: false,
             files: false,
         };
@@ -93,7 +99,7 @@ impl ServiceClient {
     async fn send_message(
         &mut self,
         peer_id: String,
-        client_id: u16,
+        client_id: ClientId,
         message: ServiceMessage,
     ) -> Result<(), Box<dyn Error>> {
         let mut content = Vec::new();
@@ -103,7 +109,7 @@ impl ServiceClient {
             from_peer: String::new(),
             to_client: client_id,
             from_client: self.client_id,
-            service: Service::Service as u16,
+            service: Service::Service as ServiceId,
             content,
         };
         self.client.send_message(msg).await?;
@@ -129,7 +135,7 @@ impl ServiceClient {
     async fn update_services(&mut self) -> Result<(), Box<dyn Error>> {
         // get list of all services local clients are interested in
         // TODO: turn set into a map from service to clients?
-        let mut services = HashSet::<u16>::new();
+        let mut services = HashSet::<ServiceId>::new();
         for local_services in self.local.services.values() {
             for service in local_services {
                 services.insert(*service);
@@ -140,9 +146,9 @@ impl ServiceClient {
         for s in services {
             // (1) find peers and their clients
             // TODO: also check local services?
-            let mut map = HashMap::<String, HashSet<u16>>::new();
+            let mut map = HashMap::<String, HashSet<ClientId>>::new();
             for (peer_id, peer) in self.peers.iter() {
-                let mut peer_clients = HashSet::<u16>::new();
+                let mut peer_clients = HashSet::<ClientId>::new();
                 for (peer_client, peer_services) in peer.services.iter() {
                     if peer_services.contains(&s) {
                         peer_clients.insert(*peer_client);
@@ -173,8 +179,8 @@ impl ServiceClient {
     async fn handle_event_client_update(
         &mut self,
         mut add: bool,
-        client_id: u16,
-        services: HashSet<u16>,
+        client_id: ClientId,
+        services: HashSet<ServiceId>,
     ) -> Result<(), Box<dyn Error>> {
         // treat empty services as remove
         if services.is_empty() {
@@ -252,7 +258,7 @@ impl ServiceClient {
     async fn handle_message_service_request(
         &mut self,
         from_peer: String,
-        from_client: u16,
+        from_client: ClientId,
     ) -> Result<(), Box<dyn Error>> {
         let reply = ServiceMessage::ServiceReply {
             services_tag: self.local.services_tag,
@@ -266,9 +272,9 @@ impl ServiceClient {
     async fn handle_message_service_reply(
         &mut self,
         from_peer: String,
-        _from_client: u16,
+        _from_client: ClientId,
         services_tag: u32,
-        services: HashMap<u16, HashSet<u16>>,
+        services: HashMap<ClientId, HashSet<ServiceId>>,
     ) -> Result<(), Box<dyn Error>> {
         if let Some(peer) = self.peers.get_mut(&from_peer) {
             peer.services_tag = services_tag;
@@ -282,7 +288,7 @@ impl ServiceClient {
     async fn handle_message(
         &mut self,
         from_peer: String,
-        from_client: u16,
+        from_client: ClientId,
         content: Vec<u8>,
     ) -> Result<(), Box<dyn Error>> {
         if let Ok(msg) = minicbor::decode::<ServiceMessage>(&content) {
