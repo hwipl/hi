@@ -40,6 +40,22 @@ impl ChatClient {
         }
     }
 
+    /// handle message coming from daemon
+    async fn handle_message(&mut self, message: Message) -> Result<(), Box<dyn Error>> {
+        match message {
+            Message::ChatMessage {
+                from,
+                from_name,
+                message,
+                ..
+            } => {
+                println!("{} <{}>: {}", from, from_name, message);
+            }
+            _ => (),
+        }
+        Ok(())
+    }
+
     /// run client
     pub async fn run(&mut self) -> Result<(), Box<dyn Error>> {
         // set chat destination
@@ -59,10 +75,8 @@ impl ChatClient {
                 // handle message coming from daemon
                 msg = self.client.receive_message().fuse() => {
                     match msg {
-                        Ok(Message::ChatMessage{ from, from_name, message, .. }) => {
-                            println!("{} <{}>: {}", from, from_name, message);
-                        }
-                        _ => continue,
+                        Ok(msg) => self.handle_message(msg).await?,
+                        Err(e) => return Err(e.into()),
                     }
                 },
 
