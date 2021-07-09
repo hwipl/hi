@@ -133,9 +133,11 @@ impl ServiceClient {
     async fn update_services(&mut self) -> Result<(), Box<dyn Error>> {
         // for every service a local client is interested in...
         for (s, clients) in self.local.services.iter() {
-            // (1) find peers and their clients
-            // TODO: also check local services?
+            // (1) get local clients
             let mut map = HashMap::<String, HashSet<ClientId>>::new();
+            map.insert("".into(), clients.clone());
+
+            // (2) find peers and their clients
             for (peer_id, peer) in self.peers.iter() {
                 if let Some(peer_clients) = peer.services.get(&s) {
                     map.insert(peer_id.to_string(), peer_clients.clone());
