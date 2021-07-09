@@ -1,17 +1,19 @@
 use crate::config;
-use crate::message::{Message, Service};
+use crate::message::{Event, Message, Service};
 use crate::unix_socket;
 use async_std::{io, prelude::*, task};
 use futures::future::FutureExt;
 use futures::select;
+use std::collections::{HashMap, HashSet};
 use std::error::Error;
 
 /// chat client
 struct ChatClient {
     config: config::Config,
     client: unix_socket::UnixClient,
-    _client_id: u16,
+    client_id: u16,
     destination: String,
+    peers: HashMap<String, HashSet<u16>>,
 }
 
 impl ChatClient {
@@ -20,8 +22,9 @@ impl ChatClient {
         ChatClient {
             config,
             client,
-            _client_id: 0,
+            client_id: 0,
             destination: String::from("all"),
+            peers: HashMap::new(),
         }
     }
 
@@ -35,11 +38,37 @@ impl ChatClient {
         self.client.send_message(msg).await?;
         match self.client.receive_message().await? {
             Message::RegisterOk { client_id } => {
-                self._client_id = client_id;
+                self.client_id = client_id;
                 Ok(())
             }
             _ => Err("unexpected message from daemon".into()),
         }
+    }
+
+    /// handle "event" message coming from daemon
+    async fn handle_message_event(
+        &mut self,
+        to_client: u16,
+        _from_client: u16,
+        event: Event,
+    ) -> Result<(), Box<dyn Error>> {
+        // make sure event is for us
+        if to_client != self.client_id {
+            error! {"received event for other client"};
+            return Ok(());
+        }
+
+        // handle events
+        match event {
+            Event::ServiceUpdate(service, peers) => {
+                // check if service is correct and update peers
+                if service == Service::Chat as u16 {
+                    self.peers = peers;
+                }
+            }
+            _ => (),
+        }
+        Ok(())
     }
 
     /// handle message coming from daemon
@@ -52,6 +81,14 @@ impl ChatClient {
                 ..
             } => {
                 println!("{} <{}>: {}", from, from_name, message);
+            }
+            Message::Event {
+                to_client,
+                from_client,
+                event,
+            } => {
+                self.handle_message_event(to_client, from_client, event)
+                    .await?;
             }
             _ => (),
         }
