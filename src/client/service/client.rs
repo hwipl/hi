@@ -14,10 +14,17 @@ enum ServiceMessage {
     ServiceRequest,
 
     /// send all services supported by this node to requesting peer:
-    /// services_tag of this node's services, map of clients and their services
     // TODO: swap key/value type? make clearer which is client id and which is service
     #[n(1)]
-    ServiceReply(#[n(0)] u32, #[n(1)] HashMap<u16, HashSet<u16>>),
+    ServiceReply {
+        /// services tag of this node's services
+        #[n(0)]
+        services_tag: u32,
+
+        /// mapping of client id to a set of services supported by the client
+        #[n(1)]
+        services: HashMap<u16, HashSet<u16>>,
+    },
 }
 
 /// services of a node
@@ -247,8 +254,10 @@ impl ServiceClient {
         from_peer: String,
         from_client: u16,
     ) -> Result<(), Box<dyn Error>> {
-        let reply =
-            ServiceMessage::ServiceReply(self.local.services_tag, self.local.services.clone());
+        let reply = ServiceMessage::ServiceReply {
+            services_tag: self.local.services_tag,
+            services: self.local.services.clone(),
+        };
         self.send_message(from_peer, from_client, reply).await?;
         Ok(())
     }
@@ -282,7 +291,10 @@ impl ServiceClient {
                     self.handle_message_service_request(from_peer, from_client)
                         .await?;
                 }
-                ServiceMessage::ServiceReply(services_tag, services) => {
+                ServiceMessage::ServiceReply {
+                    services_tag,
+                    services,
+                } => {
                     self.handle_message_service_reply(
                         from_peer,
                         from_client,
