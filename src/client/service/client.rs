@@ -17,16 +17,15 @@ enum ServiceMessage {
     ServiceRequest,
 
     /// send all services supported by this node to requesting peer:
-    // TODO: swap key/value type?
     #[n(1)]
     ServiceReply {
         /// services tag of this node's services
         #[n(0)]
         services_tag: u32,
 
-        /// mapping of client id to a set of services supported by the client
+        /// mapping of service to a set of supporting clients
         #[n(1)]
-        services: HashMap<ClientId, HashSet<ServiceId>>,
+        services: HashMap<ServiceId, HashSet<ClientId>>,
     },
 }
 
@@ -35,9 +34,8 @@ struct ServiceMap {
     /// services tag of the services
     services_tag: u32,
 
-    /// mapping of client id to a set of services supported by the client
-    // TODO: swap key/value type?
-    services: HashMap<ClientId, HashSet<ServiceId>>,
+    /// mapping of service to a set of supporting clients
+    services: HashMap<ServiceId, HashSet<ClientId>>,
 }
 
 impl ServiceMap {
@@ -133,43 +131,25 @@ impl ServiceClient {
 
     /// update services and send service updates to interested clients
     async fn update_services(&mut self) -> Result<(), Box<dyn Error>> {
-        // get list of all services local clients are interested in
-        // TODO: turn set into a map from service to clients?
-        let mut services = HashSet::<ServiceId>::new();
-        for local_services in self.local.services.values() {
-            for service in local_services {
-                services.insert(*service);
-            }
-        }
-
         // for every service a local client is interested in...
-        for s in services {
+        for (s, clients) in self.local.services.iter() {
             // (1) find peers and their clients
             // TODO: also check local services?
             let mut map = HashMap::<String, HashSet<ClientId>>::new();
             for (peer_id, peer) in self.peers.iter() {
-                let mut peer_clients = HashSet::<ClientId>::new();
-                for (peer_client, peer_services) in peer.services.iter() {
-                    if peer_services.contains(&s) {
-                        peer_clients.insert(*peer_client);
-                    }
-                }
-
-                if !peer_clients.is_empty() {
-                    map.insert(peer_id.to_string(), peer_clients);
+                if let Some(peer_clients) = peer.services.get(&s) {
+                    map.insert(peer_id.to_string(), peer_clients.clone());
                 }
             }
 
             // (2) send to local clients
-            for (client_id, local_services) in self.local.services.iter() {
-                if local_services.contains(&s) {
-                    let event = Message::Event {
-                        to_client: *client_id,
-                        from_client: self.client_id,
-                        event: Event::ServiceUpdate(s, map.clone()),
-                    };
-                    self.client.send_message(event).await?;
-                }
+            for client_id in clients.iter() {
+                let event = Message::Event {
+                    to_client: *client_id,
+                    from_client: self.client_id,
+                    event: Event::ServiceUpdate(*s, map.clone()),
+                };
+                self.client.send_message(event).await?;
             }
         }
         Ok(())
@@ -189,17 +169,23 @@ impl ServiceClient {
 
         if add {
             // add/update entry
-            match self.local.services.get_mut(&client_id) {
-                None => {
-                    self.local.services.insert(client_id, services);
-                }
-                Some(s) => {
-                    *s = services;
+            for service in services.iter() {
+                match self.local.services.get_mut(service) {
+                    None => {
+                        self.local
+                            .services
+                            .insert(*service, vec![client_id].into_iter().collect());
+                    }
+                    Some(clients) => {
+                        clients.insert(client_id);
+                    }
                 }
             }
         } else {
             // remove entry
-            self.local.services.remove(&client_id);
+            for clients in self.local.services.values_mut() {
+                clients.remove(&client_id);
+            }
         }
 
         // TODO: send service update to local clients?
