@@ -4,6 +4,7 @@ use crate::unix_socket;
 use async_std::{io, prelude::*, task};
 use futures::future::FutureExt;
 use futures::select;
+use std::error::Error;
 
 /// chat client
 struct ChatClient {
@@ -17,7 +18,8 @@ impl ChatClient {
         ChatClient { config, client }
     }
 
-    pub async fn run(&mut self) {
+    /// run client
+    pub async fn run(&mut self) -> Result<(), Box<dyn Error>> {
         // set chat destination
         let destination = match &self.config.command {
             Some(config::Command::Chat(opts)) => opts.peer.clone(),
@@ -30,19 +32,13 @@ impl ChatClient {
             chat: true,
             files: false,
         };
-        if let Err(e) = self.client.send_message(msg).await {
-            error!("error sending set chat message: {}", e);
-            return;
-        }
-        let _client_id = match self.client.receive_message().await {
-            Ok(Message::RegisterOk { client_id }) => client_id,
-            Err(e) => {
-                error!("error registering client: {}", e);
-                return;
-            }
-            Ok(msg) => {
+        self.client.send_message(msg).await?;
+
+        let _client_id = match self.client.receive_message().await? {
+            Message::RegisterOk { client_id } => client_id,
+            msg => {
                 error!("unexpected response during client registration: {:?}", msg);
-                return;
+                return Err("unexpected response during client registration".into());
             }
         };
 
@@ -73,10 +69,7 @@ impl ChatClient {
                         from_name: String::new(),
                         message: line,
                     };
-                    if let Err(e) = self.client.send_message(msg).await {
-                        error!("error sending chat message: {}", e);
-                        return;
-                    }
+                    self.client.send_message(msg).await?;
                 },
             }
         }
@@ -87,7 +80,11 @@ impl ChatClient {
 pub fn run(config: config::Config) {
     task::block_on(async {
         match unix_socket::UnixClient::connect(&config).await {
-            Ok(client) => ChatClient::new(config, client).await.run().await,
+            Ok(client) => {
+                if let Err(e) = ChatClient::new(config, client).await.run().await {
+                    error!("{}", e);
+                }
+            }
             Err(e) => error!("unix socket client error: {}", e),
         }
         debug!("chat client stopped");
