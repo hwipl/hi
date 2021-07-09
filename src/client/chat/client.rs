@@ -114,13 +114,48 @@ impl ChatClient {
 
     /// handle line entered by user
     async fn handle_line(&mut self, line: String) -> Result<(), Box<dyn Error>> {
-        let msg = Message::ChatMessage {
-            to: self.destination.clone(),
+        // create chat message
+        let mut content = Vec::new();
+        let message = ChatMessage {
             from: String::new(),
-            from_name: String::new(),
             message: line,
         };
-        self.client.send_message(msg).await?;
+        minicbor::encode(message, &mut content)?;
+
+        // send message to everyone
+        if self.destination == "all" {
+            for (peer, clients) in self.peers.iter() {
+                for client in clients.iter() {
+                    let msg = Message::Message {
+                        to_peer: peer.clone(),
+                        from_peer: "".into(),
+                        to_client: *client,
+                        from_client: self.client_id,
+                        service: Service::Chat as u16,
+                        content: content.clone(),
+                    };
+                    self.client.send_message(msg).await?;
+                }
+            }
+            return Ok(());
+        }
+
+        // send message to specific peer
+        if !self.peers.contains_key(&self.destination) {
+            let clients = self.peers.get(&self.destination).unwrap();
+            for client in clients.iter() {
+                let msg = Message::Message {
+                    to_peer: self.destination.clone(),
+                    from_peer: "".into(),
+                    to_client: *client,
+                    from_client: self.client_id,
+                    service: Service::Chat as u16,
+                    content: content.clone(),
+                };
+                self.client.send_message(msg).await?;
+            }
+            return Ok(());
+        }
         Ok(())
     }
 
