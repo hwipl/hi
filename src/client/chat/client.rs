@@ -4,8 +4,18 @@ use crate::unix_socket;
 use async_std::{io, prelude::*, task};
 use futures::future::FutureExt;
 use futures::select;
+use minicbor::{Decode, Encode};
 use std::collections::{HashMap, HashSet};
 use std::error::Error;
+
+/// chat message
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode)]
+struct ChatMessage {
+    #[n(0)]
+    from: String,
+    #[n(1)]
+    message: String,
+}
 
 /// chat client
 struct ChatClient {
