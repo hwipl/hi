@@ -431,27 +431,14 @@ impl FileClient {
         }
     }
 
-    /// handle message coming from daemon and return daemon message as reply
-    async fn handle_daemon_message(&mut self, message: Message) -> Option<Message> {
-        // get file message and sender
-        let (file_message, from_peer, from_client) = match message {
-            Message::FileMessage {
-                from_peer,
-                from_client,
-                content,
-                ..
-            } => match minicbor::decode::<FileMessage>(&content) {
-                Ok(msg) => (msg, from_peer, from_client),
-                Err(e) => {
-                    error!("error decoding file message: {}", e);
-                    return None;
-                }
-            },
-            _ => return None,
-        };
-
-        // handle file message and create response file message
-        let response = match file_message {
+    /// handle file message coming from daemon
+    async fn handle_daemon_message_file(
+        &mut self,
+        from_peer: String,
+        from_client: u16,
+        file_message: FileMessage,
+    ) -> Option<FileMessage> {
+        match file_message {
             FileMessage::List => Some(FileMessage::ListReply(self.shares.clone())),
             FileMessage::ListReply(list) => {
                 for (file, size) in list {
@@ -491,7 +478,32 @@ impl FileClient {
                     None
                 }
             }
+        }
+    }
+
+    /// handle message coming from daemon and return daemon message as reply
+    async fn handle_daemon_message(&mut self, message: Message) -> Option<Message> {
+        // get file message and sender
+        let (file_message, from_peer, from_client) = match message {
+            Message::FileMessage {
+                from_peer,
+                from_client,
+                content,
+                ..
+            } => match minicbor::decode::<FileMessage>(&content) {
+                Ok(msg) => (msg, from_peer, from_client),
+                Err(e) => {
+                    error!("error decoding file message: {}", e);
+                    return None;
+                }
+            },
+            _ => return None,
         };
+
+        // handle file message and create response file message
+        let response = self
+            .handle_daemon_message_file(from_peer.clone(), from_client, file_message)
+            .await;
 
         // if there is a response file message, create daemon message and return it
         if let Some(response) = response {
