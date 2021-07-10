@@ -6,6 +6,7 @@ use futures::future::FutureExt;
 use futures::select;
 use minicbor::{Decode, Encode};
 use std::collections::HashMap;
+use std::error::Error;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use wasm_timer::Delay;
 
@@ -370,26 +371,18 @@ impl FileClient {
     }
 
     /// run file client
-    pub async fn run(&mut self) {
+    pub async fn run(&mut self) -> Result<(), Box<dyn Error>> {
         // register this client and enable file mode
         let msg = Message::Register {
             services: vec![Service::File as u16].into_iter().collect(),
             chat: false,
             files: true,
         };
-        if let Err(e) = self.client.send_message(msg).await {
-            error!("error sending register message: {}", e);
-            return;
-        }
-        self.id = match self.client.receive_message().await {
-            Ok(Message::RegisterOk { client_id }) => client_id,
-            Err(e) => {
-                error!("error registering client: {}", e);
-                return;
-            }
-            Ok(msg) => {
-                error!("unexpected response during client registration: {:?}", msg);
-                return;
+        self.client.send_message(msg).await?;
+        self.id = match self.client.receive_message().await? {
+            Message::RegisterOk { client_id } => client_id,
+            _ => {
+                return Err("unexpected response during client registration".into());
             }
         };
 
@@ -428,10 +421,7 @@ impl FileClient {
 
             // if theres a message for the daemon, send it
             if let Some(msg) = daemon_message {
-                if let Err(e) = self.client.send_message(msg).await {
-                    error!("error sending file message: {}", e);
-                    return;
-                }
+                self.client.send_message(msg).await?;
             }
         }
     }
@@ -664,7 +654,11 @@ impl FileClient {
 pub fn run(config: config::Config) {
     task::block_on(async {
         match unix_socket::UnixClient::connect(&config).await {
-            Ok(client) => FileClient::new(config, client).await.run().await,
+            Ok(client) => {
+                if let Err(e) = FileClient::new(config, client).await.run().await {
+                    error!("{}", e);
+                }
+            }
             Err(e) => error!("unix socket client error: {}", e),
         }
         debug!("file client stopped");
