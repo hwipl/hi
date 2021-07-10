@@ -353,7 +353,7 @@ impl FileTransfer {
 struct FileClient {
     _config: config::Config,
     client: unix_socket::UnixClient,
-    id: u16,
+    client_id: u16,
     shares: Vec<(String, u64)>,
     transfers: HashMap<u32, FileTransfer>,
 }
@@ -364,27 +364,33 @@ impl FileClient {
         FileClient {
             _config,
             client,
-            id: 0,
+            client_id: 0,
             shares: Vec::new(),
             transfers: HashMap::new(),
         }
     }
 
-    /// run file client
-    pub async fn run(&mut self) -> Result<(), Box<dyn Error>> {
-        // register this client and enable file mode
+    /// register this client
+    async fn register_client(&mut self) -> Result<(), Box<dyn Error>> {
         let msg = Message::Register {
             services: vec![Service::File as u16].into_iter().collect(),
             chat: false,
             files: true,
         };
         self.client.send_message(msg).await?;
-        self.id = match self.client.receive_message().await? {
-            Message::RegisterOk { client_id } => client_id,
-            _ => {
-                return Err("unexpected response during client registration".into());
+        match self.client.receive_message().await? {
+            Message::RegisterOk { client_id } => {
+                self.client_id = client_id;
+                Ok(())
             }
-        };
+            _ => Err("unexpected message from daemon".into()),
+        }
+    }
+
+    /// run file client
+    pub async fn run(&mut self) -> Result<(), Box<dyn Error>> {
+        // register this client and enable file mode
+        self.register_client().await?;
 
         // enter file loop
         println!("File mode:");
@@ -499,7 +505,7 @@ impl FileClient {
                 to_peer: from_peer,
                 from_peer: String::new(),
                 to_client: from_client,
-                from_client: self.id,
+                from_client: self.client_id,
                 content,
             });
         }
@@ -586,7 +592,7 @@ impl FileClient {
                 to_peer,
                 from_peer: String::new(),
                 to_client,
-                from_client: self.id,
+                from_client: self.client_id,
                 content,
             }
         };
