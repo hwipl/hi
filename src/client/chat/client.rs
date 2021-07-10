@@ -58,9 +58,12 @@ impl ChatClient {
     async fn handle_message_message(
         &mut self,
         from_peer: String,
-        _service: u16,
+        service: u16,
         content: Vec<u8>,
     ) -> Result<(), Box<dyn Error>> {
+        if service != Service::Chat as u16 {
+            return Ok(());
+        }
         if let Ok(msg) = minicbor::decode::<ChatMessage>(&content) {
             println!("{} <{}>: {}", from_peer, msg.from, msg.message);
         }
