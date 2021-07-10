@@ -501,6 +501,26 @@ impl FileClient {
         None
     }
 
+    /// handle "message" message coming from daemon
+    async fn handle_daemon_message_message(
+        &mut self,
+        from_peer: String,
+        from_client: u16,
+        to_client: u16,
+        service: u16,
+        content: Vec<u8>,
+    ) -> Option<Message> {
+        if to_client != self.client_id || service != Service::File as u16 {
+            return None;
+        }
+        if let Ok(msg) = minicbor::decode::<FileMessage>(&content) {
+            return self
+                .handle_daemon_message_file(from_peer.clone(), from_client, msg)
+                .await;
+        }
+        None
+    }
+
     /// handle event message coming from daemon
     async fn handle_daemon_message_event(
         &mut self,
@@ -545,6 +565,23 @@ impl FileClient {
                     None
                 }
             },
+            Message::Message {
+                from_peer,
+                from_client,
+                to_client,
+                service,
+                content,
+                ..
+            } => {
+                self.handle_daemon_message_message(
+                    from_peer,
+                    from_client,
+                    to_client,
+                    service,
+                    content,
+                )
+                .await
+            }
             Message::Event {
                 to_client,
                 from_client,
