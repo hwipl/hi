@@ -1,11 +1,11 @@
 use crate::config;
-use crate::message::{Message, Service};
+use crate::message::{Event, Message, Service};
 use crate::unix_socket;
 use async_std::{fs, io, path, prelude::*, task};
 use futures::future::FutureExt;
 use futures::select;
 use minicbor::{Decode, Encode};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::error::Error;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use wasm_timer::Delay;
@@ -354,6 +354,7 @@ struct FileClient {
     _config: config::Config,
     client: unix_socket::UnixClient,
     client_id: u16,
+    peers: HashMap<String, HashSet<u16>>,
     shares: Vec<(String, u64)>,
     transfers: HashMap<u32, FileTransfer>,
 }
@@ -365,6 +366,7 @@ impl FileClient {
             _config,
             client,
             client_id: 0,
+            peers: HashMap::new(),
             shares: Vec::new(),
             transfers: HashMap::new(),
         }
@@ -499,6 +501,32 @@ impl FileClient {
         None
     }
 
+    /// handle event message coming from daemon
+    async fn handle_daemon_message_event(
+        &mut self,
+        to_client: u16,
+        _from_client: u16,
+        event: Event,
+    ) -> Option<Message> {
+        // make sure event is for us
+        if to_client != self.client_id {
+            error! {"received event for other client"};
+            return None;
+        }
+
+        // handle events
+        match event {
+            Event::ServiceUpdate(service, peers) => {
+                // check if service is correct and update peers
+                if service == Service::File as u16 {
+                    self.peers = peers;
+                }
+            }
+            _ => (),
+        }
+        None
+    }
+
     /// handle message coming from daemon and return daemon message as reply
     async fn handle_daemon_message(&mut self, message: Message) -> Option<Message> {
         match message {
@@ -517,6 +545,14 @@ impl FileClient {
                     None
                 }
             },
+            Message::Event {
+                to_client,
+                from_client,
+                event,
+            } => {
+                self.handle_daemon_message_event(to_client, from_client, event)
+                    .await
+            }
             _ => None,
         }
     }
