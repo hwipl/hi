@@ -29,7 +29,6 @@ impl GetClient {
     async fn register_client(&mut self) -> Result<(), Box<dyn Error>> {
         let msg = Message::Register {
             services: HashSet::new(),
-            chat: false,
             files: false,
         };
         self.client.send_message(msg).await?;

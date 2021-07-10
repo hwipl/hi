@@ -439,14 +439,12 @@ impl Daemon {
         &mut self,
         id: u16,
         services: HashSet<u16>,
-        chat: bool,
         files: bool,
     ) -> Message {
         // update client info
         match self.clients.get_mut(&id) {
             Some(client) => {
                 client.services = services.clone();
-                client.chat_support = chat;
                 client.file_support = files;
             }
             None => {
@@ -617,11 +615,9 @@ impl Daemon {
                     }
 
                     // handle register message
-                    Message::Register {
-                        services,
-                        chat,
-                        files,
-                    } => self.handle_client_register(id, services, chat, files).await,
+                    Message::Register { services, files } => {
+                        self.handle_client_register(id, services, files).await
+                    }
 
                     // handle get message
                     Message::Get {

@@ -374,7 +374,6 @@ impl FileClient {
     async fn register_client(&mut self) -> Result<(), Box<dyn Error>> {
         let msg = Message::Register {
             services: vec![Service::File as u16].into_iter().collect(),
-            chat: false,
             files: true,
         };
         self.client.send_message(msg).await?;
