@@ -54,6 +54,19 @@ impl ChatClient {
         }
     }
 
+    /// handle "message" message coming from daemon
+    async fn handle_message_message(
+        &mut self,
+        from_peer: String,
+        _service: u16,
+        content: Vec<u8>,
+    ) -> Result<(), Box<dyn Error>> {
+        if let Ok(msg) = minicbor::decode::<ChatMessage>(&content) {
+            println!("{} <{}>: {}", from_peer, msg.from, msg.message);
+        }
+        Ok(())
+    }
+
     /// handle "event" message coming from daemon
     async fn handle_message_event(
         &mut self,
@@ -84,11 +97,13 @@ impl ChatClient {
     async fn handle_message(&mut self, message: Message) -> Result<(), Box<dyn Error>> {
         match message {
             Message::Message {
-                from_peer, content, ..
+                from_peer,
+                service,
+                content,
+                ..
             } => {
-                if let Ok(msg) = minicbor::decode::<ChatMessage>(&content) {
-                    println!("{} <{}>: {}", from_peer, msg.from, msg.message);
-                }
+                self.handle_message_message(from_peer, service, content)
+                    .await?;
             }
             Message::Event {
                 to_client,
