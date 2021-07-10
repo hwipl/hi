@@ -31,7 +31,6 @@ enum Event {
 struct ClientInfo {
     sender: Sender<Message>,
     services: HashSet<u16>,
-    chat_support: bool,
     file_support: bool,
 }
 
@@ -367,7 +366,6 @@ impl Daemon {
                 let client_info = ClientInfo {
                     sender,
                     services: HashSet::new(),
-                    chat_support: false,
                     file_support: false,
                 };
                 entry.insert(client_info);
