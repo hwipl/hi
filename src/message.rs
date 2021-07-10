@@ -5,6 +5,7 @@ use std::collections::{HashMap, HashSet};
 pub enum Service {
     Service = 1,
     Chat = 1025,
+    File,
 }
 
 #[derive(Clone, Debug, Encode, Decode)]

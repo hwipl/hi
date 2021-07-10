@@ -1,11 +1,11 @@
 use crate::config;
-use crate::message::Message;
+use crate::message::{Message, Service};
 use crate::unix_socket;
 use async_std::{fs, io, path, prelude::*, task};
 use futures::future::FutureExt;
 use futures::select;
 use minicbor::{Decode, Encode};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use wasm_timer::Delay;
 
@@ -373,7 +373,7 @@ impl FileClient {
     pub async fn run(&mut self) {
         // register this client and enable file mode
         let msg = Message::Register {
-            services: HashSet::new(),
+            services: vec![Service::File as u16].into_iter().collect(),
             chat: false,
             files: true,
         };
