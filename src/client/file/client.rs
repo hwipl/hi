@@ -398,8 +398,6 @@ impl FileClient {
         let mut stdin = io::BufReader::new(io::stdin()).lines();
         let mut timer = Delay::new(Duration::from_secs(5)).fuse();
         loop {
-            let mut daemon_message = None;
-
             select! {
                 // handle message coming from daemon
                 msg = self.client.receive_message().fuse() => {
@@ -414,7 +412,7 @@ impl FileClient {
                         Some(Ok(line)) if line != "" => line,
                         _ => continue,
                     };
-                    daemon_message = self.handle_user_command(line).await;
+                    self.handle_user_command(line).await?;
                 },
 
                 // handle timer event
@@ -424,11 +422,6 @@ impl FileClient {
                         transfer.check_timeout();
                     }
                 }
-            }
-
-            // if theres a message for the daemon, send it
-            if let Some(msg) = daemon_message {
-                self.client.send_message(msg).await?;
             }
         }
     }
@@ -597,37 +590,67 @@ impl FileClient {
     }
 
     /// handle user command and return daemon message
-    async fn handle_user_command(&mut self, command: String) -> Option<Message> {
+    async fn handle_user_command(&mut self, command: String) -> Result<(), Box<dyn Error>> {
         // split command into its parts
         let cmd: Vec<&str> = command.split_whitespace().collect();
         if cmd.len() == 0 {
-            return None;
+            return Ok(());
         }
 
-        // create file message and destination according to user command
-        let (file_message, to_peer, to_client) = match cmd[0] {
-            "ls" => (FileMessage::List, String::from("all"), Message::ALL_CLIENTS),
+        // handle command
+        match cmd[0] {
+            "ls" => {
+                let message = {
+                    let mut content = Vec::new();
+                    minicbor::encode(FileMessage::List, &mut content)?;
+                    Message::FileMessage {
+                        to_peer: String::from("all"),
+                        from_peer: String::new(),
+                        to_client: Message::ALL_CLIENTS,
+                        from_client: self.client_id,
+                        content,
+                    }
+                };
+                self.client.send_message(message).await?;
+            }
             "share" => {
                 self.share_files(&cmd[1..]).await;
-                return None;
             }
             "get" => {
                 if cmd.len() < 3 {
-                    return None;
+                    return Ok(());
                 }
 
                 // create new download file transfer
                 let id = self.new_id();
                 let (peer, client) = {
-                    let (p, c) = cmd[1].split_once("/")?;
-                    (String::from(p), c.parse().ok()?)
+                    let (p, c) = match cmd[1].split_once("/") {
+                        Some((p, c)) => (p, c),
+                        None => return Ok(()),
+                    };
+                    let c = match c.parse() {
+                        Ok(c) => c,
+                        Err(_) => return Ok(()),
+                    };
+                    (String::from(p), c)
                 };
                 let file = String::from(cmd[2]);
                 let file_transfer = FileTransfer::new(id, peer.clone(), String::new(), file);
                 self.transfers.insert(id, file_transfer);
-                let next = self.transfers.get_mut(&id).unwrap().next().await?;
-
-                (next, peer, client)
+                if let Some(next) = self.transfers.get_mut(&id).unwrap().next().await {
+                    let message = {
+                        let mut content = Vec::new();
+                        minicbor::encode(next, &mut content)?;
+                        Message::FileMessage {
+                            to_peer: peer,
+                            from_peer: String::new(),
+                            to_client: client,
+                            from_client: self.client_id,
+                            content,
+                        }
+                    };
+                    self.client.send_message(message).await?;
+                };
             }
             "show" => {
                 println!("Shared files:");
@@ -647,39 +670,21 @@ impl FileClient {
                         transfer.state,
                     );
                 }
-                return None;
             }
             "cancel" => {
                 if cmd.len() < 2 {
-                    return None;
+                    return Ok(());
                 }
 
                 // cancel file transfer
-                let id = cmd[1].parse().ok()?;
+                let id = cmd[1].parse()?;
                 if let Some(transfer) = self.transfers.get_mut(&id) {
                     transfer.cancel();
                 };
-                return None;
             }
-            _ => return None,
+            _ => (),
         };
-
-        // create and return daemon message
-        let message = {
-            let mut content = Vec::new();
-            if let Err(e) = minicbor::encode(file_message, &mut content) {
-                error!("error encoding file message: {}", e);
-                return None;
-            }
-            Message::FileMessage {
-                to_peer,
-                from_peer: String::new(),
-                to_client,
-                from_client: self.client_id,
-                content,
-            }
-        };
-        Some(message)
+        Ok(())
     }
 
     /// get new file transfer id
