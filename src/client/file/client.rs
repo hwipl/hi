@@ -653,6 +653,28 @@ impl FileClient {
         Ok(())
     }
 
+    /// handle user command and "show"
+    async fn handle_user_command_show(&self) -> Result<(), Box<dyn Error>> {
+        println!("Shared files:");
+        for share in self.shares.iter() {
+            println!("  {} ({} bytes)", share.0, share.1);
+        }
+        println!("Transfers:");
+        for transfer in self.transfers.values() {
+            println!(
+                "  {}: {:?} -> {:?}: {} ({} bytes, {} bytes/s) [{:?}]",
+                transfer.id,
+                transfer.from,
+                transfer.to,
+                transfer.file,
+                transfer.num_bytes,
+                transfer.get_data_rate(),
+                transfer.state,
+            );
+        }
+        Ok(())
+    }
+
     /// handle user command and return daemon message
     async fn handle_user_command(&mut self, command: String) -> Result<(), Box<dyn Error>> {
         // split command into its parts
@@ -671,25 +693,7 @@ impl FileClient {
                 }
                 self.handle_user_command_get(cmd[1], cmd[2]).await?;
             }
-            "show" => {
-                println!("Shared files:");
-                for share in self.shares.iter() {
-                    println!("  {} ({} bytes)", share.0, share.1);
-                }
-                println!("Transfers:");
-                for transfer in self.transfers.values() {
-                    println!(
-                        "  {}: {:?} -> {:?}: {} ({} bytes, {} bytes/s) [{:?}]",
-                        transfer.id,
-                        transfer.from,
-                        transfer.to,
-                        transfer.file,
-                        transfer.num_bytes,
-                        transfer.get_data_rate(),
-                        transfer.state,
-                    );
-                }
-            }
+            "show" => self.handle_user_command_show().await?,
             "cancel" => {
                 if cmd.len() < 2 {
                     return Ok(());
