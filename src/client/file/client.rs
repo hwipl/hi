@@ -610,6 +610,49 @@ impl FileClient {
         Ok(())
     }
 
+    /// handle user command "get"
+    async fn handle_user_command_get(
+        &mut self,
+        from: &str,
+        file: &str,
+    ) -> Result<(), Box<dyn Error>> {
+        // parse from to get peer and client on peer
+        let (peer, client) = {
+            let (p, c) = match from.split_once("/") {
+                Some((p, c)) => (p, c),
+                None => return Ok(()),
+            };
+            let c = match c.parse() {
+                Ok(c) => c,
+                Err(_) => return Ok(()),
+            };
+            (String::from(p), c)
+        };
+
+        // parse file name
+        let file = String::from(file);
+
+        // create new download file transfer
+        let id = self.new_id();
+        let file_transfer = FileTransfer::new(id, peer.clone(), String::new(), file);
+        self.transfers.insert(id, file_transfer);
+
+        // create and send message
+        if let Some(next) = self.transfers.get_mut(&id).unwrap().next().await {
+            let mut content = Vec::new();
+            minicbor::encode(next, &mut content)?;
+            let message = Message::FileMessage {
+                to_peer: peer,
+                from_peer: String::new(),
+                to_client: client,
+                from_client: self.client_id,
+                content,
+            };
+            self.client.send_message(message).await?;
+        };
+        Ok(())
+    }
+
     /// handle user command and return daemon message
     async fn handle_user_command(&mut self, command: String) -> Result<(), Box<dyn Error>> {
         // split command into its parts
@@ -626,37 +669,7 @@ impl FileClient {
                 if cmd.len() < 3 {
                     return Ok(());
                 }
-
-                // create new download file transfer
-                let id = self.new_id();
-                let (peer, client) = {
-                    let (p, c) = match cmd[1].split_once("/") {
-                        Some((p, c)) => (p, c),
-                        None => return Ok(()),
-                    };
-                    let c = match c.parse() {
-                        Ok(c) => c,
-                        Err(_) => return Ok(()),
-                    };
-                    (String::from(p), c)
-                };
-                let file = String::from(cmd[2]);
-                let file_transfer = FileTransfer::new(id, peer.clone(), String::new(), file);
-                self.transfers.insert(id, file_transfer);
-                if let Some(next) = self.transfers.get_mut(&id).unwrap().next().await {
-                    let message = {
-                        let mut content = Vec::new();
-                        minicbor::encode(next, &mut content)?;
-                        Message::FileMessage {
-                            to_peer: peer,
-                            from_peer: String::new(),
-                            to_client: client,
-                            from_client: self.client_id,
-                            content,
-                        }
-                    };
-                    self.client.send_message(message).await?;
-                };
+                self.handle_user_command_get(cmd[1], cmd[2]).await?;
             }
             "show" => {
                 println!("Shared files:");
