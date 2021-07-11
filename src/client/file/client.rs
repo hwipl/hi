@@ -404,7 +404,7 @@ impl FileClient {
                 // handle message coming from daemon
                 msg = self.client.receive_message().fuse() => {
                     if let Ok(msg) = msg {
-                        daemon_message = self.handle_daemon_message(msg).await;
+                        self.handle_daemon_message(msg).await?;
                     }
                 },
 
@@ -548,21 +548,18 @@ impl FileClient {
     }
 
     /// handle message coming from daemon and return daemon message as reply
-    async fn handle_daemon_message(&mut self, message: Message) -> Option<Message> {
-        match message {
+    async fn handle_daemon_message(&mut self, message: Message) -> Result<(), Box<dyn Error>> {
+        let reply = match message {
             Message::FileMessage {
                 from_peer,
                 from_client,
                 content,
                 ..
             } => match minicbor::decode::<FileMessage>(&content) {
+                Err(_) => None,
                 Ok(msg) => {
                     self.handle_daemon_message_file(from_peer.clone(), from_client, msg)
                         .await
-                }
-                Err(e) => {
-                    error!("error decoding file message: {}", e);
-                    None
                 }
             },
             Message::Message {
@@ -591,7 +588,12 @@ impl FileClient {
                     .await
             }
             _ => None,
+        };
+
+        if let Some(reply) = reply {
+            self.client.send_message(reply).await?;
         }
+        Ok(())
     }
 
     /// handle user command and return daemon message
