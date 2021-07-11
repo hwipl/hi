@@ -675,6 +675,18 @@ impl FileClient {
         Ok(())
     }
 
+    /// handle user command "cancel"
+    async fn handle_user_command_cancel(&mut self, id: &str) -> Result<(), Box<dyn Error>> {
+        let id = match id.parse() {
+            Ok(id) => id,
+            Err(_) => return Ok(()),
+        };
+        if let Some(transfer) = self.transfers.get_mut(&id) {
+            transfer.cancel();
+        };
+        Ok(())
+    }
+
     /// handle user command and return daemon message
     async fn handle_user_command(&mut self, command: String) -> Result<(), Box<dyn Error>> {
         // split command into its parts
@@ -698,12 +710,7 @@ impl FileClient {
                 if cmd.len() < 2 {
                     return Ok(());
                 }
-
-                // cancel file transfer
-                let id = cmd[1].parse()?;
-                if let Some(transfer) = self.transfers.get_mut(&id) {
-                    transfer.cancel();
-                };
+                self.handle_user_command_cancel(cmd[1]).await?;
             }
             _ => (),
         };
