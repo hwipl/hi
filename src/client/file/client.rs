@@ -604,6 +604,12 @@ impl FileClient {
         Ok(())
     }
 
+    /// handle user command "share"
+    async fn handle_user_command_share(&mut self, files: &[&str]) -> Result<(), Box<dyn Error>> {
+        self.share_files(files).await;
+        Ok(())
+    }
+
     /// handle user command and return daemon message
     async fn handle_user_command(&mut self, command: String) -> Result<(), Box<dyn Error>> {
         // split command into its parts
@@ -615,9 +621,7 @@ impl FileClient {
         // handle command
         match cmd[0] {
             "ls" => self.handle_user_command_ls().await?,
-            "share" => {
-                self.share_files(&cmd[1..]).await;
-            }
+            "share" => self.handle_user_command_share(&cmd[1..]).await?,
             "get" => {
                 if cmd.len() < 3 {
                     return Ok(());
