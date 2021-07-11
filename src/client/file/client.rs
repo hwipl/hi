@@ -589,6 +589,21 @@ impl FileClient {
         Ok(())
     }
 
+    /// handle user command "ls"
+    async fn handle_user_command_ls(&mut self) -> Result<(), Box<dyn Error>> {
+        let mut content = Vec::new();
+        minicbor::encode(FileMessage::List, &mut content)?;
+        let message = Message::FileMessage {
+            to_peer: String::from("all"),
+            from_peer: String::new(),
+            to_client: Message::ALL_CLIENTS,
+            from_client: self.client_id,
+            content,
+        };
+        self.client.send_message(message).await?;
+        Ok(())
+    }
+
     /// handle user command and return daemon message
     async fn handle_user_command(&mut self, command: String) -> Result<(), Box<dyn Error>> {
         // split command into its parts
@@ -599,20 +614,7 @@ impl FileClient {
 
         // handle command
         match cmd[0] {
-            "ls" => {
-                let message = {
-                    let mut content = Vec::new();
-                    minicbor::encode(FileMessage::List, &mut content)?;
-                    Message::FileMessage {
-                        to_peer: String::from("all"),
-                        from_peer: String::new(),
-                        to_client: Message::ALL_CLIENTS,
-                        from_client: self.client_id,
-                        content,
-                    }
-                };
-                self.client.send_message(message).await?;
-            }
+            "ls" => self.handle_user_command_ls().await?,
             "share" => {
                 self.share_files(&cmd[1..]).await;
             }
