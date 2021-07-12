@@ -483,11 +483,12 @@ impl FileClient {
                 error!("error encoding file message: {}", e);
                 return None;
             }
-            return Some(Message::FileMessage {
+            return Some(Message::Message {
                 to_peer: from_peer,
                 from_peer: String::new(),
                 to_client: from_client,
                 from_client: self.client_id,
+                service: Service::File as u16,
                 content,
             });
         }
@@ -543,18 +544,6 @@ impl FileClient {
     /// handle message coming from daemon and return daemon message as reply
     async fn handle_daemon_message(&mut self, message: Message) -> Result<(), Box<dyn Error>> {
         let reply = match message {
-            Message::FileMessage {
-                from_peer,
-                from_client,
-                content,
-                ..
-            } => match minicbor::decode::<FileMessage>(&content) {
-                Err(_) => None,
-                Ok(msg) => {
-                    self.handle_daemon_message_file(from_peer.clone(), from_client, msg)
-                        .await
-                }
-            },
             Message::Message {
                 from_peer,
                 from_client,
@@ -595,11 +584,12 @@ impl FileClient {
         minicbor::encode(FileMessage::List, &mut content)?;
         for (peer, clients) in self.peers.iter() {
             for client in clients.iter() {
-                let message = Message::FileMessage {
+                let message = Message::Message {
                     to_peer: peer.clone(),
                     from_peer: String::new(),
                     to_client: *client,
                     from_client: self.client_id,
+                    service: Service::File as u16,
                     content: content.clone(),
                 };
                 self.client.send_message(message).await?;
@@ -645,11 +635,12 @@ impl FileClient {
         if let Some(next) = self.transfers.get_mut(&id).unwrap().next().await {
             let mut content = Vec::new();
             minicbor::encode(next, &mut content)?;
-            let message = Message::FileMessage {
+            let message = Message::Message {
                 to_peer: peer,
                 from_peer: String::new(),
                 to_client: client,
                 from_client: self.client_id,
+                service: Service::File as u16,
                 content,
             };
             self.client.send_message(message).await?;
