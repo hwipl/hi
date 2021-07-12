@@ -593,14 +593,18 @@ impl FileClient {
     async fn handle_user_command_ls(&mut self) -> Result<(), Box<dyn Error>> {
         let mut content = Vec::new();
         minicbor::encode(FileMessage::List, &mut content)?;
-        let message = Message::FileMessage {
-            to_peer: String::from("all"),
-            from_peer: String::new(),
-            to_client: Message::ALL_CLIENTS,
-            from_client: self.client_id,
-            content,
-        };
-        self.client.send_message(message).await?;
+        for (peer, clients) in self.peers.iter() {
+            for client in clients.iter() {
+                let message = Message::FileMessage {
+                    to_peer: peer.clone(),
+                    from_peer: String::new(),
+                    to_client: *client,
+                    from_client: self.client_id,
+                    content: content.clone(),
+                };
+                self.client.send_message(message).await?;
+            }
+        }
         Ok(())
     }
 
