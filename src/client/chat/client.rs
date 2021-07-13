@@ -42,7 +42,6 @@ impl ChatClient {
     async fn register_client(&mut self) -> Result<(), Box<dyn Error>> {
         let msg = Message::Register {
             services: vec![Service::Chat as u16].into_iter().collect(),
-            files: false,
         };
         self.client.send_message(msg).await?;
         match self.client.receive_message().await? {

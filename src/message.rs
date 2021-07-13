@@ -97,8 +97,6 @@ pub enum Message {
     Register {
         #[n(0)]
         services: HashSet<u16>,
-        #[n(1)]
-        files: bool,
     },
 
     /// Message indicating successful registration of the client

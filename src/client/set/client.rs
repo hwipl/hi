@@ -28,7 +28,6 @@ impl SetClient {
     async fn register_client(&mut self) -> Result<(), Box<dyn Error>> {
         let msg = Message::Register {
             services: HashSet::new(),
-            files: false,
         };
         self.client.send_message(msg).await?;
         match self.client.receive_message().await? {

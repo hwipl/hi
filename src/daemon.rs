@@ -433,17 +433,11 @@ impl Daemon {
     }
 
     /// handle "register" client message event
-    async fn handle_client_register(
-        &mut self,
-        id: u16,
-        services: HashSet<u16>,
-        files: bool,
-    ) -> Message {
+    async fn handle_client_register(&mut self, id: u16, services: HashSet<u16>) -> Message {
         // update client info
         match self.clients.get_mut(&id) {
             Some(client) => {
                 client.services = services.clone();
-                client.file_support = files;
             }
             None => {
                 error!("unknown client");
@@ -471,9 +465,7 @@ impl Daemon {
             }
         }
 
-        // send events to swarm
-        let event = swarm::Event::SetFiles(files);
-        self.swarm.send(event).await;
+        // reply with client id
         Message::RegisterOk { client_id: id }
     }
 
@@ -613,8 +605,8 @@ impl Daemon {
                     }
 
                     // handle register message
-                    Message::Register { services, files } => {
-                        self.handle_client_register(id, services, files).await
+                    Message::Register { services } => {
+                        self.handle_client_register(id, services).await
                     }
 
                     // handle get message
