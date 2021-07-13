@@ -391,15 +391,6 @@ impl Daemon {
                 }
             }
         }
-
-        // check if there are still clients with file support
-        let mut file_support = false;
-        for c in self.clients.values() {
-            file_support |= c.file_support;
-        }
-
-        let event = swarm::Event::SetFiles(file_support);
-        self.swarm.send(event).await;
     }
 
     /// handle "file message" client message event

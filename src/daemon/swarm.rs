@@ -26,8 +26,6 @@ pub enum Event {
     SetName(String),
     /// Set tag of the services supported by this node
     SetServicesTag(u32),
-    /// Set file support to enabled (true) or disabled (false)
-    SetFiles(bool),
     /// Send file message: destination peer, destination client, source client, content
     SendFileMessage(String, u16, u16, Vec<u8>),
     /// Send message: destination peer, destination client, source client, service, content
@@ -57,7 +55,7 @@ impl HiSwarm {
         let mut timer = Delay::new(Duration::from_secs(5)).fuse();
         let mut node_name = String::from("");
         let mut services_tag = 0;
-        let mut file_support = false;
+        let file_support = false;
 
         loop {
             select! {
@@ -87,11 +85,6 @@ impl HiSwarm {
                         // handle set services request
                         Event::SetServicesTag(tag) => {
                             services_tag = tag;
-                        }
-
-                        // handle set files message request
-                        Event::SetFiles(enabled) => {
-                            file_support = enabled;
                         }
 
                         // handle send file message request
