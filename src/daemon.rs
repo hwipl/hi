@@ -171,7 +171,6 @@ impl Daemon {
             peer_id,
             name,
             services_tag,
-            file_support: false,
             last_update: SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .expect("timestamp error")
