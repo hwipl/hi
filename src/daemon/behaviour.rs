@@ -26,20 +26,6 @@ impl HiBehaviour {
     /// handle request response "request" message
     fn handle_request(&mut self, peer: PeerId, request: HiRequest) -> HiResponse {
         match request {
-            // handle file message
-            HiRequest::FileMessage(to_client, from_client, content) => {
-                debug!("received file message: {:?}", content);
-                let swarm_event =
-                    swarm::Event::FileMessage(peer.to_base58(), from_client, to_client, content);
-                let mut to_swarm = self.to_swarm.clone();
-                task::spawn(async move {
-                    if let Err(e) = to_swarm.send(swarm_event).await {
-                        error!("error sending event to swarm: {}", e);
-                    }
-                });
-                HiResponse::Ok
-            }
-
             // handle message
             HiRequest::Message(to_client, from_client, service, content) => {
                 debug!("received message: {:?}", content);

@@ -107,8 +107,6 @@ pub enum HiRequest {
     #[n(0)]
     Data(#[n(0)] Vec<u8>),
     #[n(1)]
-    FileMessage(#[n(0)] u16, #[n(1)] u16, #[n(2)] Vec<u8>),
-    #[n(2)]
     Message(#[n(0)] u16, #[n(1)] u16, #[n(2)] u16, #[n(3)] Vec<u8>),
 }
 
