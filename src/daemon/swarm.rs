@@ -26,8 +26,6 @@ pub enum Event {
     SetName(String),
     /// Set tag of the services supported by this node
     SetServicesTag(u32),
-    /// Send file message: destination peer, destination client, source client, content
-    SendFileMessage(String, u16, u16, Vec<u8>),
     /// Send message: destination peer, destination client, source client, service, content
     SendMessage(String, u16, u16, u16, Vec<u8>),
 
@@ -84,16 +82,6 @@ impl HiSwarm {
                         // handle set services request
                         Event::SetServicesTag(tag) => {
                             services_tag = tag;
-                        }
-
-                        // handle send file message request
-                        Event::SendFileMessage(to_peer, to_client, from_client, content) => {
-                            let peer_id = match PeerId::from_str(&to_peer) {
-                                Ok(peer_id) => peer_id,
-                                Err(_) => continue,
-                            };
-                            let file_msg = HiRequest::FileMessage(to_client, from_client, content);
-                            swarm.behaviour_mut().request.send_request(&peer_id, file_msg);
                         }
 
                         // handle send file message request
