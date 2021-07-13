@@ -165,7 +165,6 @@ impl Daemon {
         peer_id: String,
         name: String,
         services_tag: u32,
-        file_support: bool,
     ) {
         // add or update peer entry
         // TODO: check/update services
@@ -173,7 +172,7 @@ impl Daemon {
             peer_id,
             name,
             services_tag,
-            file_support,
+            file_support: false,
             last_update: SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .expect("timestamp error")
@@ -335,8 +334,8 @@ impl Daemon {
     async fn handle_swarm_event(&mut self, event: swarm::Event) {
         match event {
             // handle peer announcement
-            swarm::Event::AnnouncePeer(peer_id, name, services_tag, file_support) => {
-                self.handle_swarm_announce_peer(peer_id, name, services_tag, file_support)
+            swarm::Event::AnnouncePeer(peer_id, name, services_tag) => {
+                self.handle_swarm_announce_peer(peer_id, name, services_tag)
                     .await;
             }
 
