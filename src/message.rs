@@ -77,37 +77,22 @@ pub enum Message {
         message: String,
     },
 
-    /// File message
-    #[n(2)]
-    FileMessage {
-        #[n(0)]
-        to_peer: String,
-        #[n(1)]
-        from_peer: String,
-        #[n(2)]
-        to_client: u16,
-        #[n(3)]
-        from_client: u16,
-        #[n(4)]
-        content: Vec<u8>,
-    },
-
     /// Register this client on the daemon
-    #[n(3)]
+    #[n(2)]
     Register {
         #[n(0)]
         services: HashSet<u16>,
     },
 
     /// Message indicating successful registration of the client
-    #[n(4)]
+    #[n(3)]
     RegisterOk {
         #[n(0)]
         client_id: u16,
     },
 
     /// Get information from the daemon
-    #[n(5)]
+    #[n(4)]
     Get {
         #[n(0)]
         client_id: u16,
@@ -118,7 +103,7 @@ pub enum Message {
     },
 
     /// Set configuration options on the daemon
-    #[n(6)]
+    #[n(5)]
     Set {
         #[n(0)]
         client_id: u16,
@@ -129,7 +114,7 @@ pub enum Message {
     },
 
     /// Message
-    #[n(7)]
+    #[n(6)]
     Message {
         #[n(0)]
         to_peer: String,
@@ -147,7 +132,7 @@ pub enum Message {
     },
 
     /// Event
-    #[n(8)]
+    #[n(7)]
     Event {
         #[n(0)]
         to_client: u16,

@@ -31,7 +31,6 @@ enum Event {
 struct ClientInfo {
     sender: Sender<Message>,
     services: HashSet<u16>,
-    file_support: bool,
 }
 
 /// Daemon
@@ -202,66 +201,6 @@ impl Daemon {
         }
     }
 
-    /// handle "file message" swarm event
-    async fn handle_swarm_file_message(
-        &mut self,
-        from_peer: String,
-        from_client: u16,
-        to_client: u16,
-        content: Vec<u8>,
-    ) {
-        // helper for sending message to a client
-        async fn send(
-            client: &mut ClientInfo,
-            from_peer: String,
-            to_client: u16,
-            from_client: u16,
-            content: Vec<u8>,
-        ) {
-            let msg = Message::FileMessage {
-                to_peer: String::new(),
-                from_peer,
-                to_client,
-                from_client,
-                content,
-            };
-            if let Err(e) = client.sender.send(msg).await {
-                error!("handle client error: {}", e);
-                return;
-            }
-        }
-
-        // handle message to all clients
-        if to_client == Message::ALL_CLIENTS {
-            for client in self.clients.values_mut() {
-                if client.file_support {
-                    send(
-                        client,
-                        from_peer.clone(),
-                        to_client,
-                        from_client,
-                        content.clone(),
-                    )
-                    .await;
-                }
-            }
-            return;
-        }
-
-        // handle message to specific client
-        if self.clients.contains_key(&to_client) {
-            let client = self.clients.get_mut(&to_client).unwrap();
-            send(
-                client,
-                from_peer.clone(),
-                to_client,
-                from_client,
-                content.clone(),
-            )
-            .await;
-        }
-    }
-
     /// handle "message" swarm event
     async fn handle_swarm_message(
         &mut self,
@@ -339,12 +278,6 @@ impl Daemon {
                     .await;
             }
 
-            // handle file messages
-            swarm::Event::FileMessage(from_peer, from_client, to_client, content) => {
-                self.handle_swarm_file_message(from_peer, from_client, to_client, content)
-                    .await;
-            }
-
             // handle messages
             swarm::Event::Message(from_peer, from_client, to_client, service, content) => {
                 self.handle_swarm_message(from_peer, from_client, to_client, service, content)
@@ -365,7 +298,6 @@ impl Daemon {
                 let client_info = ClientInfo {
                     sender,
                     services: HashSet::new(),
-                    file_support: false,
                 };
                 entry.insert(client_info);
             }
@@ -390,36 +322,6 @@ impl Daemon {
                 }
             }
         }
-    }
-
-    /// handle "file message" client message event
-    async fn handle_client_file_message(
-        &mut self,
-        to_peer: String,
-        to_client: u16,
-        from_client: u16,
-        content: Vec<u8>,
-    ) -> Message {
-        debug!("received file message for {}", to_peer);
-        if to_peer == "all" {
-            // send message to all known peers with file support
-            for peer in self.peers.values() {
-                if peer.file_support {
-                    let event = swarm::Event::SendFileMessage(
-                        peer.peer_id.clone(),
-                        to_client,
-                        from_client,
-                        content.clone(),
-                    );
-                    self.swarm.send(event).await;
-                }
-            }
-        } else {
-            // send message to peer specified in `to`
-            let event = swarm::Event::SendFileMessage(to_peer, to_client, from_client, content);
-            self.swarm.send(event).await;
-        }
-        Message::Ok
     }
 
     /// handle "register" client message event
@@ -580,18 +482,6 @@ impl Daemon {
                     Message::Error { message } => {
                         debug!("received error message from client: {:?}", message);
                         return;
-                    }
-
-                    // handle file message
-                    Message::FileMessage {
-                        to_peer,
-                        to_client,
-                        from_client,
-                        content,
-                        ..
-                    } => {
-                        self.handle_client_file_message(to_peer, to_client, from_client, content)
-                            .await
                     }
 
                     // handle register message
