@@ -156,7 +156,7 @@ impl ChatClient {
         }
 
         // send message to specific peer
-        if !self.peers.contains_key(&self.destination) {
+        if self.peers.contains_key(&self.destination) {
             let clients = self.peers.get(&self.destination).unwrap();
             for client in clients.iter() {
                 let msg = Message::Message {
