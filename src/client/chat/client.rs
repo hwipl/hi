@@ -181,6 +181,8 @@ impl ChatClient {
             // set chat user name
             if let Some(ref name) = opts.name {
                 self.name = name.clone();
+            } else {
+                self.name = whoami::username();
             };
 
             // set chat destination
