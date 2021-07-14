@@ -67,6 +67,10 @@ pub struct ChatOpts {
     /// Peer ID of chat partner
     #[clap(long, default_value = "all")]
     pub peer: String,
+
+    /// User name shown in chat
+    #[clap(long)]
+    pub name: Option<String>,
 }
 
 #[derive(Clone, Clap)]

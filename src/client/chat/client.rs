@@ -22,6 +22,7 @@ struct ChatClient {
     config: config::Config,
     client: unix_socket::UnixClient,
     client_id: u16,
+    name: String,
     destination: String,
     peers: HashMap<String, HashSet<u16>>,
 }
@@ -33,6 +34,7 @@ impl ChatClient {
             config,
             client,
             client_id: 0,
+            name: String::new(),
             destination: String::from("all"),
             peers: HashMap::new(),
         }
@@ -130,7 +132,7 @@ impl ChatClient {
         // create chat message
         let mut content = Vec::new();
         let message = ChatMessage {
-            from: String::new(),
+            from: self.name.clone(),
             message: line,
         };
         minicbor::encode(message, &mut content)?;
@@ -174,10 +176,15 @@ impl ChatClient {
 
     /// run client
     pub async fn run(&mut self) -> Result<(), Box<dyn Error>> {
-        // set chat destination
-        self.destination = match &self.config.command {
-            Some(config::Command::Chat(opts)) => opts.peer.clone(),
-            _ => String::from("all"),
+        // apply user settings
+        if let Some(config::Command::Chat(opts)) = &self.config.command {
+            // set chat user name
+            if let Some(ref name) = opts.name {
+                self.name = name.clone();
+            };
+
+            // set chat destination
+            self.destination = opts.peer.clone();
         };
 
         // register this client and enable chat mode
