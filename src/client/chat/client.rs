@@ -2,6 +2,7 @@ use crate::config;
 use crate::message::{Event, Message, Service};
 use crate::unix_socket;
 use async_std::{io, prelude::*, task};
+use chrono::Local;
 use futures::future::FutureExt;
 use futures::select;
 use minicbor::{Decode, Encode};
@@ -67,9 +68,14 @@ impl ChatClient {
             return Ok(());
         }
         if let Ok(msg) = minicbor::decode::<ChatMessage>(&content) {
+            let now = Local::now();
             println!(
-                "{}/{} <{}>: {}",
-                from_peer, from_client, msg.from, msg.message
+                "{}: {}/{} <{}>: {}",
+                now.format("%H:%M:%S"),
+                from_peer,
+                from_client,
+                msg.from,
+                msg.message
             );
         }
         Ok(())
