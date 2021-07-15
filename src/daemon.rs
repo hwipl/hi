@@ -594,6 +594,9 @@ impl Daemon {
 
     /// run server
     async fn run(&mut self) {
+        // set default name to hostname
+        self.name = whoami::hostname();
+
         // get options to set from config
         let options = match self.config.command {
             Some(config::Command::Daemon(ref daemon_opts)) => &daemon_opts.set,
@@ -604,9 +607,7 @@ impl Daemon {
         for option in options.iter() {
             match option.name.as_str() {
                 "name" => {
-                    self.swarm
-                        .send(swarm::Event::SetName(option.value.clone()))
-                        .await;
+                    self.name = option.value.clone();
                 }
                 "connect" => {
                     self.swarm
@@ -616,6 +617,11 @@ impl Daemon {
                 _ => (),
             }
         }
+
+        // set name in swarm
+        self.swarm
+            .send(swarm::Event::SetName(self.name.clone()))
+            .await;
 
         // handle server events
         self.run_server_loop().await;
