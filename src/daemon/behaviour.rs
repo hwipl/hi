@@ -44,9 +44,6 @@ impl HiBehaviour {
                 });
                 HiResponse::Ok
             }
-
-            // handle other requests
-            _ => HiResponse::Error(String::from("unknown request")),
         }
     }
 }
