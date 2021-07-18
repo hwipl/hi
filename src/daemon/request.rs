@@ -105,7 +105,14 @@ impl RequestResponseCodec for HiCodec {
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode)]
 pub enum HiRequest {
     #[n(0)]
-    Message(#[n(0)] u16, #[n(1)] u16, #[n(2)] u16, #[n(3)] Vec<u8>),
+    Message(
+        #[n(0)] u16,
+        #[n(1)] u16,
+        #[n(2)] u16,
+        #[n(3)]
+        #[cbor(with = "minicbor::bytes")]
+        Vec<u8>,
+    ),
 }
 
 /// Response message
