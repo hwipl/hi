@@ -105,16 +105,16 @@ impl HiSwarm {
                 },
 
                 // handle swarm events
-                event = swarm.next_event().fuse() => {
+                event = swarm.select_next_some().fuse() => {
                     match event {
                         SwarmEvent::Behaviour(event) => {
                             debug!("Behaviour event: {:?}", event);
                         }
-                        SwarmEvent::NewListenAddr(addr) => {
-                            println!("Started listening on {:?}", addr);
+                        SwarmEvent::NewListenAddr{address, ..} => {
+                            println!("Started listening on {:?}", address);
                         }
-                        SwarmEvent::ExpiredListenAddr(addr) => {
-                            println!("Stopped listening on {:?}", addr);
+                        SwarmEvent::ExpiredListenAddr{address, ..} => {
+                            println!("Stopped listening on {:?}", address);
                         }
                         event => debug!("{:?}", event),
                     }

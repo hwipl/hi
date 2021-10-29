@@ -2,7 +2,7 @@ use async_std::io;
 use async_trait::async_trait;
 use futures::prelude::*;
 use libp2p::core::{
-    upgrade::{read_one, write_one},
+    upgrade::{read_length_prefixed, write_length_prefixed},
     ProtocolName,
 };
 use libp2p::request_response::RequestResponseCodec;
@@ -36,7 +36,7 @@ impl RequestResponseCodec for HiCodec {
     where
         T: AsyncRead + Unpin + Send,
     {
-        read_one(io, 1024)
+        read_length_prefixed(io, 1024)
             .map(|res| match res {
                 Err(e) => Err(io::Error::new(io::ErrorKind::InvalidData, e)),
                 Ok(vec) if vec.is_empty() => Err(io::ErrorKind::UnexpectedEof.into()),
@@ -55,7 +55,7 @@ impl RequestResponseCodec for HiCodec {
     where
         T: AsyncRead + Unpin + Send,
     {
-        read_one(io, 1024)
+        read_length_prefixed(io, 1024)
             .map(|res| match res {
                 Err(e) => Err(io::Error::new(io::ErrorKind::InvalidData, e)),
                 Ok(vec) if vec.is_empty() => Err(io::ErrorKind::UnexpectedEof.into()),
@@ -80,7 +80,7 @@ impl RequestResponseCodec for HiCodec {
             error!("error encoding request message: {}", e);
             return Err(io::Error::new(io::ErrorKind::Other, e));
         }
-        write_one(io, buffer).await
+        write_length_prefixed(io, buffer).await
     }
 
     async fn write_response<T>(
@@ -97,7 +97,7 @@ impl RequestResponseCodec for HiCodec {
             error!("error encoding response message: {}", e);
             return Err(io::Error::new(io::ErrorKind::Other, e));
         }
-        write_one(io, buffer).await
+        write_length_prefixed(io, buffer).await
     }
 }
 
