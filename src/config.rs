@@ -1,4 +1,4 @@
-use clap::{AppSettings, Clap};
+use clap::Parser;
 use std::fs::create_dir_all;
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -34,35 +34,31 @@ impl FromStr for ConfigOption {
     }
 }
 
-#[derive(Clone, Clap)]
+#[derive(Clone, Parser)]
 #[clap(version)]
-#[clap(setting = AppSettings::ColoredHelp)]
 pub struct DaemonOpts {
     /// Set configuration options
     #[clap(long, name = "option:value")]
     pub set: Vec<ConfigOption>,
 }
 
-#[derive(Clone, Clap)]
+#[derive(Clone, Parser)]
 #[clap(version)]
-#[clap(setting = AppSettings::ColoredHelp)]
 pub struct GetOpts {
     /// Information to get from the daemon
     pub info: Vec<String>,
 }
 
-#[derive(Clone, Clap)]
+#[derive(Clone, Parser)]
 #[clap(version)]
-#[clap(setting = AppSettings::ColoredHelp)]
 pub struct SetOpts {
     /// Option:value pairs to set on the daemon
     #[clap(name = "option:value")]
     pub opts: Vec<ConfigOption>,
 }
 
-#[derive(Clone, Clap)]
+#[derive(Clone, Parser)]
 #[clap(version)]
-#[clap(setting = AppSettings::ColoredHelp)]
 pub struct ChatOpts {
     /// Peer ID of chat partner
     #[clap(long, default_value = "all")]
@@ -73,7 +69,7 @@ pub struct ChatOpts {
     pub name: Option<String>,
 }
 
-#[derive(Clone, Clap)]
+#[derive(Clone, Parser)]
 pub enum Command {
     /// Run daemon
     Daemon(DaemonOpts),
@@ -87,9 +83,8 @@ pub enum Command {
     Files,
 }
 
-#[derive(Clone, Clap)]
+#[derive(Clone, Parser)]
 #[clap(version)]
-#[clap(setting = AppSettings::ColoredHelp)]
 pub struct Config {
     /// Set directory
     #[clap(long)]
