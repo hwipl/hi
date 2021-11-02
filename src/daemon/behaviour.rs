@@ -12,6 +12,7 @@ use libp2p::{NetworkBehaviour, PeerId};
 
 /// Custom network behaviour with mdns, gossipsub, request-response
 #[derive(NetworkBehaviour)]
+#[behaviour(event_process = true)]
 pub struct HiBehaviour {
     pub request: RequestResponse<HiCodec>,
     pub gossip: Gossipsub,
@@ -123,6 +124,9 @@ impl NetworkBehaviourEventProcess<GossipsubEvent> for HiBehaviour {
             }
             GossipsubEvent::Unsubscribed { peer_id, topic } => {
                 debug!("Unsubscribed: {:?} {:?}", peer_id, topic);
+            }
+            GossipsubEvent::GossipsubNotSupported { peer_id } => {
+                debug!("Gossipsub not supported: {:?}", peer_id);
             }
         }
     }
