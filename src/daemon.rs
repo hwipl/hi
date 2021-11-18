@@ -12,10 +12,10 @@ use futures::channel::mpsc;
 use futures::future::FutureExt;
 use futures::select;
 use futures::sink::SinkExt;
+use futures_timer::Delay;
 use std::collections::hash_map::{Entry, HashMap};
 use std::collections::HashSet;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use wasm_timer::Delay;
 
 type Sender<T> = mpsc::UnboundedSender<T>;
 type Receiver<T> = mpsc::UnboundedReceiver<T>;

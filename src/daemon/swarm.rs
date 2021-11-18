@@ -3,6 +3,7 @@ use crate::daemon::gossip::HiAnnounce;
 use crate::daemon::request::{HiCodec, HiRequest, HiRequestProtocol};
 use async_std::task;
 use futures::{channel::mpsc, executor::block_on, prelude::*, select, sink::SinkExt};
+use futures_timer::Delay;
 use libp2p::gossipsub::{Gossipsub, GossipsubConfig, IdentTopic, MessageAuthenticity};
 use libp2p::mdns::{Mdns, MdnsConfig};
 use libp2p::request_response::{ProtocolSupport, RequestResponse, RequestResponseConfig};
@@ -12,7 +13,6 @@ use std::error::Error;
 use std::iter;
 use std::str::FromStr;
 use std::time::Duration;
-use wasm_timer::Delay;
 
 type Sender<T> = mpsc::UnboundedSender<T>;
 type Receiver<T> = mpsc::UnboundedReceiver<T>;

@@ -4,11 +4,11 @@ use crate::unix_socket;
 use async_std::{fs, io, path, prelude::*, task};
 use futures::future::FutureExt;
 use futures::select;
+use futures_timer::Delay;
 use minicbor::{Decode, Encode};
 use std::collections::{HashMap, HashSet};
 use std::error::Error;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use wasm_timer::Delay;
 
 /// size of data in a chunk in bytes
 const CHUNK_SIZE: usize = 512;
