@@ -5,7 +5,7 @@ authors = ["hwipl"]
 edition = "2021"
 
 [dependencies]
-libp2p = "0.41.1"
+libp2p = "0.42.0"
 futures = "0.3"
 futures-timer = "3.0.2"
 minicbor = { version = "0.12.1", features = ["std", "derive"] }
