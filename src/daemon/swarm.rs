@@ -7,8 +7,8 @@ use futures_timer::Delay;
 use libp2p::gossipsub::{Gossipsub, GossipsubConfig, IdentTopic, MessageAuthenticity};
 use libp2p::mdns::{Mdns, MdnsConfig};
 use libp2p::request_response::{ProtocolSupport, RequestResponse, RequestResponseConfig};
-use libp2p::swarm::{dial_opts::DialOpts, Swarm, SwarmEvent};
-use libp2p::{identity, PeerId};
+use libp2p::swarm::{Swarm, SwarmEvent};
+use libp2p::{identity, Multiaddr, PeerId};
 use std::error::Error;
 use std::iter;
 use std::str::FromStr;
@@ -64,10 +64,10 @@ impl HiSwarm {
                     match event {
                         // handle connect address event
                         Event::ConnectAddress(addr) => {
-                            if let Ok(remote) = addr.parse() {
+                            if let Ok(remote) = addr.parse::<Multiaddr>() {
                                 println!("connecting to address: {}", addr);
                                 if let Err(e) =
-                                    swarm.dial(DialOpts::unknown_peer_id().address(remote).build())
+                                    swarm.dial(remote)
                                 {
                                     error!("error dialing address: {}", e);
                                 }
@@ -143,7 +143,7 @@ impl HiSwarm {
 
                         // try connecting to discovered peers
                         for peer_id in peer_ids {
-                            match swarm.dial(DialOpts::peer_id(peer_id).build()) {
+                            match swarm.dial(peer_id) {
                                 Ok(_) => (),
                                 Err(e) => error!("Dial error: {:?}", e),
                             }
