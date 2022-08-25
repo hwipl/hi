@@ -1,12 +1,17 @@
-use crate::daemon::behaviour::HiBehaviour;
+use crate::daemon::behaviour::{HiBehaviour, HiBehaviourEvent};
 use crate::daemon::gossip::HiAnnounce;
 use crate::daemon::request::{HiCodec, HiRequest, HiRequestProtocol};
 use async_std::task;
 use futures::{channel::mpsc, executor::block_on, prelude::*, select, sink::SinkExt};
 use futures_timer::Delay;
-use libp2p::gossipsub::{Gossipsub, GossipsubConfig, IdentTopic, MessageAuthenticity};
-use libp2p::mdns::{Mdns, MdnsConfig};
-use libp2p::request_response::{ProtocolSupport, RequestResponse, RequestResponseConfig};
+use libp2p::gossipsub::{
+    Gossipsub, GossipsubConfig, GossipsubEvent, IdentTopic, MessageAuthenticity,
+};
+use libp2p::mdns::{Mdns, MdnsConfig, MdnsEvent};
+use libp2p::request_response::{
+    ProtocolSupport, RequestResponse, RequestResponseConfig, RequestResponseEvent,
+    RequestResponseMessage,
+};
 use libp2p::swarm::{Swarm, SwarmEvent};
 use libp2p::{identity, Multiaddr, PeerId};
 use std::error::Error;
@@ -109,15 +114,111 @@ impl HiSwarm {
                 // handle swarm events
                 event = swarm.select_next_some().fuse() => {
                     match event {
-                        SwarmEvent::Behaviour(event) => {
-                            debug!("Behaviour event: {:?}", event);
+                        // request response event
+                        SwarmEvent::Behaviour(HiBehaviourEvent::RequestResponse(event)) => {
+                            // handle incoming messages
+                            if let RequestResponseEvent::Message { peer, message } = event {
+                                match message {
+                                    // handle incoming request message, send back response
+                                    RequestResponseMessage::Request {
+                                        channel,
+                                        request,
+                                        request_id,
+                                    } => {
+                                        debug!(
+                                            "received request {:?} with id {} from {:?}",
+                                            request, request_id, peer
+                                        );
+                                        let response = swarm.behaviour_mut().handle_request(peer, request);
+                                        swarm.behaviour_mut().request.send_response(channel, response).unwrap();
+                                        continue;
+                                    }
+
+                                    // handle incoming response message
+                                    RequestResponseMessage::Response { response, .. } => {
+                                        debug!("received response {:?} from {:?}", response, peer);
+                                        continue;
+                                    }
+                                }
+                            }
+
+                            // handle response sent event
+                            if let RequestResponseEvent::ResponseSent { peer, request_id } = event {
+                                debug!("sent response for request {:?} to {:?}", request_id, peer);
+                                continue;
+                            }
+
+                            error!("request response error: {:?}", event);
                         }
+
+                        // gossipsub event
+                        SwarmEvent::Behaviour(HiBehaviourEvent::Gossipsub(event)) => {
+                            match event {
+                                GossipsubEvent::Message { message, .. } => match HiAnnounce::decode(&message.data) {
+                                    Some(msg) => {
+                                        debug!(
+                                            "Message: {:?} -> {:?}: {:?}",
+                                            message.source, message.topic, msg
+                                        );
+                                        if let Some(peer) = message.source {
+                                            let swarm_event = Event::AnnouncePeer(
+                                                peer.to_string(),
+                                                msg.name,
+                                                msg.services_tag,
+                                            );
+                                            let mut to_swarm = swarm.behaviour().to_swarm.clone();
+                                            task::spawn(async move {
+                                                if let Err(e) = to_swarm.send(swarm_event).await {
+                                                    error!("error sending event to swarm: {}", e);
+                                                }
+                                            });
+                                        }
+                                    }
+                                    None => {
+                                        debug!(
+                                            "Message: {:?} -> {:?}: {:?}",
+                                            message.source, message.topic, message.data
+                                        );
+                                    }
+                                },
+                                GossipsubEvent::Subscribed { peer_id, topic } => {
+                                    debug!("Subscribed: {:?} {:?}", peer_id, topic);
+                                }
+                                GossipsubEvent::Unsubscribed { peer_id, topic } => {
+                                    debug!("Unsubscribed: {:?} {:?}", peer_id, topic);
+                                }
+                                GossipsubEvent::GossipsubNotSupported { peer_id } => {
+                                    debug!("Gossipsub not supported: {:?}", peer_id);
+                                }
+                            }
+                        }
+
+                        // mdns event
+                        SwarmEvent::Behaviour(HiBehaviourEvent::Mdns(event)) => {
+                            match event {
+                                MdnsEvent::Discovered(list) => {
+                                    for (peer, addr) in list {
+                                        debug!("Peer discovered: {:?} {:?}", peer, addr);
+                                    }
+                                }
+                                MdnsEvent::Expired(list) => {
+                                    for (peer, addr) in list {
+                                        if !swarm.behaviour().mdns.has_node(&peer) {
+                                            debug!("Peer expired: {:?} {:?}", peer, addr);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
                         SwarmEvent::NewListenAddr{address, ..} => {
                             println!("Started listening on {:?}", address);
                         }
+
                         SwarmEvent::ExpiredListenAddr{address, ..} => {
                             println!("Stopped listening on {:?}", address);
                         }
+
                         event => debug!("{:?}", event),
                     }
                 },
