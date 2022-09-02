@@ -47,6 +47,55 @@ pub struct HiSwarm {
 }
 
 impl HiSwarm {
+    /// handle event sent to the swarm
+    async fn handle_receiver_event(
+        swarm: &mut Swarm<HiBehaviour>,
+        event: Event,
+        sender: &mut Sender<Event>,
+        node_name: &mut String,
+        services_tag: &mut u32,
+    ) {
+        match event {
+            // handle connect address event
+            Event::ConnectAddress(addr) => {
+                if let Ok(remote) = addr.parse::<Multiaddr>() {
+                    println!("connecting to address: {}", addr);
+                    if let Err(e) = swarm.dial(remote) {
+                        error!("error dialing address: {}", e);
+                    }
+                }
+            }
+
+            // handle set name request
+            Event::SetName(name) => {
+                *node_name = name.clone();
+            }
+
+            // handle set services request
+            Event::SetServicesTag(tag) => {
+                *services_tag = tag;
+            }
+
+            // handle send file message request
+            Event::SendMessage(to_peer, to_client, from_client, service, content) => {
+                let peer_id = match PeerId::from_str(&to_peer) {
+                    Ok(peer_id) => peer_id,
+                    Err(_) => return,
+                };
+                let msg = HiRequest::Message(to_client, from_client, service, content);
+                swarm.behaviour_mut().request.send_request(&peer_id, msg);
+            }
+
+            // events (coming from behaviour) not handled here,
+            // forward to daemon
+            Event::AnnouncePeer(..) | Event::Message(..) => {
+                if let Err(e) = sender.send(event).await {
+                    error!("Error sending swarm event: {}", e);
+                };
+            }
+        }
+    }
+
     /// main loop for handling events
     async fn handle_events(
         swarm: &mut Swarm<HiBehaviour>,
@@ -66,49 +115,8 @@ impl HiSwarm {
                         Some(event) => event,
                         None => break,
                     };
-                    match event {
-                        // handle connect address event
-                        Event::ConnectAddress(addr) => {
-                            if let Ok(remote) = addr.parse::<Multiaddr>() {
-                                println!("connecting to address: {}", addr);
-                                if let Err(e) =
-                                    swarm.dial(remote)
-                                {
-                                    error!("error dialing address: {}", e);
-                                }
-                            }
-                        }
-
-                        // handle set name request
-                        Event::SetName(name) => {
-                            node_name = name.clone();
-                        }
-
-                        // handle set services request
-                        Event::SetServicesTag(tag) => {
-                            services_tag = tag;
-                        }
-
-                        // handle send file message request
-                        Event::SendMessage(to_peer, to_client, from_client, service, content) => {
-                            let peer_id = match PeerId::from_str(&to_peer) {
-                                Ok(peer_id) => peer_id,
-                                Err(_) => continue,
-                            };
-                            let msg = HiRequest::Message(to_client, from_client, service, content);
-                            swarm.behaviour_mut().request.send_request(&peer_id, msg);
-                        }
-
-                        // events (coming from behaviour) not handled here,
-                        // forward to daemon
-                        | Event::AnnouncePeer(..)
-                        | Event::Message(..)
-                        => {
-                            if let Err(e) = sender.send(event).await {
-                                error!("Error sending swarm event: {}", e);
-                            };
-                        }
-                    }
+                    Self::handle_receiver_event(swarm, event, &mut sender, &mut node_name, &mut services_tag)
+                        .await;
                 },
 
                 // handle swarm events
