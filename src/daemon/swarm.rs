@@ -230,6 +230,47 @@ impl HiSwarm {
         }
     }
 
+    /// handle timer event
+    async fn handle_timer_event(
+        swarm: &mut Swarm<HiBehaviour>,
+        node_name: &String,
+        services_tag: &u32,
+    ) {
+        // check number of peers in gossipsub
+        let topic = IdentTopic::new("/hello/world");
+        if swarm.behaviour().gossip.mesh_peers(&topic.hash()).count() == 0 {
+            debug!("No nodes in mesh");
+
+            // get peerids of discovered peers
+            let mut peer_ids: Vec<PeerId> = Vec::new();
+            for peer_id in swarm.behaviour().mdns.discovered_nodes() {
+                if peer_ids.contains(peer_id) {
+                    continue;
+                }
+                peer_ids.push(peer_id.clone());
+            }
+
+            // try connecting to discovered peers
+            for peer_id in peer_ids {
+                match swarm.dial(peer_id) {
+                    Ok(_) => (),
+                    Err(e) => error!("Dial error: {:?}", e),
+                }
+            }
+        }
+
+        // announce presence
+        let mut announce = HiAnnounce::new();
+        announce.name = node_name.to_string();
+        announce.services_tag = *services_tag;
+        if let Some(announce) = announce.encode() {
+            match swarm.behaviour_mut().gossip.publish(topic, announce) {
+                Ok(_) => (),
+                Err(e) => error!("publish error: {:?}", e),
+            }
+        }
+    }
+
     /// main loop for handling events
     async fn handle_events(
         swarm: &mut Swarm<HiBehaviour>,
@@ -262,40 +303,7 @@ impl HiSwarm {
                 event = timer => {
                     debug!("timer event: {:?}", event);
                     timer = Delay::new(Duration::from_secs(15)).fuse();
-
-                    // check number of peers in gossipsub
-                    let topic = IdentTopic::new("/hello/world");
-                    if swarm.behaviour().gossip.mesh_peers(&topic.hash()).count() == 0 {
-                        debug!("No nodes in mesh");
-
-                        // get peerids of discovered peers
-                        let mut peer_ids: Vec<PeerId> = Vec::new();
-                        for peer_id in swarm.behaviour().mdns.discovered_nodes() {
-                            if peer_ids.contains(peer_id) {
-                                continue;
-                            }
-                            peer_ids.push(peer_id.clone());
-                        }
-
-                        // try connecting to discovered peers
-                        for peer_id in peer_ids {
-                            match swarm.dial(peer_id) {
-                                Ok(_) => (),
-                                Err(e) => error!("Dial error: {:?}", e),
-                            }
-                        }
-                    }
-
-                    // announce presence
-                    let mut announce = HiAnnounce::new();
-                    announce.name = node_name.to_string();
-                    announce.services_tag = services_tag;
-                    if let Some(announce) = announce.encode() {
-                        match swarm.behaviour_mut().gossip.publish(topic, announce) {
-                            Ok(_) => (),
-                            Err(e) => error!("publish error: {:?}", e),
-                        }
-                    }
+                    Self::handle_timer_event(swarm, &node_name, &services_tag).await;
                 },
             }
         }
