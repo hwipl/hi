@@ -40,27 +40,25 @@ pub enum Event {
     Message(String, u16, u16, u16, Vec<u8>),
 }
 
-/// Hi swarm
-pub struct HiSwarm {
-    sender: Sender<Event>,
+/// Hi swarm handler
+struct HiSwarmHandler {
+    swarm: Swarm<HiBehaviour>,
     receiver: Receiver<Event>,
+    sender: Sender<Event>,
+
+    node_name: String,
+    services_tag: u32,
 }
 
-impl HiSwarm {
+impl HiSwarmHandler {
     /// handle event sent to the swarm
-    async fn handle_receiver_event(
-        swarm: &mut Swarm<HiBehaviour>,
-        event: Event,
-        sender: &mut Sender<Event>,
-        node_name: &mut String,
-        services_tag: &mut u32,
-    ) {
+    async fn handle_receiver_event(&mut self, event: Event) {
         match event {
             // handle connect address event
             Event::ConnectAddress(addr) => {
                 if let Ok(remote) = addr.parse::<Multiaddr>() {
                     println!("connecting to address: {}", addr);
-                    if let Err(e) = swarm.dial(remote) {
+                    if let Err(e) = self.swarm.dial(remote) {
                         error!("error dialing address: {}", e);
                     }
                 }
@@ -68,12 +66,12 @@ impl HiSwarm {
 
             // handle set name request
             Event::SetName(name) => {
-                *node_name = name.clone();
+                self.node_name = name.clone();
             }
 
             // handle set services request
             Event::SetServicesTag(tag) => {
-                *services_tag = tag;
+                self.services_tag = tag;
             }
 
             // handle send file message request
@@ -83,13 +81,16 @@ impl HiSwarm {
                     Err(_) => return,
                 };
                 let msg = HiRequest::Message(to_client, from_client, service, content);
-                swarm.behaviour_mut().request.send_request(&peer_id, msg);
+                self.swarm
+                    .behaviour_mut()
+                    .request
+                    .send_request(&peer_id, msg);
             }
 
             // events (coming from behaviour) not handled here,
             // forward to daemon
             Event::AnnouncePeer(..) | Event::Message(..) => {
-                if let Err(e) = sender.send(event).await {
+                if let Err(e) = self.sender.send(event).await {
                     error!("Error sending swarm event: {}", e);
                 };
             }
@@ -98,7 +99,7 @@ impl HiSwarm {
 
     /// handle request response event
     async fn handle_request_response_event(
-        swarm: &mut Swarm<HiBehaviour>,
+        &mut self,
         event: RequestResponseEvent<HiRequest, HiResponse>,
     ) {
         // handle incoming messages
@@ -114,8 +115,8 @@ impl HiSwarm {
                         "received request {:?} with id {} from {:?}",
                         request, request_id, peer
                     );
-                    let response = swarm.behaviour_mut().handle_request(peer, request);
-                    swarm
+                    let response = self.swarm.behaviour_mut().handle_request(peer, request);
+                    self.swarm
                         .behaviour_mut()
                         .request
                         .send_response(channel, response)
@@ -141,7 +142,7 @@ impl HiSwarm {
     }
 
     /// handle gossipsub event
-    async fn handle_gossipsub_event(swarm: &mut Swarm<HiBehaviour>, event: GossipsubEvent) {
+    async fn handle_gossipsub_event(&mut self, event: GossipsubEvent) {
         match event {
             GossipsubEvent::Message { message, .. } => match HiAnnounce::decode(&message.data) {
                 Some(msg) => {
@@ -152,7 +153,7 @@ impl HiSwarm {
                     if let Some(peer) = message.source {
                         let swarm_event =
                             Event::AnnouncePeer(peer.to_string(), msg.name, msg.services_tag);
-                        let mut to_swarm = swarm.behaviour().to_swarm.clone();
+                        let mut to_swarm = self.sender.clone();
                         task::spawn(async move {
                             if let Err(e) = to_swarm.send(swarm_event).await {
                                 error!("error sending event to swarm: {}", e);
@@ -180,7 +181,7 @@ impl HiSwarm {
     }
 
     /// handle mdns event
-    async fn handle_mdns_event(swarm: &mut Swarm<HiBehaviour>, event: MdnsEvent) {
+    async fn handle_mdns_event(&mut self, event: MdnsEvent) {
         match event {
             MdnsEvent::Discovered(list) => {
                 for (peer, addr) in list {
@@ -189,7 +190,7 @@ impl HiSwarm {
             }
             MdnsEvent::Expired(list) => {
                 for (peer, addr) in list {
-                    if !swarm.behaviour().mdns.has_node(&peer) {
+                    if !self.swarm.behaviour().mdns.has_node(&peer) {
                         debug!("Peer expired: {:?} {:?}", peer, addr);
                     }
                 }
@@ -198,24 +199,21 @@ impl HiSwarm {
     }
 
     /// handle swarm event
-    async fn handle_swarm_event(
-        swarm: &mut Swarm<HiBehaviour>,
-        event: SwarmEvent<HiBehaviourEvent, impl Error>,
-    ) {
+    async fn handle_swarm_event(&mut self, event: SwarmEvent<HiBehaviourEvent, impl Error>) {
         match event {
             // request response event
             SwarmEvent::Behaviour(HiBehaviourEvent::RequestResponse(event)) => {
-                Self::handle_request_response_event(swarm, event).await;
+                self.handle_request_response_event(event).await;
             }
 
             // gossipsub event
             SwarmEvent::Behaviour(HiBehaviourEvent::Gossipsub(event)) => {
-                Self::handle_gossipsub_event(swarm, event).await;
+                self.handle_gossipsub_event(event).await;
             }
 
             // mdns event
             SwarmEvent::Behaviour(HiBehaviourEvent::Mdns(event)) => {
-                Self::handle_mdns_event(swarm, event).await;
+                self.handle_mdns_event(event).await;
             }
 
             SwarmEvent::NewListenAddr { address, .. } => {
@@ -231,19 +229,22 @@ impl HiSwarm {
     }
 
     /// handle timer event
-    async fn handle_timer_event(
-        swarm: &mut Swarm<HiBehaviour>,
-        node_name: &String,
-        services_tag: &u32,
-    ) {
+    async fn handle_timer_event(&mut self) {
         // check number of peers in gossipsub
         let topic = IdentTopic::new("/hello/world");
-        if swarm.behaviour().gossip.mesh_peers(&topic.hash()).count() == 0 {
+        if self
+            .swarm
+            .behaviour()
+            .gossip
+            .mesh_peers(&topic.hash())
+            .count()
+            == 0
+        {
             debug!("No nodes in mesh");
 
             // get peerids of discovered peers
             let mut peer_ids: Vec<PeerId> = Vec::new();
-            for peer_id in swarm.behaviour().mdns.discovered_nodes() {
+            for peer_id in self.swarm.behaviour().mdns.discovered_nodes() {
                 if peer_ids.contains(peer_id) {
                     continue;
                 }
@@ -252,7 +253,7 @@ impl HiSwarm {
 
             // try connecting to discovered peers
             for peer_id in peer_ids {
-                match swarm.dial(peer_id) {
+                match self.swarm.dial(peer_id) {
                     Ok(_) => (),
                     Err(e) => error!("Dial error: {:?}", e),
                 }
@@ -261,10 +262,10 @@ impl HiSwarm {
 
         // announce presence
         let mut announce = HiAnnounce::new();
-        announce.name = node_name.to_string();
-        announce.services_tag = *services_tag;
+        announce.name = self.node_name.to_string();
+        announce.services_tag = self.services_tag;
         if let Some(announce) = announce.encode() {
-            match swarm.behaviour_mut().gossip.publish(topic, announce) {
+            match self.swarm.behaviour_mut().gossip.publish(topic, announce) {
                 Ok(_) => (),
                 Err(e) => error!("publish error: {:?}", e),
             }
@@ -272,43 +273,44 @@ impl HiSwarm {
     }
 
     /// main loop for handling events
-    async fn handle_events(
-        swarm: &mut Swarm<HiBehaviour>,
-        mut receiver: Receiver<Event>,
-        mut sender: Sender<Event>,
-    ) {
+    async fn handle_events(&mut self) {
         let mut timer = Delay::new(Duration::from_secs(5)).fuse();
-        let mut node_name = String::from("");
-        let mut services_tag = 0;
 
         loop {
             select! {
                 // handle events sent to the swarm
-                event = receiver.next().fuse() => {
+                event = self.receiver.next().fuse() => {
                     debug!("received hi swarm event");
                     let event = match event {
                         Some(event) => event,
                         None => break,
                     };
-                    Self::handle_receiver_event(swarm, event, &mut sender, &mut node_name, &mut services_tag)
-                        .await;
+                    self.handle_receiver_event(event).await;
                 },
 
                 // handle swarm events
-                event = swarm.select_next_some().fuse() => {
-                    Self::handle_swarm_event(swarm, event).await;
+                event = self.swarm.select_next_some().fuse() => {
+                    self.handle_swarm_event(event).await;
                 },
 
                 // handle timer events
                 event = timer => {
                     debug!("timer event: {:?}", event);
                     timer = Delay::new(Duration::from_secs(15)).fuse();
-                    Self::handle_timer_event(swarm, &node_name, &services_tag).await;
+                    self.handle_timer_event().await;
                 },
             }
         }
     }
+}
 
+/// Hi swarm
+pub struct HiSwarm {
+    sender: Sender<Event>,
+    receiver: Receiver<Event>,
+}
+
+impl HiSwarm {
     /// create and run swarm
     pub async fn run() -> Result<Self, Box<dyn Error>> {
         // create key and peer id
@@ -357,8 +359,15 @@ impl HiSwarm {
         swarm.listen_on("/ip4/0.0.0.0/tcp/0".parse()?)?;
 
         // start main loop
-        task::spawn(async move {
-            Self::handle_events(&mut swarm, to_swarm_receiver, from_swarm_sender).await;
+        task::spawn(async {
+            let mut handler = HiSwarmHandler {
+                swarm,
+                receiver: to_swarm_receiver,
+                sender: from_swarm_sender,
+                node_name: String::from(""),
+                services_tag: 0,
+            };
+            handler.handle_events().await;
             debug!("swarm stopped");
         });
 
