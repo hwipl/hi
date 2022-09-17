@@ -97,6 +97,29 @@ impl HiSwarmHandler {
         }
     }
 
+    /// handle request response "request" message
+    pub fn handle_request_response_request(
+        &mut self,
+        peer: PeerId,
+        request: HiRequest,
+    ) -> HiResponse {
+        match request {
+            // handle message
+            HiRequest::Message(to_client, from_client, service, content) => {
+                debug!("received message: {:?}", content);
+                let swarm_event =
+                    Event::Message(peer.to_base58(), from_client, to_client, service, content);
+                let mut to_swarm = self.sender.clone();
+                task::spawn(async move {
+                    if let Err(e) = to_swarm.send(swarm_event).await {
+                        error!("error sending event to swarm: {}", e);
+                    }
+                });
+                HiResponse::Ok
+            }
+        }
+    }
+
     /// handle request response event
     async fn handle_request_response_event(
         &mut self,
@@ -115,7 +138,7 @@ impl HiSwarmHandler {
                         "received request {:?} with id {} from {:?}",
                         request, request_id, peer
                     );
-                    let response = self.swarm.behaviour_mut().handle_request(peer, request);
+                    let response = self.handle_request_response_request(peer, request);
                     self.swarm
                         .behaviour_mut()
                         .request
