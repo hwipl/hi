@@ -370,8 +370,6 @@ impl HiSwarm {
             request,
             gossip,
             mdns,
-
-            to_swarm: to_swarm_sender.clone(),
         };
 
         // create swarm

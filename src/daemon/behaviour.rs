@@ -1,6 +1,4 @@
 use crate::daemon::request::{HiCodec, HiRequest, HiResponse};
-use crate::daemon::swarm;
-use futures::channel::mpsc;
 use libp2p::gossipsub::{Gossipsub, GossipsubEvent};
 use libp2p::mdns::{Mdns, MdnsEvent};
 use libp2p::request_response::{RequestResponse, RequestResponseEvent};
@@ -13,10 +11,6 @@ pub struct HiBehaviour {
     pub request: RequestResponse<HiCodec>,
     pub gossip: Gossipsub,
     pub mdns: Mdns,
-
-    // channel for sending events to the swarm
-    #[behaviour(ignore)]
-    pub to_swarm: mpsc::UnboundedSender<swarm::Event>,
 }
 
 #[derive(Debug)]
