@@ -5,16 +5,16 @@ authors = ["hwipl"]
 edition = "2021"
 
 [dependencies]
-libp2p = "0.47.0"
-futures = "0.3.23"
+libp2p = "0.48.0"
+futures = "0.3.24"
 futures-timer = "3.0.2"
 minicbor = { version = "0.18.0", features = ["std", "derive"] }
 async-trait = "0.1.57"
 async-std = "1.12.0"
-clap = { version = "3.2.17", features = ["derive"] }
+clap = { version = "3.2.22", features = ["derive"] }
 dirs = "4.0.0"
 log = "0.4.17"
-env_logger = "0.9.0"
+env_logger = "0.9.1"
 rand = "0.8.5"
-whoami = "1.2.1"
+whoami = "1.2.3"
 chrono = "0.4.22"
