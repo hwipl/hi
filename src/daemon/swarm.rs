@@ -2,7 +2,7 @@ use crate::daemon::behaviour::{HiBehaviour, HiBehaviourEvent};
 use crate::daemon::gossip::HiAnnounce;
 use crate::daemon::request::{HiCodec, HiRequest, HiRequestProtocol, HiResponse};
 use async_std::task;
-use futures::{channel::mpsc, executor::block_on, prelude::*, select, sink::SinkExt};
+use futures::{channel::mpsc, prelude::*, select, sink::SinkExt};
 use futures_timer::Delay;
 use libp2p::gossipsub::{
     Gossipsub, GossipsubConfig, GossipsubEvent, IdentTopic, MessageAuthenticity,
@@ -342,10 +342,10 @@ impl HiSwarm {
         println!("Local peer id: {:?}", local_peer_id);
 
         // create transport
-        let transport = block_on(libp2p::development_transport(local_key.clone()))?;
+        let transport = libp2p::development_transport(local_key.clone()).await?;
 
         // create mdns
-        let mdns = Mdns::new(MdnsConfig::default()).await?;
+        let mdns = Mdns::new(MdnsConfig::default())?;
 
         // create gossip
         let message_authenticity = MessageAuthenticity::Signed(local_key);
