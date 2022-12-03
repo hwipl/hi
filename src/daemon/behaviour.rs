@@ -1,8 +1,8 @@
 use crate::daemon::request::{HiCodec, HiRequest, HiResponse};
 use libp2p::gossipsub::{Gossipsub, GossipsubEvent};
-use libp2p::mdns::{Mdns, MdnsEvent};
+use libp2p::mdns;
 use libp2p::request_response::{RequestResponse, RequestResponseEvent};
-use libp2p::NetworkBehaviour;
+use libp2p::swarm::NetworkBehaviour;
 
 /// Custom network behaviour with mdns, gossipsub, request-response
 #[derive(NetworkBehaviour)]
@@ -10,14 +10,14 @@ use libp2p::NetworkBehaviour;
 pub struct HiBehaviour {
     pub request: RequestResponse<HiCodec>,
     pub gossip: Gossipsub,
-    pub mdns: Mdns,
+    pub mdns: mdns::async_io::Behaviour,
 }
 
 #[derive(Debug)]
 pub enum HiBehaviourEvent {
     RequestResponse(RequestResponseEvent<HiRequest, HiResponse>),
     Gossipsub(GossipsubEvent),
-    Mdns(MdnsEvent),
+    Mdns(mdns::Event),
 }
 
 impl From<RequestResponseEvent<HiRequest, HiResponse>> for HiBehaviourEvent {
@@ -32,8 +32,8 @@ impl From<GossipsubEvent> for HiBehaviourEvent {
     }
 }
 
-impl From<MdnsEvent> for HiBehaviourEvent {
-    fn from(event: MdnsEvent) -> Self {
+impl From<mdns::Event> for HiBehaviourEvent {
+    fn from(event: mdns::Event) -> Self {
         HiBehaviourEvent::Mdns(event)
     }
 }

@@ -7,7 +7,7 @@ use futures_timer::Delay;
 use libp2p::gossipsub::{
     Gossipsub, GossipsubConfig, GossipsubEvent, IdentTopic, MessageAuthenticity,
 };
-use libp2p::mdns::{Mdns, MdnsConfig, MdnsEvent};
+use libp2p::mdns;
 use libp2p::request_response::{
     ProtocolSupport, RequestResponse, RequestResponseConfig, RequestResponseEvent,
     RequestResponseMessage,
@@ -204,14 +204,14 @@ impl HiSwarmHandler {
     }
 
     /// handle mdns event
-    async fn handle_mdns_event(&mut self, event: MdnsEvent) {
+    async fn handle_mdns_event(&mut self, event: mdns::Event) {
         match event {
-            MdnsEvent::Discovered(list) => {
+            mdns::Event::Discovered(list) => {
                 for (peer, addr) in list {
                     debug!("Peer discovered: {:?} {:?}", peer, addr);
                 }
             }
-            MdnsEvent::Expired(list) => {
+            mdns::Event::Expired(list) => {
                 for (peer, addr) in list {
                     if !self.swarm.behaviour().mdns.has_node(&peer) {
                         debug!("Peer expired: {:?} {:?}", peer, addr);
@@ -345,7 +345,7 @@ impl HiSwarm {
         let transport = libp2p::development_transport(local_key.clone()).await?;
 
         // create mdns
-        let mdns = Mdns::new(MdnsConfig::default())?;
+        let mdns = mdns::Behaviour::new(mdns::Config::default())?;
 
         // create gossip
         let message_authenticity = MessageAuthenticity::Signed(local_key);
@@ -373,7 +373,7 @@ impl HiSwarm {
         };
 
         // create swarm
-        let mut swarm = Swarm::new(transport, behaviour, local_peer_id);
+        let mut swarm = Swarm::with_async_std_executor(transport, behaviour, local_peer_id);
 
         // listen on all IPs and random ports.
         swarm.listen_on("/ip6/::/tcp/0".parse()?)?;
