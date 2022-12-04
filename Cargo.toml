@@ -17,4 +17,6 @@ log = "0.4.17"
 env_logger = "0.10.0"
 rand = "0.8.5"
 whoami = "1.2.3"
-chrono = "0.4.23"
+# disable default features to fix issue with old time version,
+# should be resolved in next chrono version
+chrono = { version = "0.4.23", default-features = false, features = ["clock", "std", "wasmbind"] }
