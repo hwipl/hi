@@ -1,33 +1,33 @@
 use crate::daemon::request::{HiCodec, HiRequest, HiResponse};
-use libp2p::gossipsub::{Gossipsub, GossipsubEvent};
+use libp2p::gossipsub;
 use libp2p::mdns;
-use libp2p::request_response::{RequestResponse, RequestResponseEvent};
+use libp2p::request_response;
 use libp2p::swarm::NetworkBehaviour;
 
 /// Custom network behaviour with mdns, gossipsub, request-response
 #[derive(NetworkBehaviour)]
 #[behaviour(out_event = "HiBehaviourEvent")]
 pub struct HiBehaviour {
-    pub request: RequestResponse<HiCodec>,
-    pub gossip: Gossipsub,
+    pub request: request_response::Behaviour<HiCodec>,
+    pub gossip: gossipsub::Behaviour,
     pub mdns: mdns::async_io::Behaviour,
 }
 
 #[derive(Debug)]
 pub enum HiBehaviourEvent {
-    RequestResponse(RequestResponseEvent<HiRequest, HiResponse>),
-    Gossipsub(GossipsubEvent),
+    RequestResponse(request_response::Event<HiRequest, HiResponse>),
+    Gossipsub(gossipsub::Event),
     Mdns(mdns::Event),
 }
 
-impl From<RequestResponseEvent<HiRequest, HiResponse>> for HiBehaviourEvent {
-    fn from(event: RequestResponseEvent<HiRequest, HiResponse>) -> Self {
+impl From<request_response::Event<HiRequest, HiResponse>> for HiBehaviourEvent {
+    fn from(event: request_response::Event<HiRequest, HiResponse>) -> Self {
         HiBehaviourEvent::RequestResponse(event)
     }
 }
 
-impl From<GossipsubEvent> for HiBehaviourEvent {
-    fn from(event: GossipsubEvent) -> Self {
+impl From<gossipsub::Event> for HiBehaviourEvent {
+    fn from(event: gossipsub::Event) -> Self {
         HiBehaviourEvent::Gossipsub(event)
     }
 }

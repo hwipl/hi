@@ -5,7 +5,7 @@ use libp2p::core::{
     upgrade::{read_length_prefixed, write_length_prefixed},
     ProtocolName,
 };
-use libp2p::request_response::RequestResponseCodec;
+use libp2p::request_response;
 use minicbor::{Decode, Encode};
 
 /// Request-response protocol for the request-response behaviour
@@ -23,7 +23,7 @@ impl ProtocolName for HiRequestProtocol {
 pub struct HiCodec();
 
 #[async_trait]
-impl RequestResponseCodec for HiCodec {
+impl request_response::Codec for HiCodec {
     type Protocol = HiRequestProtocol;
     type Request = HiRequest;
     type Response = HiResponse;

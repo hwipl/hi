@@ -4,14 +4,9 @@ use crate::daemon::request::{HiCodec, HiRequest, HiRequestProtocol, HiResponse};
 use async_std::task;
 use futures::{channel::mpsc, prelude::*, select, sink::SinkExt};
 use futures_timer::Delay;
-use libp2p::gossipsub::{
-    Gossipsub, GossipsubConfig, GossipsubEvent, IdentTopic, MessageAuthenticity,
-};
+use libp2p::gossipsub;
 use libp2p::mdns;
-use libp2p::request_response::{
-    ProtocolSupport, RequestResponse, RequestResponseConfig, RequestResponseEvent,
-    RequestResponseMessage,
-};
+use libp2p::request_response;
 use libp2p::swarm::{Swarm, SwarmEvent};
 use libp2p::{identity, Multiaddr, PeerId};
 use std::error::Error;
@@ -123,13 +118,13 @@ impl HiSwarmHandler {
     /// handle request response event
     async fn handle_request_response_event(
         &mut self,
-        event: RequestResponseEvent<HiRequest, HiResponse>,
+        event: request_response::Event<HiRequest, HiResponse>,
     ) {
         // handle incoming messages
-        if let RequestResponseEvent::Message { peer, message } = event {
+        if let request_response::Event::Message { peer, message } = event {
             match message {
                 // handle incoming request message, send back response
-                RequestResponseMessage::Request {
+                request_response::Message::Request {
                     channel,
                     request,
                     request_id,
@@ -148,7 +143,7 @@ impl HiSwarmHandler {
                 }
 
                 // handle incoming response message
-                RequestResponseMessage::Response { response, .. } => {
+                request_response::Message::Response { response, .. } => {
                     debug!("received response {:?} from {:?}", response, peer);
                     return;
                 }
@@ -156,7 +151,7 @@ impl HiSwarmHandler {
         }
 
         // handle response sent event
-        if let RequestResponseEvent::ResponseSent { peer, request_id } = event {
+        if let request_response::Event::ResponseSent { peer, request_id } = event {
             debug!("sent response for request {:?} to {:?}", request_id, peer);
             return;
         }
@@ -165,9 +160,9 @@ impl HiSwarmHandler {
     }
 
     /// handle gossipsub event
-    async fn handle_gossipsub_event(&mut self, event: GossipsubEvent) {
+    async fn handle_gossipsub_event(&mut self, event: gossipsub::Event) {
         match event {
-            GossipsubEvent::Message { message, .. } => match HiAnnounce::decode(&message.data) {
+            gossipsub::Event::Message { message, .. } => match HiAnnounce::decode(&message.data) {
                 Some(msg) => {
                     debug!(
                         "Message: {:?} -> {:?}: {:?}",
@@ -191,13 +186,13 @@ impl HiSwarmHandler {
                     );
                 }
             },
-            GossipsubEvent::Subscribed { peer_id, topic } => {
+            gossipsub::Event::Subscribed { peer_id, topic } => {
                 debug!("Subscribed: {:?} {:?}", peer_id, topic);
             }
-            GossipsubEvent::Unsubscribed { peer_id, topic } => {
+            gossipsub::Event::Unsubscribed { peer_id, topic } => {
                 debug!("Unsubscribed: {:?} {:?}", peer_id, topic);
             }
-            GossipsubEvent::GossipsubNotSupported { peer_id } => {
+            gossipsub::Event::GossipsubNotSupported { peer_id } => {
                 debug!("Gossipsub not supported: {:?}", peer_id);
             }
         }
@@ -254,7 +249,7 @@ impl HiSwarmHandler {
     /// handle timer event
     async fn handle_timer_event(&mut self) {
         // check number of peers in gossipsub
-        let topic = IdentTopic::new("/hello/world");
+        let topic = gossipsub::IdentTopic::new("/hello/world");
         if self
             .swarm
             .behaviour()
@@ -345,21 +340,21 @@ impl HiSwarm {
         let transport = libp2p::development_transport(local_key.clone()).await?;
 
         // create mdns
-        let mdns = mdns::Behaviour::new(mdns::Config::default())?;
+        let mdns = mdns::Behaviour::new(mdns::Config::default(), local_peer_id)?;
 
         // create gossip
-        let message_authenticity = MessageAuthenticity::Signed(local_key);
-        let gossipsub_config = GossipsubConfig::default();
-        let mut gossip: Gossipsub = Gossipsub::new(message_authenticity, gossipsub_config)?;
+        let message_authenticity = gossipsub::MessageAuthenticity::Signed(local_key);
+        let gossipsub_config = gossipsub::Config::default();
+        let mut gossip = gossipsub::Behaviour::new(message_authenticity, gossipsub_config)?;
 
         // subscribe to topic
-        let topic = IdentTopic::new("/hello/world");
+        let topic = gossipsub::IdentTopic::new("/hello/world");
         gossip.subscribe(&topic).unwrap();
 
         // create request-response
-        let protocols = iter::once((HiRequestProtocol(), ProtocolSupport::Full));
-        let cfg = RequestResponseConfig::default();
-        let request = RequestResponse::new(HiCodec(), protocols.clone(), cfg.clone());
+        let protocols = iter::once((HiRequestProtocol(), request_response::ProtocolSupport::Full));
+        let cfg = request_response::Config::default();
+        let request = request_response::Behaviour::new(HiCodec(), protocols.clone(), cfg.clone());
 
         // create channel for sending/receiving events to/from the swarm
         let (to_swarm_sender, to_swarm_receiver) = mpsc::unbounded();
