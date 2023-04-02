@@ -7,7 +7,7 @@ use futures_timer::Delay;
 use libp2p::gossipsub;
 use libp2p::mdns;
 use libp2p::request_response;
-use libp2p::swarm::{Swarm, SwarmEvent};
+use libp2p::swarm::{Swarm, SwarmBuilder, SwarmEvent};
 use libp2p::{identity, Multiaddr, PeerId};
 use std::error::Error;
 use std::iter;
@@ -368,7 +368,8 @@ impl HiSwarm {
         };
 
         // create swarm
-        let mut swarm = Swarm::with_async_std_executor(transport, behaviour, local_peer_id);
+        let mut swarm =
+            SwarmBuilder::with_async_std_executor(transport, behaviour, local_peer_id).build();
 
         // listen on all IPs and random ports.
         swarm.listen_on("/ip6/::/tcp/0".parse()?)?;
