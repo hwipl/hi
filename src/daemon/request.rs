@@ -1,10 +1,7 @@
 use async_std::io;
 use async_trait::async_trait;
 use futures::prelude::*;
-use libp2p::core::{
-    upgrade::{read_length_prefixed, write_length_prefixed},
-    ProtocolName,
-};
+use libp2p::core::upgrade::{read_length_prefixed, write_length_prefixed};
 use libp2p::request_response;
 use minicbor::{Decode, Encode};
 
@@ -12,14 +9,14 @@ use minicbor::{Decode, Encode};
 #[derive(Debug, Clone)]
 pub struct HiRequestProtocol();
 
-impl ProtocolName for HiRequestProtocol {
-    fn protocol_name(&self) -> &[u8] {
-        "/hi/request/0.0.1".as_bytes()
+impl AsRef<str> for HiRequestProtocol {
+    fn as_ref(&self) -> &str {
+        "/hi/request/0.0.1"
     }
 }
 
 /// Codec for the request-response behaviour
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct HiCodec();
 
 #[async_trait]

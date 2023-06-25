@@ -6,7 +6,7 @@ use libp2p::swarm::NetworkBehaviour;
 
 /// Custom network behaviour with mdns, gossipsub, request-response
 #[derive(NetworkBehaviour)]
-#[behaviour(out_event = "HiBehaviourEvent")]
+#[behaviour(to_swarm = "HiBehaviourEvent")]
 pub struct HiBehaviour {
     pub request: request_response::Behaviour<HiCodec>,
     pub gossip: gossipsub::Behaviour,

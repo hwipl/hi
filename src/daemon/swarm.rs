@@ -1,6 +1,6 @@
 use crate::daemon::behaviour::{HiBehaviour, HiBehaviourEvent};
 use crate::daemon::gossip::HiAnnounce;
-use crate::daemon::request::{HiCodec, HiRequest, HiRequestProtocol, HiResponse};
+use crate::daemon::request::{HiRequest, HiRequestProtocol, HiResponse};
 use async_std::task;
 use futures::{channel::mpsc, prelude::*, select, sink::SinkExt};
 use futures_timer::Delay;
@@ -354,7 +354,7 @@ impl HiSwarm {
         // create request-response
         let protocols = iter::once((HiRequestProtocol(), request_response::ProtocolSupport::Full));
         let cfg = request_response::Config::default();
-        let request = request_response::Behaviour::new(HiCodec(), protocols.clone(), cfg.clone());
+        let request = request_response::Behaviour::new(protocols.clone(), cfg.clone());
 
         // create channel for sending/receiving events to/from the swarm
         let (to_swarm_sender, to_swarm_receiver) = mpsc::unbounded();
