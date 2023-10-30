@@ -4,11 +4,8 @@ use crate::daemon::request::{HiRequest, HiRequestProtocol, HiResponse};
 use async_std::task;
 use futures::{channel::mpsc, prelude::*, select, sink::SinkExt};
 use futures_timer::Delay;
-use libp2p::gossipsub;
-use libp2p::mdns;
-use libp2p::request_response;
-use libp2p::swarm::{Swarm, SwarmBuilder, SwarmEvent};
-use libp2p::{identity, Multiaddr, PeerId};
+use libp2p::swarm::{Swarm, SwarmEvent};
+use libp2p::{gossipsub, mdns, request_response, Multiaddr, PeerId, SwarmBuilder};
 use std::error::Error;
 use std::iter;
 use std::str::FromStr;
@@ -331,45 +328,51 @@ pub struct HiSwarm {
 impl HiSwarm {
     /// create and run swarm
     pub async fn run() -> Result<Self, Box<dyn Error>> {
-        // create key and peer id
-        let local_key = identity::Keypair::generate_ed25519();
-        let local_peer_id = PeerId::from(local_key.public());
-        println!("Local peer id: {:?}", local_peer_id);
+        // create swarm
+        let mut swarm = SwarmBuilder::with_new_identity()
+            .with_async_std()
+            .with_tcp(
+                Default::default(),
+                (libp2p::tls::Config::new, libp2p::noise::Config::new),
+                libp2p::yamux::Config::default,
+            )?
+            .with_dns()
+            .await?
+            .with_behaviour(|key| {
+                // create mdns
+                let mdns =
+                    mdns::Behaviour::new(mdns::Config::default(), key.public().to_peer_id())?;
 
-        // create transport
-        let transport = libp2p::development_transport(local_key.clone()).await?;
+                // create gossip
+                let message_authenticity = gossipsub::MessageAuthenticity::Signed(key.clone());
+                let gossipsub_config = gossipsub::Config::default();
+                let mut gossip = gossipsub::Behaviour::new(message_authenticity, gossipsub_config)?;
 
-        // create mdns
-        let mdns = mdns::Behaviour::new(mdns::Config::default(), local_peer_id)?;
+                // subscribe to topic
+                let topic = gossipsub::IdentTopic::new("/hello/world");
+                gossip.subscribe(&topic).unwrap();
 
-        // create gossip
-        let message_authenticity = gossipsub::MessageAuthenticity::Signed(local_key);
-        let gossipsub_config = gossipsub::Config::default();
-        let mut gossip = gossipsub::Behaviour::new(message_authenticity, gossipsub_config)?;
+                // create request-response
+                let protocols =
+                    iter::once((HiRequestProtocol(), request_response::ProtocolSupport::Full));
+                let cfg = request_response::Config::default();
+                let request = request_response::Behaviour::new(protocols.clone(), cfg.clone());
 
-        // subscribe to topic
-        let topic = gossipsub::IdentTopic::new("/hello/world");
-        gossip.subscribe(&topic).unwrap();
+                // create network behaviour
+                let behaviour = HiBehaviour {
+                    request,
+                    gossip,
+                    mdns,
+                };
 
-        // create request-response
-        let protocols = iter::once((HiRequestProtocol(), request_response::ProtocolSupport::Full));
-        let cfg = request_response::Config::default();
-        let request = request_response::Behaviour::new(protocols.clone(), cfg.clone());
+                Ok(behaviour)
+            })?
+            .build();
+        println!("Local peer id: {:?}", swarm.local_peer_id());
 
         // create channel for sending/receiving events to/from the swarm
         let (to_swarm_sender, to_swarm_receiver) = mpsc::unbounded();
         let (from_swarm_sender, from_swarm_receiver) = mpsc::unbounded();
-
-        // create network behaviour
-        let behaviour = HiBehaviour {
-            request,
-            gossip,
-            mdns,
-        };
-
-        // create swarm
-        let mut swarm =
-            SwarmBuilder::with_async_std_executor(transport, behaviour, local_peer_id).build();
 
         // listen on all IPs and random ports.
         swarm.listen_on("/ip6/::/tcp/0".parse()?)?;
