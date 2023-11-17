@@ -367,6 +367,7 @@ impl HiSwarm {
 
                 Ok(behaviour)
             })?
+            .with_swarm_config(|cfg| cfg.with_idle_connection_timeout(Duration::from_secs(5)))
             .build();
         println!("Local peer id: {:?}", swarm.local_peer_id());
 
