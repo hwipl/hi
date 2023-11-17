@@ -1,7 +1,6 @@
 use async_std::io;
 use async_trait::async_trait;
 use futures::prelude::*;
-use libp2p::core::upgrade::{read_length_prefixed, write_length_prefixed};
 use libp2p::request_response;
 use minicbor::{Decode, Encode};
 
@@ -33,15 +32,9 @@ impl request_response::Codec for HiCodec {
     where
         T: AsyncRead + Unpin + Send,
     {
-        read_length_prefixed(io, 1024)
-            .map(|res| match res {
-                Err(e) => Err(io::Error::new(io::ErrorKind::InvalidData, e)),
-                Ok(vec) if vec.is_empty() => Err(io::ErrorKind::UnexpectedEof.into()),
-                Ok(vec) => {
-                    minicbor::decode(&vec).map_err(|e| io::Error::new(io::ErrorKind::Other, e))
-                }
-            })
-            .await
+        let mut vec = Vec::new();
+        io.take(1024).read_to_end(&mut vec).await?;
+        minicbor::decode(&vec).map_err(|e| io::Error::new(io::ErrorKind::Other, e))
     }
 
     async fn read_response<T>(
@@ -52,15 +45,9 @@ impl request_response::Codec for HiCodec {
     where
         T: AsyncRead + Unpin + Send,
     {
-        read_length_prefixed(io, 1024)
-            .map(|res| match res {
-                Err(e) => Err(io::Error::new(io::ErrorKind::InvalidData, e)),
-                Ok(vec) if vec.is_empty() => Err(io::ErrorKind::UnexpectedEof.into()),
-                Ok(vec) => {
-                    minicbor::decode(&vec).map_err(|e| io::Error::new(io::ErrorKind::Other, e))
-                }
-            })
-            .await
+        let mut vec = Vec::new();
+        io.take(1024).read_to_end(&mut vec).await?;
+        minicbor::decode(&vec).map_err(|e| io::Error::new(io::ErrorKind::Other, e))
     }
 
     async fn write_request<T>(
@@ -77,7 +64,7 @@ impl request_response::Codec for HiCodec {
             error!("error encoding request message: {}", e);
             return Err(io::Error::new(io::ErrorKind::Other, e));
         }
-        write_length_prefixed(io, buffer).await
+        io.write_all(buffer.as_ref()).await
     }
 
     async fn write_response<T>(
@@ -94,7 +81,7 @@ impl request_response::Codec for HiCodec {
             error!("error encoding response message: {}", e);
             return Err(io::Error::new(io::ErrorKind::Other, e));
         }
-        write_length_prefixed(io, buffer).await
+        io.write_all(buffer.as_ref()).await
     }
 }
 

@@ -214,7 +214,7 @@ impl HiSwarmHandler {
     }
 
     /// handle swarm event
-    async fn handle_swarm_event(&mut self, event: SwarmEvent<HiBehaviourEvent, impl Error>) {
+    async fn handle_swarm_event(&mut self, event: SwarmEvent<HiBehaviourEvent>) {
         match event {
             // request response event
             SwarmEvent::Behaviour(HiBehaviourEvent::RequestResponse(event)) => {
