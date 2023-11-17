@@ -205,7 +205,13 @@ impl HiSwarmHandler {
             }
             mdns::Event::Expired(list) => {
                 for (peer, addr) in list {
-                    if !self.swarm.behaviour().mdns.has_node(&peer) {
+                    if !self
+                        .swarm
+                        .behaviour()
+                        .mdns
+                        .discovered_nodes()
+                        .any(|x| x == &peer)
+                    {
                         debug!("Peer expired: {:?} {:?}", peer, addr);
                     }
                 }
