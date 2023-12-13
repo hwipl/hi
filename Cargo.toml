@@ -5,13 +5,13 @@ authors = ["hwipl"]
 edition = "2021"
 
 [dependencies]
-libp2p = { version = "0.53.1", features = ["gossipsub", "mdns", "request-response", "tcp", "tls", "dns", "async-std", "noise", "yamux", "macros"] }
+libp2p = { version = "0.53.2", features = ["gossipsub", "mdns", "request-response", "tcp", "tls", "dns", "async-std", "noise", "yamux", "macros"] }
 futures = "0.3.29"
 futures-timer = "3.0.2"
 minicbor = { version = "0.20.0", features = ["std", "derive"] }
 async-trait = "0.1.74"
 async-std = "1.12.0"
-clap = { version = "4.4.8", features = ["derive"] }
+clap = { version = "4.4.11", features = ["derive"] }
 dirs = "5.0.1"
 log = "0.4.20"
 env_logger = "0.10.1"
