@@ -50,6 +50,23 @@ enum FTState {
     Error(String),
 }
 
+/// Display for file transfer state
+impl std::fmt::Display for FTState {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            FTState::New => write!(f, "New"),
+            FTState::SendChunk => write!(f, "SendChunk"),
+            FTState::SendAck => write!(f, "SendAck"),
+            FTState::SendLastAck => write!(f, "SendLastAck"),
+            FTState::WaitChunk => write!(f, "WaitChunk"),
+            FTState::WaitAck => write!(f, "WaitAck"),
+            FTState::WaitLastAck => write!(f, "WaitLastAck"),
+            FTState::Done => write!(f, "Done"),
+            FTState::Error(e) => write!(f, "Error: {}", e),
+        }
+    }
+}
+
 /// file transfer
 #[derive(Debug)]
 struct FileTransfer {
@@ -656,7 +673,7 @@ impl FileClient {
         println!("Transfers:");
         for transfer in self.transfers.values() {
             println!(
-                "  {}: {:?} -> {:?}: {} ({} bytes, {} bytes/s) [{:?}]",
+                "  {}: {:?} -> {:?}: {} ({} bytes, {} bytes/s) [{}]",
                 transfer.id,
                 transfer.from,
                 transfer.to,
