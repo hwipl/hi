@@ -595,7 +595,7 @@ impl Daemon {
     /// run server
     async fn run(&mut self) {
         // set default name to hostname
-        self.name = whoami::hostname();
+        self.name = whoami::fallible::hostname().unwrap_or("localhost".to_string());
 
         // get options to set from config
         let options = match self.config.command {
