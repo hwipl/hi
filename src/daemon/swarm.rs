@@ -342,8 +342,7 @@ impl HiSwarm {
                 (libp2p::tls::Config::new, libp2p::noise::Config::new),
                 libp2p::yamux::Config::default,
             )?
-            .with_dns()
-            .await?
+            .with_dns()?
             .with_behaviour(|key| {
                 // create mdns
                 let mdns =
