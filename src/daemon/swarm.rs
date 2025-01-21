@@ -118,7 +118,12 @@ impl HiSwarmHandler {
         event: request_response::Event<HiRequest, HiResponse>,
     ) {
         // handle incoming messages
-        if let request_response::Event::Message { peer, message } = event {
+        if let request_response::Event::Message {
+            peer,
+            connection_id: _,
+            message,
+        } = event
+        {
             match message {
                 // handle incoming request message, send back response
                 request_response::Message::Request {
@@ -148,7 +153,12 @@ impl HiSwarmHandler {
         }
 
         // handle response sent event
-        if let request_response::Event::ResponseSent { peer, request_id } = event {
+        if let request_response::Event::ResponseSent {
+            peer,
+            connection_id: _,
+            request_id,
+        } = event
+        {
             debug!("sent response for request {:?} to {:?}", request_id, peer);
             return;
         }
@@ -191,6 +201,9 @@ impl HiSwarmHandler {
             }
             gossipsub::Event::GossipsubNotSupported { peer_id } => {
                 debug!("Gossipsub not supported: {:?}", peer_id);
+            }
+            gossipsub::Event::SlowPeer { peer_id, .. } => {
+                debug!("Slow peer: {:?}", peer_id);
             }
         }
     }
