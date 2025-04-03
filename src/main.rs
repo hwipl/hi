@@ -1,3 +1,4 @@
-fn main() {
-    hi::run();
+#[tokio::main]
+async fn main() {
+    hi::run().await;
 }

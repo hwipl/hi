@@ -1,8 +1,8 @@
-use async_std::io;
 use async_trait::async_trait;
 use futures::prelude::*;
 use libp2p::request_response;
 use minicbor::{Decode, Encode};
+use tokio::io;
 
 /// Request-response protocol for the request-response behaviour
 #[derive(Debug, Clone)]

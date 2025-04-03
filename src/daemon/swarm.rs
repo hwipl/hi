@@ -1,7 +1,6 @@
 use crate::daemon::behaviour::{HiBehaviour, HiBehaviourEvent};
 use crate::daemon::gossip::HiAnnounce;
 use crate::daemon::request::{HiRequest, HiRequestProtocol, HiResponse};
-use async_std::task;
 use futures::{channel::mpsc, prelude::*, select, sink::SinkExt};
 use futures_timer::Delay;
 use libp2p::swarm::{Swarm, SwarmEvent};
@@ -102,7 +101,7 @@ impl HiSwarmHandler {
                 let swarm_event =
                     Event::Message(peer.to_base58(), from_client, to_client, service, content);
                 let mut to_swarm = self.sender.clone();
-                task::spawn(async move {
+                tokio::spawn(async move {
                     if let Err(e) = to_swarm.send(swarm_event).await {
                         error!("error sending event to swarm: {}", e);
                     }
@@ -179,7 +178,7 @@ impl HiSwarmHandler {
                         let swarm_event =
                             Event::AnnouncePeer(peer.to_string(), msg.name, msg.services_tag);
                         let mut to_swarm = self.sender.clone();
-                        task::spawn(async move {
+                        tokio::spawn(async move {
                             if let Err(e) = to_swarm.send(swarm_event).await {
                                 error!("error sending event to swarm: {}", e);
                             }
@@ -349,7 +348,7 @@ impl HiSwarm {
     pub async fn run() -> Result<Self, Box<dyn Error>> {
         // create swarm
         let mut swarm = SwarmBuilder::with_new_identity()
-            .with_async_std()
+            .with_tokio()
             .with_tcp(
                 Default::default(),
                 (libp2p::tls::Config::new, libp2p::noise::Config::new),
@@ -398,7 +397,7 @@ impl HiSwarm {
         swarm.listen_on("/ip4/0.0.0.0/tcp/0".parse()?)?;
 
         // start main loop
-        task::spawn(async {
+        tokio::spawn(async {
             let mut handler = HiSwarmHandler {
                 swarm,
                 receiver: to_swarm_receiver,

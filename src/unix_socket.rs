@@ -1,10 +1,10 @@
 use crate::config::Config;
 use crate::message::Message;
-use async_std::fs;
-use async_std::io;
-use async_std::os::unix::net::{UnixListener, UnixStream};
-use async_std::prelude::*;
 use std::convert::TryFrom;
+use tokio::fs;
+use tokio::io;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::net::{UnixListener, UnixStream};
 
 const SOCKET_FILE: &str = "hi.sock";
 
@@ -22,13 +22,13 @@ impl UnixServer {
             // remove old socket file
             fs::remove_file(&socket).await?;
         }
-        let listener = UnixListener::bind(&socket).await?;
+        let listener = UnixListener::bind(&socket)?;
         Ok(UnixServer { listener })
     }
 
     /// Wait for next client connecting to the unix socket
     pub async fn next(&self) -> Option<UnixClient> {
-        if let Some(Ok(stream)) = self.listener.incoming().next().await {
+        if let Ok((stream, ..)) = self.listener.accept().await {
             let client = UnixClient { stream };
             return Some(client);
         }

@@ -1,14 +1,16 @@
 use crate::config;
 use crate::message::{Event, Message, Service};
 use crate::unix_socket;
-use async_std::{fs, io, path, prelude::*, task};
 use futures::future::FutureExt;
 use futures::select;
 use futures_timer::Delay;
 use minicbor::{Decode, Encode};
 use std::collections::{HashMap, HashSet};
 use std::error::Error;
+use std::path;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt};
+use tokio::{fs, io};
 
 /// size of data in a chunk in bytes
 const CHUNK_SIZE: usize = 512;
@@ -266,11 +268,11 @@ impl FileTransfer {
     async fn open_write_file(&self) -> Option<fs::File> {
         if let None = self.io {
             let file_name = path::Path::new(&self.file).file_name()?;
-            if path::Path::new(&file_name).exists().await {
+            if let Ok(true) = fs::try_exists(path::Path::new(&file_name)).await {
                 error!("file already exists");
                 return None;
             }
-            return fs::File::create(file_name).await.ok();
+            return fs::File::create_new(file_name).await.ok();
         };
         None
     }
@@ -423,9 +425,9 @@ impl FileClient {
                 },
 
                 // handle line read from stdin
-                line = stdin.next().fuse() => {
+                line = stdin.next_line().fuse() => {
                     let line = match line {
-                        Some(Ok(line)) if line != "" => line,
+                        Ok(Some(line)) if line != "" => line,
                         _ => continue,
                     };
                     self.handle_user_command(line).await?;
@@ -786,16 +788,14 @@ impl FileClient {
 }
 
 /// run daemon client in file mode
-pub fn run(config: config::Config) {
-    task::block_on(async {
-        match unix_socket::UnixClient::connect(&config).await {
-            Ok(client) => {
-                if let Err(e) = FileClient::new(config, client).await.run().await {
-                    error!("{}", e);
-                }
+pub async fn run(config: config::Config) {
+    match unix_socket::UnixClient::connect(&config).await {
+        Ok(client) => {
+            if let Err(e) = FileClient::new(config, client).await.run().await {
+                error!("{}", e);
             }
-            Err(e) => error!("unix socket client error: {}", e),
         }
-        debug!("file client stopped");
-    });
+        Err(e) => error!("unix socket client error: {}", e),
+    }
+    debug!("file client stopped");
 }

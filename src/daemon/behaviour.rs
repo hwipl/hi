@@ -10,7 +10,7 @@ use libp2p::swarm::NetworkBehaviour;
 pub struct HiBehaviour {
     pub request: request_response::Behaviour<HiCodec>,
     pub gossip: gossipsub::Behaviour,
-    pub mdns: mdns::async_io::Behaviour,
+    pub mdns: mdns::tokio::Behaviour,
 }
 
 #[derive(Debug)]

@@ -6,12 +6,11 @@ mod swarm;
 use crate::config;
 use crate::message::{self, GetSet, Message, PeerInfo, Service};
 use crate::unix_socket;
-use async_std::prelude::*;
-use async_std::task;
 use futures::channel::mpsc;
 use futures::future::FutureExt;
 use futures::select;
 use futures::sink::SinkExt;
+use futures::StreamExt;
 use futures_timer::Delay;
 use std::collections::hash_map::{Entry, HashMap};
 use std::collections::HashSet;
@@ -126,7 +125,7 @@ impl Daemon {
     /// handle new client connection
     async fn handle_connection(&mut self, client: unix_socket::UnixClient) {
         // create new client handler
-        task::spawn(Self::handle_client(
+        tokio::spawn(Self::handle_client(
             self.from_client_tx.clone(),
             self.client_id,
             client,
@@ -629,31 +628,29 @@ impl Daemon {
 }
 
 /// entry point for running the daemon server
-pub fn run(config: config::Config) {
-    task::block_on(async {
-        // create and run swarm
-        let swarm = match swarm::HiSwarm::run().await {
-            Ok(swarm) => swarm,
-            Err(e) => {
-                error!("error creating swarm: {}", e);
-                return;
-            }
-        };
+pub async fn run(config: config::Config) {
+    // create and run swarm
+    let swarm = match swarm::HiSwarm::run().await {
+        Ok(swarm) => swarm,
+        Err(e) => {
+            error!("error creating swarm: {}", e);
+            return;
+        }
+    };
 
-        // create unix server
-        let server = match unix_socket::UnixServer::listen(&config).await {
-            Ok(server) => server,
-            Err(e) => {
-                error!("unix socket server error: {}", e);
-                return;
-            }
-        };
+    // create unix server
+    let server = match unix_socket::UnixServer::listen(&config).await {
+        Ok(server) => server,
+        Err(e) => {
+            error!("unix socket server error: {}", e);
+            return;
+        }
+    };
 
-        // start service client
-        crate::client::service::run(config.clone());
+    // start service client
+    crate::client::service::run(config.clone()).await;
 
-        // start daemon
-        Daemon::new(config, server, swarm).await.run().await;
-        debug!("daemon stopped");
-    });
+    // start daemon
+    Daemon::new(config, server, swarm).await.run().await;
+    debug!("daemon stopped");
 }

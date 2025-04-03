@@ -1,7 +1,6 @@
 use crate::config;
 use crate::message::{Event, GetSet, Message, PeerInfo, Service};
 use crate::unix_socket;
-use async_std::task;
 use minicbor::{Decode, Encode};
 use std::collections::{HashMap, HashSet};
 use std::error::Error;
@@ -322,8 +321,8 @@ impl ServiceClient {
 }
 
 /// run daemon client in service mode
-pub fn run(config: config::Config) {
-    task::spawn(async {
+pub async fn run(config: config::Config) {
+    tokio::spawn(async {
         match unix_socket::UnixClient::connect(&config).await {
             Ok(client) => {
                 if let Err(e) = ServiceClient::new(config, client).await.run().await {

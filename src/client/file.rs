@@ -2,6 +2,6 @@ mod client;
 
 use crate::config::Config;
 
-pub fn run(config: Config) {
-    client::run(config);
+pub async fn run(config: Config) {
+    client::run(config).await;
 }

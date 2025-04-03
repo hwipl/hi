@@ -1,13 +1,14 @@
 use crate::config;
 use crate::message::{Event, Message, Service};
 use crate::unix_socket;
-use async_std::{io, prelude::*, task};
 use chrono::Local;
 use futures::future::FutureExt;
 use futures::select;
 use minicbor::{Decode, Encode};
 use std::collections::{HashMap, HashSet};
 use std::error::Error;
+use tokio::io;
+use tokio::io::AsyncBufReadExt;
 
 /// chat message
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode)]
@@ -212,8 +213,8 @@ impl ChatClient {
                 },
 
                 // handle line read from stdin
-                line = stdin.next().fuse() => {
-                    if let Some(Ok(line)) = line {
+                line = stdin.next_line().fuse() => {
+                    if let Ok(Some(line)) = line {
                         if line != "" {
                             self.handle_line(line).await?;
                         }
@@ -225,16 +226,14 @@ impl ChatClient {
 }
 
 /// run daemon client in chat mode
-pub fn run(config: config::Config) {
-    task::block_on(async {
-        match unix_socket::UnixClient::connect(&config).await {
-            Ok(client) => {
-                if let Err(e) = ChatClient::new(config, client).await.run().await {
-                    error!("{}", e);
-                }
+pub async fn run(config: config::Config) {
+    match unix_socket::UnixClient::connect(&config).await {
+        Ok(client) => {
+            if let Err(e) = ChatClient::new(config, client).await.run().await {
+                error!("{}", e);
             }
-            Err(e) => error!("unix socket client error: {}", e),
         }
-        debug!("chat client stopped");
-    });
+        Err(e) => error!("unix socket client error: {}", e),
+    }
+    debug!("chat client stopped");
 }

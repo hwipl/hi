@@ -1,7 +1,6 @@
 use crate::config;
 use crate::message::{GetSet, Message};
 use crate::unix_socket;
-use async_std::task;
 use std::collections::HashSet;
 use std::error::Error;
 
@@ -101,16 +100,14 @@ impl SetClient {
 }
 
 /// run set client
-pub fn run(config: config::Config) {
-    task::block_on(async {
-        match unix_socket::UnixClient::connect(&config).await {
-            Ok(client) => {
-                if let Err(e) = SetClient::new(config, client).await.run().await {
-                    error!("{}", e);
-                }
+pub async fn run(config: config::Config) {
+    match unix_socket::UnixClient::connect(&config).await {
+        Ok(client) => {
+            if let Err(e) = SetClient::new(config, client).await.run().await {
+                error!("{}", e);
             }
-            Err(e) => error!("unix socket client error: {}", e),
         }
-        debug!("set client stopped");
-    });
+        Err(e) => error!("unix socket client error: {}", e),
+    }
+    debug!("set client stopped");
 }
