@@ -11,10 +11,10 @@ use futures::future::FutureExt;
 use futures::select;
 use futures::sink::SinkExt;
 use futures::StreamExt;
-use futures_timer::Delay;
 use std::collections::hash_map::{Entry, HashMap};
 use std::collections::HashSet;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{SystemTime, UNIX_EPOCH};
+use tokio::time::{self, Duration, Instant};
 
 type Sender<T> = mpsc::UnboundedSender<T>;
 type Receiver<T> = mpsc::UnboundedReceiver<T>;
@@ -549,10 +549,11 @@ impl Daemon {
     /// run the server's main loop
     async fn run_server_loop(&mut self) {
         // start timer
-        let mut timer = Delay::new(Duration::from_secs(5)).fuse();
+        let timer = time::sleep(Duration::new(5, 0));
+        tokio::pin!(timer);
 
         loop {
-            select! {
+            tokio::select! {
                 // handle incoming connections
                 event = self.server.next().fuse() => {
                     let client = match event {
@@ -563,9 +564,9 @@ impl Daemon {
                 }
 
                 // handle timer event
-                event = timer => {
+                event = &mut timer => {
                     debug!("daemon timer event: {:?}", event);
-                    timer = Delay::new(Duration::from_secs(5)).fuse();
+                    timer.as_mut().reset(Instant::now() + Duration::new(5,0));
                     self.handle_timer().await;
                 }
 

@@ -1,14 +1,13 @@
 use crate::daemon::behaviour::{HiBehaviour, HiBehaviourEvent};
 use crate::daemon::gossip::HiAnnounce;
 use crate::daemon::request::{HiRequest, HiRequestProtocol, HiResponse};
-use futures::{channel::mpsc, prelude::*, select, sink::SinkExt};
-use futures_timer::Delay;
+use futures::{channel::mpsc, prelude::*, sink::SinkExt};
 use libp2p::swarm::{Swarm, SwarmEvent};
 use libp2p::{gossipsub, mdns, request_response, Multiaddr, PeerId, SwarmBuilder};
 use std::error::Error;
 use std::iter;
 use std::str::FromStr;
-use std::time::Duration;
+use tokio::time::{self, Duration, Instant};
 
 type Sender<T> = mpsc::UnboundedSender<T>;
 type Receiver<T> = mpsc::UnboundedReceiver<T>;
@@ -307,10 +306,11 @@ impl HiSwarmHandler {
 
     /// main loop for handling events
     async fn handle_events(&mut self) {
-        let mut timer = Delay::new(Duration::from_secs(5)).fuse();
+        let timer = time::sleep(Duration::new(5, 0));
+        tokio::pin!(timer);
 
         loop {
-            select! {
+            tokio::select! {
                 // handle events sent to the swarm
                 event = self.receiver.next().fuse() => {
                     debug!("received hi swarm event");
@@ -327,9 +327,9 @@ impl HiSwarmHandler {
                 },
 
                 // handle timer events
-                event = timer => {
+                event = &mut timer => {
                     debug!("timer event: {:?}", event);
-                    timer = Delay::new(Duration::from_secs(15)).fuse();
+                    timer.as_mut().reset(Instant::now() + Duration::new(15,0));
                     self.handle_timer_event().await;
                 },
             }

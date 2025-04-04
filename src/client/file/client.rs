@@ -2,14 +2,13 @@ use crate::config;
 use crate::message::{Event, Message, Service};
 use crate::unix_socket;
 use futures::future::FutureExt;
-use futures::select;
-use futures_timer::Delay;
 use minicbor::{Decode, Encode};
 use std::collections::{HashMap, HashSet};
 use std::error::Error;
 use std::path;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt};
+use tokio::time::{self, Duration, Instant};
 use tokio::{fs, io};
 
 /// size of data in a chunk in bytes
@@ -414,9 +413,11 @@ impl FileClient {
         // enter file loop
         println!("File mode:");
         let mut stdin = io::BufReader::new(io::stdin()).lines();
-        let mut timer = Delay::new(Duration::from_secs(5)).fuse();
+        let timer = time::sleep(Duration::new(5, 0));
+        tokio::pin!(timer);
+
         loop {
-            select! {
+            tokio::select! {
                 // handle message coming from daemon
                 msg = self.client.receive_message().fuse() => {
                     if let Ok(msg) = msg {
@@ -434,8 +435,8 @@ impl FileClient {
                 },
 
                 // handle timer event
-                _ = timer => {
-                    timer = Delay::new(Duration::from_secs(5)).fuse();
+                _ = &mut timer => {
+                    timer.as_mut().reset(Instant::now() + Duration::new(5,0));
                     for transfer in self.transfers.values_mut() {
                         transfer.check_timeout();
                     }
