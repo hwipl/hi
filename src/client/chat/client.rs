@@ -3,7 +3,6 @@ use crate::message::{Event, Message, Service};
 use crate::unix_socket;
 use chrono::Local;
 use futures::future::FutureExt;
-use futures::select;
 use minicbor::{Decode, Encode};
 use std::collections::{HashMap, HashSet};
 use std::error::Error;
@@ -203,7 +202,7 @@ impl ChatClient {
         println!("Chat mode:");
         let mut stdin = io::BufReader::new(io::stdin()).lines();
         loop {
-            select! {
+            tokio::select! {
                 // handle message coming from daemon
                 msg = self.client.receive_message().fuse() => {
                     match msg {

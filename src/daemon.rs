@@ -8,7 +8,6 @@ use crate::message::{self, GetSet, Message, PeerInfo, Service};
 use crate::unix_socket;
 use futures::channel::mpsc;
 use futures::future::FutureExt;
-use futures::select;
 use futures::sink::SinkExt;
 use futures::StreamExt;
 use std::collections::hash_map::{Entry, HashMap};
@@ -79,7 +78,7 @@ impl Daemon {
         }
 
         loop {
-            select! {
+            tokio::select! {
                 // handle messages from server
                 msg = client_receiver.next().fuse() => {
                     match msg {
