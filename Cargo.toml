@@ -7,15 +7,15 @@ edition = "2024"
 [dependencies]
 libp2p = { version = "0.56.0", features = ["gossipsub", "mdns", "request-response", "tcp", "tls", "dns", "tokio", "noise", "yamux", "macros"] }
 futures = "0.3.31"
-minicbor = { version = "1.0.0", features = ["std", "derive"] }
-async-trait = "0.1.88"
-clap = { version = "4.5.40", features = ["derive"] }
+minicbor = { version = "2.1.0", features = ["std", "derive"] }
+async-trait = "0.1.89"
+clap = { version = "4.5.45", features = ["derive"] }
 dirs = "6.0.0"
 log = "0.4.27"
 env_logger = "0.11.8"
-rand = "0.9.1"
-whoami = "1.6.0"
+rand = "0.9.2"
+whoami = "1.6.1"
 # disable default features to fix issue with old time version,
 # should be resolved in next chrono version
 chrono = { version = "0.4.41", default-features = false, features = ["clock", "std", "wasmbind"] }
-tokio = { version = "1.46.1", features = ["fs", "io-std"] }
+tokio = { version = "1.47.1", features = ["fs", "io-std"] }
