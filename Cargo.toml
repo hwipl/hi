@@ -5,7 +5,8 @@ authors = ["hwipl"]
 edition = "2024"
 
 [dependencies]
-libp2p = { version = "0.56.0", features = ["gossipsub", "mdns", "request-response", "tcp", "tls", "dns", "tokio", "noise", "yamux", "macros"] }
+# use current git version dated 2026-01-07 to remove lru dependency for dependabot alert
+libp2p = { git = "https://github.com/libp2p/rust-libp2p", rev = "5e3519fb66b92c7f7c0dc744ab360fd8b669fe54", features = ["gossipsub", "mdns", "request-response", "tcp", "tls", "dns", "tokio", "noise", "yamux", "macros"] }
 futures = "0.3.31"
 minicbor = { version = "2.1.3", features = ["std", "derive"] }
 async-trait = "0.1.89"
