@@ -8,7 +8,7 @@ use std::error::Error;
 use std::path;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt};
-use tokio::time::{self, Duration, Instant};
+use tokio::time::{self, Duration};
 use tokio::{fs, io};
 
 /// size of data in a chunk in bytes
@@ -413,8 +413,8 @@ impl FileClient {
         // enter file loop
         println!("File mode:");
         let mut stdin = io::BufReader::new(io::stdin()).lines();
-        let timer = time::sleep(Duration::new(5, 0));
-        tokio::pin!(timer);
+        let mut timer = time::interval(Duration::from_secs(5));
+        timer.set_missed_tick_behavior(time::MissedTickBehavior::Skip);
 
         loop {
             tokio::select! {
@@ -435,8 +435,7 @@ impl FileClient {
                 },
 
                 // handle timer event
-                _ = &mut timer => {
-                    timer.as_mut().reset(Instant::now() + Duration::new(5,0));
+                _ = timer.tick() => {
                     for transfer in self.transfers.values_mut() {
                         transfer.check_timeout();
                     }
