@@ -9,6 +9,10 @@ use std::iter;
 use std::str::FromStr;
 use tokio::time::{self, Duration, Instant};
 
+/// gossipsub topic
+// TODO: change /hello/world to other topic?
+const TOPIC: &str = "/hello/world";
+
 type Sender<T> = mpsc::UnboundedSender<T>;
 type Receiver<T> = mpsc::UnboundedReceiver<T>;
 
@@ -366,7 +370,7 @@ impl HiSwarm {
                 let mut gossip = gossipsub::Behaviour::new(message_authenticity, gossipsub_config)?;
 
                 // subscribe to topic
-                let topic = gossipsub::IdentTopic::new("/hello/world");
+                let topic = gossipsub::IdentTopic::new(TOPIC);
                 gossip.subscribe(&topic).unwrap();
 
                 // create request-response
