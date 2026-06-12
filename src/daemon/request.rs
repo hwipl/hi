@@ -1,4 +1,3 @@
-use async_trait::async_trait;
 use futures::prelude::*;
 use libp2p::request_response;
 use minicbor::{Decode, Encode};
@@ -18,7 +17,6 @@ impl AsRef<str> for HiRequestProtocol {
 #[derive(Clone, Default)]
 pub struct HiCodec();
 
-#[async_trait]
 impl request_response::Codec for HiCodec {
     type Protocol = HiRequestProtocol;
     type Request = HiRequest;
