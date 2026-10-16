@@ -95,14 +95,11 @@ impl ChatClient {
         }
 
         // handle events
-        match event {
-            Event::ServiceUpdate(service, peers) => {
-                // check if service is correct and update peers
-                if service == Service::Chat as u16 {
-                    self.peers = peers;
-                }
+        if let Event::ServiceUpdate(service, peers) = event {
+            // check if service is correct and update peers
+            if service == Service::Chat as u16 {
+                self.peers = peers;
             }
-            _ => (),
         }
         Ok(())
     }
@@ -213,11 +210,10 @@ impl ChatClient {
 
                 // handle line read from stdin
                 line = stdin.next_line().fuse() => {
-                    if let Ok(Some(line)) = line {
-                        if line != "" {
+                    if let Ok(Some(line)) = line
+                        && !line.is_empty() {
                             self.handle_line(line).await?;
-                        }
-                    };
+                        };
                 },
             }
         }
