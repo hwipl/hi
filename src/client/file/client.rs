@@ -109,18 +109,12 @@ impl FileTransfer {
 
     /// is file transfer done?
     fn is_done(&self) -> bool {
-        match self.state {
-            FTState::Done => true,
-            _ => false,
-        }
+        matches!(self.state, FTState::Done)
     }
 
     /// is file transfer in error state?
     fn is_error(&self) -> bool {
-        match self.state {
-            FTState::Error(..) => true,
-            _ => false,
-        }
+        matches!(self.state, FTState::Error(..))
     }
 
     /// reset timeout of the transfer
@@ -184,7 +178,7 @@ impl FileTransfer {
 
     /// is file transfer an upload?
     fn is_upload(&self) -> bool {
-        if self.from == "" {
+        if self.from.is_empty() {
             return true;
         }
         false
@@ -204,7 +198,7 @@ impl FileTransfer {
         if from == self.from {
             return true;
         }
-        return false;
+        false
     }
 
     /// handle incoming file messages for this file upload
@@ -241,7 +235,7 @@ impl FileTransfer {
         if data.len() < CHUNK_SIZE {
             self.state = FTState::SendLastAck;
         }
-        if let None = self.write_next_chunk(data).await {
+        if self.write_next_chunk(data).await.is_none() {
             self.state = FTState::Error("Error writing file".into());
         }
     }
@@ -257,7 +251,7 @@ impl FileTransfer {
 
     /// open file for reading
     async fn open_read_file(&self) -> Option<fs::File> {
-        if let None = self.io {
+        if self.io.is_none() {
             return fs::File::open(self.file.clone()).await.ok();
         };
         None
@@ -265,7 +259,7 @@ impl FileTransfer {
 
     /// open file for writing
     async fn open_write_file(&self) -> Option<fs::File> {
-        if let None = self.io {
+        if self.io.is_none() {
             let file_name = path::Path::new(&self.file).file_name()?;
             if let Ok(true) = fs::try_exists(path::Path::new(&file_name)).await {
                 error!("file already exists");
@@ -323,14 +317,14 @@ impl FileTransfer {
             FTState::New => {
                 if self.is_upload() {
                     self.io = self.open_read_file().await;
-                    if let None = self.io {
+                    if self.io.is_none() {
                         self.state = FTState::Error("Error opening file".into());
                         return None;
                     }
                     return self.next_chunk_message().await;
                 } else {
                     self.io = self.open_write_file().await;
-                    if let None = self.io {
+                    if self.io.is_none() {
                         self.state = FTState::Error("Error opening file".into());
                         return None;
                     }
@@ -428,7 +422,7 @@ impl FileClient {
                 // handle line read from stdin
                 line = stdin.next_line().fuse() => {
                     let line = match line {
-                        Ok(Some(line)) if line != "" => line,
+                        Ok(Some(line)) if !line.is_empty() => line,
                         _ => continue,
                     };
                     self.handle_user_command(line).await?;
@@ -547,14 +541,11 @@ impl FileClient {
         }
 
         // handle events
-        match event {
-            Event::ServiceUpdate(service, peers) => {
-                // check if service is correct and update peers
-                if service == Service::File as u16 {
-                    self.peers = peers;
-                }
+        if let Event::ServiceUpdate(service, peers) = event {
+            // check if service is correct and update peers
+            if service == Service::File as u16 {
+                self.peers = peers;
             }
-            _ => (),
         }
         None
     }
@@ -704,7 +695,7 @@ impl FileClient {
     async fn handle_user_command(&mut self, command: String) -> Result<(), Box<dyn Error>> {
         // split command into its parts
         let cmd: Vec<&str> = command.split_whitespace().collect();
-        if cmd.len() == 0 {
+        if cmd.is_empty() {
             return Ok(());
         }
 
@@ -736,7 +727,7 @@ impl FileClient {
         while self.transfers.contains_key(&id) {
             id = rand::random();
         }
-        return id;
+        id
     }
 
     /// check if file is shared
@@ -746,7 +737,7 @@ impl FileClient {
                 return true;
             }
         }
-        return false;
+        false
     }
 
     /// get size of the file
