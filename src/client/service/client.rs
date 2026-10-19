@@ -136,7 +136,7 @@ impl ServiceClient {
 
             // (2) find peers and their clients
             for (peer_id, peer) in self.peers.iter() {
-                if let Some(peer_clients) = peer.services.get(&s) {
+                if let Some(peer_clients) = peer.services.get(s) {
                     map.insert(peer_id.to_string(), peer_clients.clone());
                 }
             }
