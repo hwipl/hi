@@ -17,7 +17,7 @@ impl FromStr for ConfigOption {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // parse option string and get name and value
         let parts: Vec<&str> = s.split(":").collect();
-        if parts.len() < 1 || parts.len() > 2 {
+        if parts.is_empty() || parts.len() > 2 {
             return Err(String::from("invalid configuration option"));
         }
         let name = String::from(parts[0]);
@@ -100,7 +100,7 @@ pub fn get() -> Config {
     let mut config = Config::parse();
 
     // check working directory
-    if let None = config.dir {
+    if config.dir.is_none() {
         if let Some(mut dir) = dirs::config_dir() {
             dir.push("hi");
             create_dir_all(&dir).expect("could not create directory");
