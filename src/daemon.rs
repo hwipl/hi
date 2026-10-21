@@ -117,7 +117,6 @@ impl Daemon {
         // remove this client
         if let Err(e) = server.send(Event::RemoveClient(id)).await {
             error!("error removing client: {}", e);
-            return;
         }
     }
 
@@ -226,7 +225,6 @@ impl Daemon {
             };
             if let Err(e) = client.sender.send(msg).await {
                 error!("handle client error: {}", e);
-                return;
             }
         }
 
@@ -535,12 +533,10 @@ impl Daemon {
                 };
 
                 // send reply to client
-                if let Some(client) = self.clients.get_mut(&id) {
-                    if let Err(e) = client.sender.send(reply).await {
+                if let Some(client) = self.clients.get_mut(&id)
+                    && let Err(e) = client.sender.send(reply).await {
                         error!("handle client error: {}", e);
-                        return;
                     }
-                }
             }
         }
     }
