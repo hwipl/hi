@@ -32,7 +32,7 @@ impl request_response::Codec for HiCodec {
     {
         let mut vec = Vec::new();
         io.take(1024).read_to_end(&mut vec).await?;
-        minicbor::decode(&vec).map_err(|e| io::Error::new(io::ErrorKind::Other, e))
+        minicbor::decode(&vec).map_err(io::Error::other)
     }
 
     async fn read_response<T>(
@@ -45,7 +45,7 @@ impl request_response::Codec for HiCodec {
     {
         let mut vec = Vec::new();
         io.take(1024).read_to_end(&mut vec).await?;
-        minicbor::decode(&vec).map_err(|e| io::Error::new(io::ErrorKind::Other, e))
+        minicbor::decode(&vec).map_err(io::Error::other)
     }
 
     async fn write_request<T>(
@@ -60,7 +60,7 @@ impl request_response::Codec for HiCodec {
         let mut buffer = Vec::new();
         if let Err(e) = minicbor::encode(request, &mut buffer) {
             error!("error encoding request message: {}", e);
-            return Err(io::Error::new(io::ErrorKind::Other, e));
+            return Err(io::Error::other(e));
         }
         io.write_all(buffer.as_ref()).await
     }
@@ -77,7 +77,7 @@ impl request_response::Codec for HiCodec {
         let mut buffer = Vec::new();
         if let Err(e) = minicbor::encode(response, &mut buffer) {
             error!("error encoding response message: {}", e);
-            return Err(io::Error::new(io::ErrorKind::Other, e));
+            return Err(io::Error::other(e));
         }
         io.write_all(buffer.as_ref()).await
     }
