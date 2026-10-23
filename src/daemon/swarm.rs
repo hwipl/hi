@@ -284,7 +284,7 @@ impl HiSwarmHandler {
                 if peer_ids.contains(peer_id) {
                     continue;
                 }
-                peer_ids.push(peer_id.clone());
+                peer_ids.push(*peer_id);
             }
 
             // try connecting to discovered peers
