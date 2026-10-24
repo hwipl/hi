@@ -54,7 +54,7 @@ impl UnixClient {
     async fn send(&mut self, bytes: Vec<u8>) -> io::Result<()> {
         let len = match u16::try_from(bytes.len()) {
             Ok(len) => len.to_be_bytes(),
-            Err(e) => return Err(io::Error::new(io::ErrorKind::Other, e)),
+            Err(e) => return Err(io::Error::other(e)),
         };
         self.stream.write_all(&len).await?;
         self.stream.write_all(&bytes).await?;
@@ -84,8 +84,7 @@ impl UnixClient {
         let bytes = self.receive().await?;
         match Message::from_bytes(&bytes) {
             Some(msg) => Ok(msg),
-            None => Err(io::Error::new(
-                io::ErrorKind::Other,
+            None => Err(io::Error::other(
                 "error receiving message",
             )),
         }
